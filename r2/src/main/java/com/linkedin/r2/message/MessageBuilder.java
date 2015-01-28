@@ -42,12 +42,10 @@ import com.linkedin.data.ByteString;
  *
  * @see com.linkedin.r2.message.rest.RestRequestBuilder
  * @see com.linkedin.r2.message.rest.RestResponseBuilder
- * @see com.linkedin.r2.message.rpc.RpcRequestBuilder
- * @see com.linkedin.r2.message.rpc.RpcResponseBuilder
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface MessageBuilder<B extends MessageBuilder<B>>
+public interface MessageBuilder<B extends MessageBuilder<B>> extends StreamMessageBuilder<B>
 {
   /**
    * Sets the entity for this message.<p/>

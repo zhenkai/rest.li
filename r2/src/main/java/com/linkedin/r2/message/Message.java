@@ -31,7 +31,7 @@ import com.linkedin.data.ByteString;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface Message
+public interface Message extends StreamMessage
 {
   /**
    * Returns the entity for this message.
