@@ -14,6 +14,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
+ * This example shows how the Observer can be used to implement Filters.
+ *
+ * This ProxyFilter simply records the status, total streamed bytes, and total time for a response.
+ *
  * @author Zhenkai Zhu
  */
 public class ProxyFilter implements RestResponseFilter

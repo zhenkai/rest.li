@@ -28,6 +28,9 @@ import java.util.Map;
 
 
 /**
+ * This illustrates how the Reader on the Netty Client side would look like. This is just to address Chris's concern
+ * about inter-locking between Reader and Writer. Basically we just introduce some kind of pipelining or buffering
+ * instead of the inter-locking step of read-one-chunk-wait-for-it-to-be-written-then-request-the-next-chunk problem.
  * @author Zhenkai Zhu
  */
 public class GracefulNettyClientHandler implements ChannelDownstreamHandler
@@ -47,8 +50,11 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
         throws Exception
     {
       RestRequest request = (RestRequest) msg;
+
+      // hook up the reader with the EntityStream of the request
+      // the maximum pipelining or buffering is 256 KB
       EntityStream entityStream = request.getEntityStream();
-      entityStream.setReader(new BufferedReader(ctx, 1024));
+      entityStream.setReader(new BufferedReader(ctx, 256 * 1024));
 
       HttpMethod nettyMethod = HttpMethod.valueOf(request.getMethod());
       URL url = new URL(request.getURI().toString());
@@ -76,6 +82,12 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
     }
   }
 
+  /**
+   * A reader that has pipelining/buffered reading
+   *
+   * The bufferSize = the permitted size that the writer can still write + the size of data that has been provided
+   * by writer but not yet written to socket
+   */
   private static class BufferedReader implements Reader
   {
     final private int _bufferSize;
@@ -91,6 +103,7 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
+      // signal the Writer that we can accept _bufferSize bytes
       _readHandle.read(_bufferSize);
     }
 
@@ -105,7 +118,7 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
         @Override
         public void operationComplete(ChannelFuture future) throws Exception
         {
-          // dataSize bytes have been written out, we can request more
+          // dataSize bytes have been written out, we can tell the writer that we can accept dataSize more bytes
           _readHandle.read(dataSize);
         }
       });

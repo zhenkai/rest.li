@@ -17,6 +17,10 @@ import com.linkedin.r2.transport.common.StreamClient;
 import com.linkedin.r2.transport.common.StreamResponseHandler;
 
 /**
+ * This is a slightly more complex Proxy that decodes the streamed request body before sending to downstream, and encodes
+ * the streamed response body before sending back to upstream.
+ *
+ * Similar to the SimpleRelayProxy, back pressure is also achieved in the same fashion {@see SimpleRelayProxy}
  * @author Zhenkai Zhu
  */
 public class CipherProxy implements StreamResponseHandler
@@ -35,10 +39,10 @@ public class CipherProxy implements StreamResponseHandler
   {
     Processor requestProcessor = new RequestProcessor();
 
-    // read from encoded request
+    // read encoded data from original request
     request.getEntityStream().setReader(requestProcessor);
 
-    // write to decoded request
+    // write decoded data to new request
     EntityStream requestEntityStream = EntityStreams.newEntityStream(requestProcessor);
     RestRequestBuilder restRequestBuilder = request.builder();
     RestRequest decodedRequest = restRequestBuilder.build(requestEntityStream);
@@ -56,10 +60,10 @@ public class CipherProxy implements StreamResponseHandler
       {
         Processor responseProcessor = new ResponeProcessor();
 
-        // read from plain response
+        // read plain data from original response
         result.getEntityStream().setReader(responseProcessor);
 
-        // write to encoded response
+        // write encoded data to new response
         EntityStream responseEntityStream = EntityStreams.newEntityStream(responseProcessor);
         RestResponseBuilder restResponseBuilder = result.builder();
         RestResponse encodedResponse = restResponseBuilder.build(responseEntityStream);
@@ -86,7 +90,15 @@ public class CipherProxy implements StreamResponseHandler
     }
   }
 
-  private abstract static class Processor implements Reader, Writer
+  /**
+   * A Processor reads from EntityStream E1, process the data, and writes to EntityStream E2. Conceptually, it links
+   * two EntityStreams into a single EntityStream with additional processing of data.
+   *
+   * The data flow of E1->Processor->E2 is driven by the Reader of E2, which is the ultimate data reader.
+   *
+   * This could be pull up to be a public convenient class.
+   */
+  private static abstract class Processor implements Reader, Writer
   {
     private WriteHandle _writeHandle;
     private ReadHandle _readHandle;
@@ -103,8 +115,8 @@ public class CipherProxy implements StreamResponseHandler
     {
       // assume processedData.length() <= data.length()
       ByteString processedData = process(data);
-      // we can write as this data is provided to us
-      // because we signaled via _readHandle that we want more
+      // we can safely write to E2 as the data is supplied to us because we have received permission from
+      // Reader of E2, and requested more from Writer of E1
       _writeHandle.write(processedData);
     }
 
@@ -130,7 +142,7 @@ public class CipherProxy implements StreamResponseHandler
     @Override
     public void onWritePossible(int byteNum)
     {
-      // we can write more, so let's request to read more
+      // Reader of E2 says we can write more, so let's request more from Writer of E1
       _readHandle.read(byteNum);
     }
 
