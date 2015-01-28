@@ -19,7 +19,7 @@ package com.linkedin.r2.message.rest;
 
 import com.linkedin.r2.message.ResponseBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
-
+import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
  * @author Chris Pettitt
@@ -94,5 +94,17 @@ public final class RestResponseBuilder
           HttpConstants.RESPONSE_COOKIE_HEADER_NAME);
       throw new IllegalArgumentException(message);
     }
+  }
+
+  @Override
+  public RestResponse build(EntityStream entityStream)
+  {
+    return new RestResponseImpl(entityStream, getHeaders(), getStatus());
+  }
+
+  @Override
+  public RestResponse buildCanonical(EntityStream entityStream)
+  {
+    return new RestResponseImpl(entityStream, getCanonicalHeaders(), getStatus());
   }
 }

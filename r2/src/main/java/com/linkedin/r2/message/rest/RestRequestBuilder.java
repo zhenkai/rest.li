@@ -20,6 +20,7 @@ package com.linkedin.r2.message.rest;
 
 import com.linkedin.r2.message.RequestBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.util.ArgumentUtil;
 
 import java.net.URI;
@@ -125,5 +126,17 @@ public final class RestRequestBuilder
           HttpConstants.REQUEST_COOKIE_HEADER_NAME);
       throw new IllegalArgumentException(message);
     }
+  }
+
+  @Override
+  public RestRequest build(EntityStream entityStream)
+  {
+    return new RestRequestImpl(entityStream, getHeaders(), getURI(), getMethod());
+  }
+
+  @Override
+  public RestRequest buildCanonical(EntityStream entityStream)
+  {
+    return new RestRequestImpl(entityStream, getCanonicalHeaders(), getURI().normalize(), getMethod());
   }
 }

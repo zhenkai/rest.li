@@ -18,6 +18,7 @@
 package com.linkedin.r2.message;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
  * An object that represents a message, either REST or RPC, and either request or response.<p/>
@@ -34,11 +35,21 @@ import com.linkedin.data.ByteString;
 public interface Message
 {
   /**
-   * Returns the entity for this message.
+   * Returns the whole entity for this message.
+   * If the entity is streamed, this method reads from the entity stream and may block.
    *
+   * @throws IllegalStateException if the entity is streamed and the entity stream has been consumed.
    * @return the entity for this message
    */
   ByteString getEntity();
+
+  /**
+   * Returns the EntityStream for this message. The entity stream can only be read once (i.e. Message
+   * does not keep a copy of the whole entity).
+   *
+   * @return the EntityStream of this message.
+   */
+  EntityStream getEntityStream();
 
   /**
    * Returns a {@link MessageBuilder}, which provides a means of constructing a new message using
