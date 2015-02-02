@@ -13,8 +13,8 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
-import com.linkedin.r2.transport.common.StreamClient;
-import com.linkedin.r2.transport.common.StreamResponseHandler;
+import com.linkedin.r2.transport.common.Client;
+import com.linkedin.r2.transport.common.RestRequestHandler;
 
 /**
  * This is a slightly more complex Proxy that decodes the streamed request body before sending to downstream, and encodes
@@ -23,19 +23,19 @@ import com.linkedin.r2.transport.common.StreamResponseHandler;
  * Similar to the SimpleRelayProxy, back pressure is also achieved in the same fashion {@see SimpleRelayProxy}
  * @author Zhenkai Zhu
  */
-public class CipherProxy implements StreamResponseHandler
+public class CipherProxy implements RestRequestHandler
 {
-  final private StreamClient _client;
+  final private Client _client;
   final private Cipher _cipher;
 
-  public CipherProxy(StreamClient client, Cipher cipher)
+  public CipherProxy(Client client, Cipher cipher)
   {
     _client = client;
     _cipher = cipher;
   }
 
   @Override
-  public void handleStreamRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
+  public void handleRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
   {
     Processor requestProcessor = new RequestProcessor();
 
@@ -47,7 +47,7 @@ public class CipherProxy implements StreamResponseHandler
     RestRequestBuilder restRequestBuilder = request.builder();
     RestRequest decodedRequest = restRequestBuilder.build(requestEntityStream);
 
-    _client.streamRestRequest(decodedRequest, requestContext, new Callback<RestResponse>()
+    _client.restRequest(decodedRequest, requestContext, new Callback<RestResponse>()
     {
       @Override
       public void onError(Throwable e)

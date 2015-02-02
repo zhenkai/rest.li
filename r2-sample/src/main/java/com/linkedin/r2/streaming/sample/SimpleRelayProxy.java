@@ -4,8 +4,8 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
-import com.linkedin.r2.transport.common.StreamClient;
-import com.linkedin.r2.transport.common.StreamResponseHandler;
+import com.linkedin.r2.transport.common.Client;
+import com.linkedin.r2.transport.common.RestRequestHandler;
 
 /**
  * A simple proxy that just relays request to downstream and response back to upstream.
@@ -13,17 +13,17 @@ import com.linkedin.r2.transport.common.StreamResponseHandler;
  *
  * @author Zhenkai Zhu
  */
-public class SimpleRelayProxy implements StreamResponseHandler
+public class SimpleRelayProxy implements RestRequestHandler
 {
-  final private StreamClient _client;
+  final private Client _client;
 
-  public SimpleRelayProxy(StreamClient client)
+  public SimpleRelayProxy(Client client)
   {
     _client = client;
   }
 
   @Override
-  public void handleStreamRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
+  public void handleRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
   {
     /**
      * RestRequest is created by async servlet, and a Writer would be provided during construction. This RequestRequest
@@ -39,6 +39,6 @@ public class SimpleRelayProxy implements StreamResponseHandler
      * would signal netty client (Writer) to write certain amount data (e.g. 1024K) when netty client has data read
      * from downstream. If the servlet has no capacity to send, the netty client won't read from downstream.
      */
-    _client.streamRestRequest(request, requestContext, callback);
+    _client.restRequest(request, requestContext, callback);
   }
 }
