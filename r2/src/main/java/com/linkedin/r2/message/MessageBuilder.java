@@ -18,6 +18,7 @@
 package com.linkedin.r2.message;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
  * An object that builds new messages (rest/rpc, request/response).<p/>
@@ -45,7 +46,7 @@ import com.linkedin.data.ByteString;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface MessageBuilder<B extends MessageBuilder<B>> extends StreamMessageBuilder<B>
+public interface MessageBuilder<B extends MessageBuilder<B>>
 {
   /**
    * Sets the entity for this message.<p/>
@@ -90,4 +91,22 @@ public interface MessageBuilder<B extends MessageBuilder<B>> extends StreamMessa
    * @return a Message from the settings in this builder.
    */
   Message buildCanonical();
+
+
+  /**
+   * Constructs an {@link Message} using the settings configured in this builder and the supplied EntityStream.
+   * Subsequent changes to this builder will not change the underlying message.
+   *
+   * @return a Message from the settings in this builder and the supplied EntityStream
+   * @throws IllegalArgumentException if {@link #setEntity} has been called.
+   */
+  Message build(EntityStream stream);
+
+  /**
+   * Similar to {@link #build}, but the returned Message is in canonical form.
+   *
+   * @return a Message from the settings in this builder and the supplied EntityStream
+   * @throws IllegalArgumentException if {@link #setEntity} has been called.
+   */
+  Message buildCanonical(EntityStream stream);
 }

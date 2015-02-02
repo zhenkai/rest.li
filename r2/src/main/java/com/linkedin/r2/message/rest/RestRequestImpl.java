@@ -19,6 +19,7 @@ package com.linkedin.r2.message.rest;
 
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.net.URI;
 import java.util.List;
@@ -39,6 +40,17 @@ import java.util.Map;
       ByteString entity, Map<String, String> headers, List<String> cookies, URI uri, String method)
   {
     super(entity, headers, cookies);
+
+    assert uri != null;
+    assert method != null;
+
+    _uri = uri;
+    _method = method;
+  }
+
+  /* package private */ RestRequestImpl(EntityStream stream, Map<String, String> headers, URI uri, String method)
+  {
+    super(stream, headers);
 
     assert uri != null;
     assert method != null;

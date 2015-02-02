@@ -19,6 +19,7 @@ package com.linkedin.r2.message.rest;
 
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,12 @@ import java.util.Map;
       ByteString entity, Map<String, String> headers, List<String> cookies, int status)
   {
     super(entity, headers, cookies);
+    _status = status;
+  }
+
+  /* package private */ RestResponseImpl(EntityStream stream, Map<String, String> headers, int status)
+  {
+    super(stream, headers);
     _status = status;
   }
 

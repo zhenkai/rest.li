@@ -25,6 +25,7 @@ import java.util.Map;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.BaseMessage;
+import com.linkedin.r2.message.streaming.EntityStream;
 
 
 /**
@@ -45,6 +46,14 @@ import com.linkedin.r2.message.BaseMessage;
     assert cookies != null;
     _headers = headers;
     _cookies = cookies;
+  }
+
+  protected BaseRestMessage(EntityStream stream, Map<String, String> headers)
+  {
+    super(stream);
+
+    assert headers != null;
+    _headers = headers;
   }
 
   @Override
