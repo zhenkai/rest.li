@@ -38,6 +38,7 @@ public interface Message
    * Returns the whole entity for this message.
    * If the entity is streamed, this method reads from the entity stream and may block.
    *
+   * @throws IllegalStateException if the entity is streamed and the entity stream has been consumed.
    * @return the entity for this message
    */
   ByteString getEntity();

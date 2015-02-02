@@ -56,6 +56,16 @@ public abstract class BaseMessage implements Message
     _entityStream = EntityStreams.newEntityStream(new ByteStringWriter(_body));
   }
 
+  /**
+   * This method lazy-init _body and returns it
+   *
+   * This is trying is mimic the old behavior because previously calling getEntity() multiple
+   * times is allowed and very cheap, although I didn't find any use case for that.
+   * If that's not required, we could remove _lock & _body and just creates the ByteString from
+   * the EntityStream.
+   *
+   * @return the whole entity
+   */
   @Override
   public ByteString getEntity()
   {
@@ -102,6 +112,8 @@ public abstract class BaseMessage implements Message
 
     BaseMessage that = (BaseMessage) o;
 
+    // This is to mimic the old behavior
+    // we consider two messages as equal if they all have whole entity and entities equal
     if (_body != null)
     {
       return _body.equals(that._body);
@@ -115,6 +127,7 @@ public abstract class BaseMessage implements Message
   @Override
   public int hashCode()
   {
+    // if _body is not null, we need to use _body to calc hash because the relationship between equals & hashCode
     if (_body != null)
     {
       return _body.hashCode();
@@ -123,6 +136,9 @@ public abstract class BaseMessage implements Message
     return _entityStream.hashCode();
   }
 
+  /**
+   * A private writer that produce content based on the ByteString.
+   */
   private static class ByteStringWriter implements Writer
   {
     final ByteString _content;
@@ -155,6 +171,9 @@ public abstract class BaseMessage implements Message
     }
   }
 
+  /**
+   * A private reader that reads everything in the EntityStream and dumps into a ByteString
+   */
   private static class BlockingReader implements Reader
   {
     final private CountDownLatch _latch = new CountDownLatch(1);
