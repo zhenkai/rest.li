@@ -12,12 +12,12 @@ public interface Writer
    *
    * @param wh the handle to write data to the EntityStream.
    */
-  void onInit(WriteHandle wh);
+  void onInit(final WriteHandle wh);
 
   /**
    * This is called when the Reader requested the writer to produce more data.
    *
    * @param bytesNum the additional bytes allowed to write
    */
-  void onWritePossible(int bytesNum);
+  void onWritePossible(final int bytesNum);
 }

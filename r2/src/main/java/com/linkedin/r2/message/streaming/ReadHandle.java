@@ -12,5 +12,5 @@ public interface ReadHandle
    *
    * @param bytesNum the additional number of bytes that the writer is permitted to write
    */
-  void read(int bytesNum);
+  void read(final int bytesNum);
 }

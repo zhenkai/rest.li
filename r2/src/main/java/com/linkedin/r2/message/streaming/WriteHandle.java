@@ -16,7 +16,7 @@ public interface WriteHandle
    * @throws java.lang.IllegalArgumentException if the length of the data exceeds the total remaining capacity
    * permitted by the Reader
    */
-  void write(ByteString data);
+  void write(final ByteString data);
 
   /**
    * Signals that Writer has finished writing. This method does not block.
@@ -28,5 +28,5 @@ public interface WriteHandle
    *
    * @param throwable the cause of the error.
    */
-  void error(Throwable throwable);
+  void error(final Throwable throwable);
 }

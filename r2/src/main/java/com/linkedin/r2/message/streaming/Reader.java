@@ -13,5 +13,5 @@ public interface Reader extends Observer
    *
    * @param rh the ReadHandle {@link com.linkedin.r2.message.streaming.ReadHandle} provided to this reader.
    */
-  void onInit(ReadHandle rh);
+  void onInit(final ReadHandle rh);
 }
