@@ -40,9 +40,9 @@ import java.util.Map;
     _status = status;
   }
 
-  /* package private */ RestResponseImpl(EntityStream stream, Map<String, String> headers, int status)
+  /* package private */ RestResponseImpl(EntityStream stream, Map<String, String> headers, List<String> cookies, int status)
   {
-    super(stream, headers);
+    super(stream, headers, cookies);
     _status = status;
   }
 

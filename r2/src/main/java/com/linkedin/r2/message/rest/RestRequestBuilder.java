@@ -131,12 +131,12 @@ public final class RestRequestBuilder
   @Override
   public RestRequest build(EntityStream entityStream)
   {
-    return new RestRequestImpl(entityStream, getHeaders(), getURI(), getMethod());
+    return new RestRequestImpl(entityStream, getHeaders(), getCookies(), getURI(), getMethod());
   }
 
   @Override
   public RestRequest buildCanonical(EntityStream entityStream)
   {
-    return new RestRequestImpl(entityStream, getCanonicalHeaders(), getURI().normalize(), getMethod());
+    return new RestRequestImpl(entityStream, getCanonicalHeaders(), getCanonicalCookies(), getURI().normalize(), getMethod());
   }
 }
