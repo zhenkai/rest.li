@@ -44,12 +44,12 @@ public class SyncIOWriter implements Writer
 
   public void readFromServletInputStream()
   {
+    byte[] bytes = new byte[_chunkSize];
     try
     {
       while (true)
       {
         _capacity.acquire();
-        byte[] bytes = new byte[_chunkSize];
         int dataLen = _is.read(bytes);
 
         if (dataLen < 0)
