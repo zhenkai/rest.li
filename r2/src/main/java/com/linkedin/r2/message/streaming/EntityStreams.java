@@ -131,9 +131,9 @@ public final class EntityStreams
           {
             for(Observer observer: _observers)
             {
-              observer.onReadPossible(data);
+              observer.onDataAvailable(data);
             }
-            _reader.onReadPossible(data);
+            _reader.onDataAvailable(data);
           }
         };
         dispatch(notifyReadPossible);

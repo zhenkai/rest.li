@@ -193,7 +193,7 @@ public abstract class BaseMessage implements Message
       _rh.read(Integer.MAX_VALUE);
     }
 
-    public void onReadPossible(ByteString data)
+    public void onDataAvailable(ByteString data)
     {
       try
       {

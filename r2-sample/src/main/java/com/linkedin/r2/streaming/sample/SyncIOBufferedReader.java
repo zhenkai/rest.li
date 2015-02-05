@@ -67,7 +67,7 @@ public class SyncIOBufferedReader implements Reader
     _readHandle.read(_permittedChunks);
   }
 
-  public void onReadPossible(ByteString data)
+  public void onDataAvailable(ByteString data)
   {
     // just add to unbounded blocking queue, no blocking.
     // the queue is actually bounded, because WriteHandle guarantees that writer cannot

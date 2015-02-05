@@ -107,7 +107,7 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
       _readHandle.read(_bufferSize);
     }
 
-    public void onReadPossible(ByteString data)
+    public void onDataAvailable(ByteString data)
     {
       ChannelBuffer channelBuffer = ChannelBuffers.wrappedBuffer(data.asByteBuffer());
       HttpChunk chunk = new DefaultHttpChunk(channelBuffer);

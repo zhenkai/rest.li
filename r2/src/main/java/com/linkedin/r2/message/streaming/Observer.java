@@ -13,7 +13,7 @@ public interface Observer
    * This is called when a new chunk of data is written to the stream by the writer.
    * @param data data written by the writer
    */
-  void onReadPossible(final ByteString data);
+  void onDataAvailable(final ByteString data);
 
   /**
    * This is called when the writer finished writing.

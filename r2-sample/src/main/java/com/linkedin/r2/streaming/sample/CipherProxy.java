@@ -123,7 +123,7 @@ public class CipherProxy implements RestRequestHandler
     }
 
     @Override
-    public void onReadPossible(ByteString data)
+    public void onDataAvailable(ByteString data)
     {
       // assume processedData.length() <= data.length()
       ByteString processedData = process(data);

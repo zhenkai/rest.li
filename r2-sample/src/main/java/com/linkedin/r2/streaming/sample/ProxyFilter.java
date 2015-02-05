@@ -37,7 +37,7 @@ public class ProxyFilter implements RestResponseFilter
       private long bytesNum = 0;
 
       @Override
-      public void onReadPossible(ByteString data)
+      public void onDataAvailable(ByteString data)
       {
         if (bytesNum == 0)
         {
