@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -43,7 +42,6 @@ public final class EntityStreams
     private Reader _reader;
     private boolean _initialized;
     private Semaphore _capacity;
-    final private AtomicBoolean _notifyWriter;
     private int _chunkSize;
 
     EntityStreamImpl(Writer writer)
@@ -53,7 +51,6 @@ public final class EntityStreams
       _observers = new ArrayList<Observer>();
       _initialized = false;
       _capacity = new Semaphore(0);
-      _notifyWriter = new AtomicBoolean(true);
       _chunkSize = 0;
     }
 
@@ -118,7 +115,7 @@ public final class EntityStreams
 
         if(!_capacity.tryAcquire())
         {
-          throw new IllegalStateException("Trying to write when WriteHandle is not writable.");
+          throw new IllegalStateException("There is no permits left for write.");
         }
 
         if (data.length() > _chunkSize)
@@ -177,21 +174,6 @@ public final class EntityStreams
         };
         dispatch(notifyError);
       }
-
-      @Override
-      public boolean isWritable()
-      {
-        if (_capacity.tryAcquire())
-        {
-          _capacity.release();
-          return true;
-        }
-        else
-        {
-          _notifyWriter.set(true);
-          return false;
-        }
-      }
     }
 
     private class ReadHandleImpl implements ReadHandle
@@ -199,23 +181,16 @@ public final class EntityStreams
       @Override
       public void read(final int chunkNum)
       {
-        _capacity.release(chunkNum);
-
-        if (_notifyWriter.compareAndSet(true, false))
+        Runnable notifyWritePossible = new Runnable()
         {
-
-          Runnable notifyWritePossible = new Runnable()
+          @Override
+          public void run()
           {
-            @Override
-            public void run()
-            {
-              {
-                _writer.onWritePossible();
-              }
-            }
-          };
-          dispatch(notifyWritePossible);
-        }
+            _capacity.release(chunkNum);
+            _writer.onWritePossible(chunkNum);
+          }
+        };
+        dispatch(notifyWritePossible);
       }
     }
 

@@ -16,9 +16,6 @@ import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.RestRequestHandler;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 /**
  * This is a slightly more complex Proxy that decodes the streamed request body before sending to downstream, and encodes
  * the streamed response body before sending back to upstream.
@@ -112,12 +109,10 @@ public class CipherProxy implements RestRequestHandler
     final private EntityStream _originalStream;
     private WriteHandle _writeHandle;
     private ReadHandle _readHandle;
-    final private Queue<ByteString> _queue;
 
     Processor(EntityStream originalStream)
     {
       _originalStream = originalStream;
-      _queue = new ConcurrentLinkedQueue<ByteString>();
     }
 
     // ===== Reader part =====
@@ -125,15 +120,16 @@ public class CipherProxy implements RestRequestHandler
     public void onInit(ReadHandle readHandle)
     {
       _readHandle = readHandle;
-      _readHandle.read(100);
     }
 
     @Override
     public void onDataAvailable(ByteString data)
     {
+      // assume processedData.length() <= data.length()
       ByteString processedData = process(data);
-      _queue.offer(processedData);
-      doWrite();
+      // we can safely write to E2 as the data is supplied to us because we have received permission from
+      // Reader of E2, and requested more from Writer of E1
+      _writeHandle.write(processedData);
     }
 
     @Override
@@ -159,18 +155,10 @@ public class CipherProxy implements RestRequestHandler
     }
 
     @Override
-    public void onWritePossible()
+    public void onWritePossible(int chunkNum)
     {
-      doWrite();
-    }
-
-    private void doWrite()
-    {
-      while(_writeHandle.isWritable() && _queue.peek() != null)
-      {
-        _writeHandle.write(_queue.poll());
-        _readHandle.read(1);
-      }
+      // Reader of E2 says we can write more, so let's request more from Writer of E1
+      _readHandle.read(chunkNum);
     }
 
     protected abstract ByteString process(ByteString input);

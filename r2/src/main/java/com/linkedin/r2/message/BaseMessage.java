@@ -157,16 +157,19 @@ public abstract class BaseMessage implements Message
       _chunkSize = chunkSize;
     }
 
-    public void onWritePossible()
+    public void onWritePossible(int chunkNum)
     {
-      while(_wh.isWritable() && _offset < _content.length())
+      for (int i = 0; i < chunkNum; i++)
       {
-        int bytesToWrite = Math.min(_chunkSize, _content.length() - _offset);
-        _wh.write(_content.slice(_offset, bytesToWrite));
-        _offset += bytesToWrite;
-        if (_offset == _content.length())
+        if (_offset <= _content.length())
         {
-          _wh.done();
+          int bytesToWrite = Math.min(_chunkSize, _content.length() - _offset);
+          _wh.write(_content.slice(_offset, bytesToWrite));
+          _offset += bytesToWrite;
+          if (_offset == _content.length())
+          {
+            _wh.done();
+          }
         }
       }
     }

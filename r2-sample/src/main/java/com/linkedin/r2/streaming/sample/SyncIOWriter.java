@@ -4,9 +4,9 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.io.IOException;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -16,20 +16,17 @@ import java.util.concurrent.Semaphore;
  *
  * @author Zhenkai Zhu
  */
-public class SyncIOBufferedWriter implements Writer
+public class SyncIOWriter implements Writer
 {
   final private ServletInputStream _is;
-  final Semaphore _sem;
   private WriteHandle _wh;
+  final private Semaphore _capacity;
   private int _chunkSize;
 
-  final private static ByteString DONE = ByteString.copy(new byte[1]);
-  final private static ByteString ERROR = ByteString.copy(new byte[1]);
-
-  public SyncIOBufferedWriter(ServletInputStream is)
+  public SyncIOWriter(ServletInputStream is)
   {
     _is = is;
-    _sem = new Semaphore(0);
+    _capacity = new Semaphore(0);
   }
 
   @Override
@@ -40,17 +37,19 @@ public class SyncIOBufferedWriter implements Writer
   }
 
   @Override
-  public void onWritePossible()
+  public void onWritePossible(int chunkNum)
   {
+    _capacity.release(chunkNum);
   }
 
   public void readFromServletInputStream()
   {
-    byte[] bytes = new byte[_chunkSize];
     try
     {
       while (true)
       {
+        _capacity.acquire();
+        byte[] bytes = new byte[_chunkSize];
         int dataLen = _is.read(bytes);
 
         if (dataLen < 0)
@@ -60,15 +59,7 @@ public class SyncIOBufferedWriter implements Writer
         }
         else
         {
-          ByteString data = ByteString.copy(bytes, 0, dataLen);
-          if (_wh.isWritable())
-          {
-            _wh.write(data);
-          }
-          else
-          {
-            _sem.acquire();
-          }
+          _wh.write(ByteString.copy(bytes, 0, dataLen));
         }
       }
     }

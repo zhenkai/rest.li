@@ -16,10 +16,9 @@ public interface Writer
   void onInit(final WriteHandle wh, final int chunkSize);
 
   /**
-   * Invoked when it it possible to write data.
-   * This method will be invoked the first time as soon as data can be written to the WriteHandle.
-   * Subsequent invocations will only occur if a call to WriteHandle.isWritable() has returned false
-   * and it has since become possible to write data.
+   * This is called when the Reader requested the writer to produce more data.
+   *
+   * @param chunkNum the additional chunks allowed to write
    */
-  void onWritePossible();
+  void onWritePossible(final int chunkNum);
 }

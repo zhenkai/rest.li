@@ -14,7 +14,7 @@ public interface WriteHandle
    *
    * @param data the data to be written
    * @throws java.lang.IllegalArgumentException if the length of the data exceeds the chunkSize specified by the reader
-   * @throws java.lang.IllegalStateException if this write handle is not writable
+   * @throws java.lang.IllegalStateException if there is no more chunks permitted by the reader
    */
   void write(final ByteString data);
 
@@ -29,10 +29,4 @@ public interface WriteHandle
    * @param throwable the cause of the error.
    */
   void error(final Throwable throwable);
-
-  /**
-   * Indicates if this WriteHandle is writable.
-   * @return writable state
-   */
-  boolean isWritable();
 }
