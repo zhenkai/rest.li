@@ -21,7 +21,8 @@ public interface EntityStream
    * Set reader for this stream.
    *
    * @param r the Reader of this stream
+   * @param chunkSize the desired chunkSize for data
    * @throws java.lang.IllegalStateException if there is already a reader
    */
-  void setReader(Reader r);
+  void setReader(Reader r, int chunkSize);
 }

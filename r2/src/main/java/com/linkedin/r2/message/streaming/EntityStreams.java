@@ -42,6 +42,7 @@ public final class EntityStreams
     private Reader _reader;
     private boolean _initialized;
     private Semaphore _capacity;
+    private int _chunkSize;
 
     EntityStreamImpl(Writer writer)
     {
@@ -50,6 +51,7 @@ public final class EntityStreams
       _observers = new ArrayList<Observer>();
       _initialized = false;
       _capacity = new Semaphore(0);
+      _chunkSize = 0;
     }
 
     public void addObserver(Observer o)
@@ -66,13 +68,14 @@ public final class EntityStreams
       }
     }
 
-    public void setReader(Reader r)
+    public void setReader(Reader r, final int chunkSize)
     {
       try
       {
         _lock.lock();
         checkInit();
         _reader = r;
+        _chunkSize = chunkSize;
         _initialized = true;
         _observers = Collections.unmodifiableList(_observers);
       }
@@ -87,7 +90,7 @@ public final class EntityStreams
         public void run()
         {
           final WriteHandle wh = new WriteHandleImpl();
-          _writer.onInit(wh);
+          _writer.onInit(wh, chunkSize);
         }
       };
       dispatch(notifyWriterInit);
@@ -109,10 +112,16 @@ public final class EntityStreams
       @Override
       public void write(final ByteString data)
       {
-        if(!_capacity.tryAcquire(data.length()))
+
+        if(!_capacity.tryAcquire())
+        {
+          throw new IllegalStateException("There is no permits left for write.");
+        }
+
+        if (data.length() > _chunkSize)
         {
           throw new IllegalArgumentException("Data length " + data.length() +
-              " exceeds the total remaining capacity permitted by the Reader");
+              " is larger than the desired chunk size: " + _chunkSize);
         }
 
         Runnable notifyReadPossible = new Runnable()
@@ -170,15 +179,15 @@ public final class EntityStreams
     private class ReadHandleImpl implements ReadHandle
     {
       @Override
-      public void read(final int bytesNum)
+      public void read(final int chunkNum)
       {
         Runnable notifyWritePossible = new Runnable()
         {
           @Override
           public void run()
           {
-            _capacity.release(bytesNum);
-            _writer.onWritePossible(bytesNum);
+            _capacity.release(chunkNum);
+            _writer.onWritePossible(chunkNum);
           }
         };
         dispatch(notifyWritePossible);

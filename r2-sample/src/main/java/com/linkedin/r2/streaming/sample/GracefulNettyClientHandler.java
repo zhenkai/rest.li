@@ -52,9 +52,9 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
       RestRequest request = (RestRequest) msg;
 
       // hook up the reader with the EntityStream of the request
-      // the maximum pipelining or buffering is 256 KB
+      // the maximum pipelining or buffering is 256 KB = 64 chunk * 4k/chunk
       EntityStream entityStream = request.getEntityStream();
-      entityStream.setReader(new BufferedReader(ctx, 256 * 1024));
+      entityStream.setReader(new BufferedReader(ctx, 64), 4096);
 
       HttpMethod nettyMethod = HttpMethod.valueOf(request.getMethod());
       URL url = new URL(request.getURI().toString());
@@ -103,7 +103,7 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
-      // signal the Writer that we can accept _bufferSize bytes
+      // signal the Writer that we can accept _bufferSize chunks
       _readHandle.read(_bufferSize);
     }
 
@@ -118,8 +118,8 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
         @Override
         public void operationComplete(ChannelFuture future) throws Exception
         {
-          // dataSize bytes have been written out, we can tell the writer that we can accept dataSize more bytes
-          _readHandle.read(dataSize);
+          // data have been written out, we can tell the writer that we can accept one more chunk
+          _readHandle.read(1);
         }
       });
     }

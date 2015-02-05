@@ -13,6 +13,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 /**
  * This example reader deals with Synchronous IO, which is the case for Servlet API 3.0 & Jetty 8
  *
+ * This Reader reads from the EntityStream of a RestResponse and writes to ServletOutputStream.
+ *
  * @author Zhenkai Zhu
  */
 public class SyncIOBufferedReader implements Reader
@@ -22,19 +24,19 @@ public class SyncIOBufferedReader implements Reader
 
   final private ServletOutputStream _os;
   final private BlockingQueue<ByteString> _queue;
-  final private int _bufferSize;
+  final private int _permittedChunks;
 
   private ReadHandle _readHandle;
   private Throwable _e;
 
-  SyncIOBufferedReader(ServletOutputStream os, int bufferSize)
+  SyncIOBufferedReader(ServletOutputStream os, int permittedChunks)
   {
     _os = os;
-    _bufferSize = bufferSize;
+    _permittedChunks = permittedChunks;
     _queue = new LinkedBlockingDeque<ByteString>();
   }
 
-  public void writeToServletResponse() throws ServletException, IOException, InterruptedException
+  public void writeToServletOutputStream() throws ServletException, IOException, InterruptedException
   {
     while (true)
     {
@@ -53,16 +55,16 @@ public class SyncIOBufferedReader implements Reader
 
       data.write(_os);
 
-      // finished writing data.length() bytes of data to ServletOutputStream, now signal writer we want more
-      _readHandle.read(data.length());
+      // finished writing data to ServletOutputStream, now signal writer we want one more chunk of data
+      _readHandle.read(1);
     }
   }
 
   public void onInit(ReadHandle rh)
   {
     _readHandle = rh;
-    // signal writer that we can accept _bufferSize bytes
-    _readHandle.read(_bufferSize);
+    // signal writer that we can accept number of _permittedChunks chunks
+    _readHandle.read(_permittedChunks);
   }
 
   public void onReadPossible(ByteString data)

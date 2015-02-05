@@ -25,11 +25,10 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
-import java.io.ByteArrayOutputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 /**
@@ -76,7 +75,7 @@ public abstract class BaseMessage implements Message
         if (_body == null)
         {
           BlockingReader reader = new BlockingReader();
-          _entityStream.setReader(reader);
+          _entityStream.setReader(reader, 4096);
           _body = reader.get();
         }
       }
@@ -144,6 +143,7 @@ public abstract class BaseMessage implements Message
     final ByteString _content;
     private int _offset;
     private WriteHandle _wh;
+    private int _chunkSize;
 
     ByteStringWriter(ByteString content)
     {
@@ -151,21 +151,25 @@ public abstract class BaseMessage implements Message
       _offset = 0;
     }
 
-    public void onInit(WriteHandle wh)
+    public void onInit(WriteHandle wh, int chunkSize)
     {
       _wh = wh;
+      _chunkSize = chunkSize;
     }
 
-    public void onWritePossible(int bytesNum)
+    public void onWritePossible(int chunkNum)
     {
-      if (_offset <= _content.length())
+      for (int i = 0; i < chunkNum; i++)
       {
-        int bytesToWrite = Math.min(bytesNum, _content.length() - _offset);
-        _wh.write(_content.slice(_offset, bytesToWrite));
-        _offset += bytesToWrite;
-        if (_offset == _content.length())
+        if (_offset <= _content.length())
         {
-          _wh.done();
+          int bytesToWrite = Math.min(_chunkSize, _content.length() - _offset);
+          _wh.write(_content.slice(_offset, bytesToWrite));
+          _offset += bytesToWrite;
+          if (_offset == _content.length())
+          {
+            _wh.done();
+          }
         }
       }
     }
@@ -177,8 +181,9 @@ public abstract class BaseMessage implements Message
   private static class BlockingReader implements Reader
   {
     final private CountDownLatch _latch = new CountDownLatch(1);
-    final private AtomicReference<Throwable> _error = new AtomicReference<Throwable>();
     final private ByteArrayOutputStream _outputStream = new ByteArrayOutputStream();
+    private volatile Throwable _error;
+
 
     private ReadHandle _rh;
 
@@ -196,7 +201,7 @@ public abstract class BaseMessage implements Message
       }
       catch (Exception ex)
       {
-        _error.set(ex);
+        _error = ex;
         _latch.countDown();
         throw new RuntimeException("Read entity failed: ", ex);
       }
@@ -209,7 +214,7 @@ public abstract class BaseMessage implements Message
 
     public void onError(Throwable ex)
     {
-      _error.set(ex);
+      _error = ex;
       _latch.countDown();
     }
 
@@ -217,22 +222,26 @@ public abstract class BaseMessage implements Message
     {
       try
       {
-        while(_error.get() == null)
+        while(_error == null)
         {
           _latch.await(5000, TimeUnit.MILLISECONDS);
         }
       }
       catch (InterruptedException ex)
       {
-        _error.set(ex);
+        _error = ex;
       }
 
-      if (_error.get() != null)
+      if (_error != null)
       {
-        throw new RuntimeException("Read entity failed: ", _error.get());
+        throw new RuntimeException("Read entity failed: ", _error);
       }
 
-      // two copies! But this is needed to make ByteString immutable
+      // org.apache.commons.io.output.ByteArrayOutputStream has toInputStream() method; the returned stream is backed
+      // by buffers of this stream, avoiding memory allocation and copy, thus saving space and time
+      // needs commons-io 2.5, which is not in artifactory yet
+
+      // return ByteString.read(_outputStream.toInputStream(), _outputStream.size());
       return ByteString.copy(_outputStream.toByteArray());
     }
   }

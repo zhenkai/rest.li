@@ -37,12 +37,10 @@ public class CipherProxy implements RestRequestHandler
   @Override
   public void handleRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
   {
-    Processor requestProcessor = new RequestProcessor();
+    // processor will read encoded data from original request entity stream
+    Processor requestProcessor = new RequestProcessor(request.getEntityStream());
 
-    // read encoded data from original request
-    request.getEntityStream().setReader(requestProcessor);
-
-    // write decoded data to new request
+    // processor will write decoded data to new request entity stream
     EntityStream requestEntityStream = EntityStreams.newEntityStream(requestProcessor);
     RestRequestBuilder restRequestBuilder = request.builder();
     RestRequest decodedRequest = restRequestBuilder.build(requestEntityStream);
@@ -58,12 +56,10 @@ public class CipherProxy implements RestRequestHandler
       @Override
       public void onSuccess(RestResponse result)
       {
-        Processor responseProcessor = new ResponeProcessor();
+        // processor will read plain data from original response entity stream
+        Processor responseProcessor = new ResponseProcessor(result.getEntityStream());
 
-        // read plain data from original response
-        result.getEntityStream().setReader(responseProcessor);
-
-        // write encoded data to new response
+        // processor will write encoded data to new response entity stream
         EntityStream responseEntityStream = EntityStreams.newEntityStream(responseProcessor);
         RestResponseBuilder restResponseBuilder = result.builder();
         RestResponse encodedResponse = restResponseBuilder.build(responseEntityStream);
@@ -74,6 +70,11 @@ public class CipherProxy implements RestRequestHandler
 
   private class RequestProcessor extends Processor
   {
+    RequestProcessor(EntityStream originalStream)
+    {
+      super(originalStream);
+    }
+
     @Override
     protected ByteString process(ByteString input)
     {
@@ -81,8 +82,13 @@ public class CipherProxy implements RestRequestHandler
     }
   }
 
-  private class ResponeProcessor extends Processor
+  private class ResponseProcessor extends Processor
   {
+    ResponseProcessor(EntityStream originalStream)
+    {
+      super(originalStream);
+    }
+
     @Override
     protected ByteString process(ByteString input)
     {
@@ -100,8 +106,14 @@ public class CipherProxy implements RestRequestHandler
    */
   private static abstract class Processor implements Reader, Writer
   {
+    final private EntityStream _originalStream;
     private WriteHandle _writeHandle;
     private ReadHandle _readHandle;
+
+    Processor(EntityStream originalStream)
+    {
+      _originalStream = originalStream;
+    }
 
     // ===== Reader part =====
     @Override
@@ -134,16 +146,19 @@ public class CipherProxy implements RestRequestHandler
 
     // ===== Writer part =====
     @Override
-    public void onInit(WriteHandle writeHandle)
+    public void onInit(WriteHandle writeHandle, int chunkSize)
     {
       _writeHandle = writeHandle;
+      // this means the reader of the new stream is ready, and told us the desired chunkSize,
+      // so now we can hook up with the original stream with the same chunkSize
+      _originalStream.setReader(this, chunkSize);
     }
 
     @Override
-    public void onWritePossible(int byteNum)
+    public void onWritePossible(int chunkNum)
     {
       // Reader of E2 says we can write more, so let's request more from Writer of E1
-      _readHandle.read(byteNum);
+      _readHandle.read(chunkNum);
     }
 
     protected abstract ByteString process(ByteString input);
