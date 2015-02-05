@@ -48,12 +48,14 @@ import com.linkedin.r2.message.streaming.EntityStream;
     _cookies = cookies;
   }
 
-  protected BaseRestMessage(EntityStream stream, Map<String, String> headers)
+  protected BaseRestMessage(EntityStream stream, Map<String, String> headers, List<String> cookies)
   {
     super(stream);
 
+    assert cookies != null;
     assert headers != null;
     _headers = headers;
+    _cookies = cookies;
   }
 
   @Override

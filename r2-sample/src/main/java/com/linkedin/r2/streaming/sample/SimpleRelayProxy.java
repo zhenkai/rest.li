@@ -26,16 +26,16 @@ public class SimpleRelayProxy implements RestRequestHandler
   public void handleRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
   {
     /**
-     * RestRequest is created by async servlet, and a Writer would be provided during construction. This RequestRequest
+     * RestRequest is created by servlet, and a Writer would be provided during construction. This RequestRequest
      * would be passed through server filter chain, to this method, and then be passed down to the client filter chain,
      * and finally reach the netty client code. Netty client code would then set a Reader to the entity stream of this
-     * Request. So when there is capacity to sent to downstream, netty client (Reader) would signal async servlet (Writer)
-     * to asynchrously write certain amount data (e.g. 1024K) when the servlet has data read from upstream. If netty
+     * Request. So when there is capacity to sent to downstream, netty client (Reader) would signal servlet (Writer)
+     * to write certain amount data (e.g. 1024K) when the servlet has data read from upstream. If netty
      * client has no capacity to send, the servlet won't read from upstream.
      *
      * Similarly, RestResponse is created by the netty client, and has a Writer provided. The RestResponse would be passed
-     * through client filter chain and server filter chain and then passed to async servlet, which in turn would set
-     * a Reader to the entity stream. So when there is capacity to sent response back to upstream, async servlet (Reader)
+     * through client filter chain and server filter chain and then passed to servlet, which in turn would set
+     * a Reader to the entity stream. So when there is capacity to sent response back to upstream, servlet (Reader)
      * would signal netty client (Writer) to write certain amount data (e.g. 1024K) when netty client has data read
      * from downstream. If the servlet has no capacity to send, the netty client won't read from downstream.
      */

@@ -33,7 +33,7 @@ import java.util.Map;
  * instead of the inter-locking step of read-one-chunk-wait-for-it-to-be-written-then-request-the-next-chunk problem.
  * @author Zhenkai Zhu
  */
-public class GracefulNettyClientHandler implements ChannelDownstreamHandler
+public class NettyClientRequestHandler implements ChannelDownstreamHandler
 {
   final private RequestEncoder _encoder = new RequestEncoder();
 
@@ -50,11 +50,6 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
         throws Exception
     {
       RestRequest request = (RestRequest) msg;
-
-      // hook up the reader with the EntityStream of the request
-      // the maximum pipelining or buffering is 256 KB
-      EntityStream entityStream = request.getEntityStream();
-      entityStream.setReader(new BufferedReader(ctx, 256 * 1024));
 
       HttpMethod nettyMethod = HttpMethod.valueOf(request.getMethod());
       URL url = new URL(request.getURI().toString());
@@ -75,7 +70,17 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
       {
         nettyRequest.setHeader(e.getKey(), e.getValue());
       }
+
+      // always setting to chunked as the read-write in the stream is async
+      // and we have no way to know if we need to chunk unless we are willing to wait
       nettyRequest.setChunked(true);
+
+      // hook up the reader with the EntityStream of the request
+      // the maximum pipelining or buffering is 256 KB = 64 chunk * 4k/chunk
+      // probably cannot use Encoder pattern because this may cause race condition:
+      // the data chunk may be written before the headers are sent
+      EntityStream entityStream = request.getEntityStream();
+      entityStream.setReader(new BufferedReader(ctx, 64), 4096);
 
       // set out the headers first
       return nettyRequest;
@@ -103,23 +108,22 @@ public class GracefulNettyClientHandler implements ChannelDownstreamHandler
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
-      // signal the Writer that we can accept _bufferSize bytes
+      // signal the Writer that we can accept _bufferSize chunks
       _readHandle.read(_bufferSize);
     }
 
-    public void onReadPossible(ByteString data)
+    public void onDataAvailable(ByteString data)
     {
       ChannelBuffer channelBuffer = ChannelBuffers.wrappedBuffer(data.asByteBuffer());
       HttpChunk chunk = new DefaultHttpChunk(channelBuffer);
-      final int dataSize = data.length();
       ChannelFuture writeFuture = _ctx.getChannel().write(chunk);
       writeFuture.addListener(new ChannelFutureListener()
       {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception
         {
-          // dataSize bytes have been written out, we can tell the writer that we can accept dataSize more bytes
-          _readHandle.read(dataSize);
+          // data have been written out, we can tell the writer that we can accept one more chunk
+          _readHandle.read(1);
         }
       });
     }
