@@ -99,12 +99,12 @@ public final class RestResponseBuilder
   @Override
   public RestResponse build(EntityStream entityStream)
   {
-    return new RestResponseImpl(entityStream, getHeaders(), getStatus());
+    return new RestResponseImpl(entityStream, getHeaders(), getCookies(), getStatus());
   }
 
   @Override
   public RestResponse buildCanonical(EntityStream entityStream)
   {
-    return new RestResponseImpl(entityStream, getCanonicalHeaders(), getStatus());
+    return new RestResponseImpl(entityStream, getCanonicalHeaders(), getCanonicalCookies(), getStatus());
   }
 }

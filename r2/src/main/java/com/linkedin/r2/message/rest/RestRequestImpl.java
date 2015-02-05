@@ -48,9 +48,9 @@ import java.util.Map;
     _method = method;
   }
 
-  /* package private */ RestRequestImpl(EntityStream stream, Map<String, String> headers, URI uri, String method)
+  /* package private */ RestRequestImpl(EntityStream stream, Map<String, String> headers, List<String> cookies, URI uri, String method)
   {
-    super(stream, headers);
+    super(stream, headers, cookies);
 
     assert uri != null;
     assert method != null;

@@ -14,6 +14,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * This class ensures the events with the same key are always executed on the same thread in order.
  *
+ * The basic idea is that we create N single thread executors, and assign the Event with key K to the
+ * (K % N)th executor.
+ *
  * @author Zhenkai Zhu
  */
 public class StickyEventExecutor
