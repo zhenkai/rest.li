@@ -33,7 +33,7 @@ import java.util.Map;
  * instead of the inter-locking step of read-one-chunk-wait-for-it-to-be-written-then-request-the-next-chunk problem.
  * @author Zhenkai Zhu
  */
-public class GracefulNettyClientHandler implements ChannelDownstreamHandler
+public class NettyClientRequestHandler implements ChannelDownstreamHandler
 {
   final private RequestEncoder _encoder = new RequestEncoder();
 

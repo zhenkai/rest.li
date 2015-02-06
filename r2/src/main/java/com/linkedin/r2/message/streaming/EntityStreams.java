@@ -37,7 +37,7 @@ public final class EntityStreams
   private static class EntityStreamImpl implements EntityStream
   {
     final private Writer _writer;
-    final private Lock _lock;
+    final private Object _lock;
     private List<Observer> _observers;
     private Reader _reader;
     private boolean _initialized;
@@ -47,7 +47,7 @@ public final class EntityStreams
     EntityStreamImpl(Writer writer)
     {
       _writer = writer;
-      _lock = new ReentrantLock();
+      _lock = new Object();
       _observers = new ArrayList<Observer>();
       _initialized = false;
       _capacity = new Semaphore(0);
@@ -56,32 +56,22 @@ public final class EntityStreams
 
     public void addObserver(Observer o)
     {
-      try
+      synchronized (_lock)
       {
-        _lock.lock();
         checkInit();
         _observers.add(o);
-      }
-      finally
-      {
-        _lock.unlock();
       }
     }
 
     public void setReader(Reader r, final int chunkSize)
     {
-      try
+      synchronized (_lock)
       {
-        _lock.lock();
         checkInit();
         _reader = r;
         _chunkSize = chunkSize;
         _initialized = true;
         _observers = Collections.unmodifiableList(_observers);
-      }
-      finally
-      {
-        _lock.unlock();
       }
 
       Runnable notifyWriterInit = new Runnable()
