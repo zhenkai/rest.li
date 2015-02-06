@@ -25,8 +25,11 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -181,7 +184,7 @@ public abstract class BaseMessage implements Message
   private static class BlockingReader implements Reader
   {
     final private CountDownLatch _latch = new CountDownLatch(1);
-    final private ByteArrayOutputStream _outputStream = new ByteArrayOutputStream();
+    final private NoCopyByteArrayOutputStream _outputStream = new NoCopyByteArrayOutputStream();
     private volatile Throwable _error;
 
 
@@ -237,12 +240,27 @@ public abstract class BaseMessage implements Message
         throw new RuntimeException("Read entity failed: ", _error);
       }
 
-      // org.apache.commons.io.output.ByteArrayOutputStream has toInputStream() method; the returned stream is backed
-      // by buffers of this stream, avoiding memory allocation and copy, thus saving space and time
-      // needs commons-io 2.5, which is not in artifactory yet
+      // commons-io 2.5 ByteArrayOutputStream has toInputStream() method; the returned stream is backed
+      // by buffers of this stream, avoiding memory allocation and copy
+      // but commons-io 2.5 is still SNAPSHOT version in their website, so we hacked our own
 
-      // return ByteString.read(_outputStream.toInputStream(), _outputStream.size());
-      return ByteString.copy(_outputStream.toByteArray());
+      try
+      {
+        return ByteString.read(_outputStream.toInputStream(), _outputStream.size());
+      }
+      catch (IOException ex)
+      {
+        // shouldn't happen
+        throw new RuntimeException(ex);
+      }
+    }
+  }
+
+  private static class NoCopyByteArrayOutputStream extends ByteArrayOutputStream
+  {
+    public synchronized InputStream toInputStream()
+    {
+      return new ByteArrayInputStream(super.buf, 0, super.count);
     }
   }
 }
