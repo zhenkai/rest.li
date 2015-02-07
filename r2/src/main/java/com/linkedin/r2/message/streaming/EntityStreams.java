@@ -6,8 +6,10 @@ import com.linkedin.r2.util.StickyEventExecutor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -32,12 +34,28 @@ public final class EntityStreams
    */
   public static EntityStream newEntityStream(Writer writer)
   {
-    return new EntityStreamImpl(writer);
+    return new EntityStreamImpl(writer, null);
+  }
+
+  /**
+   * The method to create a new EntityStream with a writer for the stream and a specific streamId.
+   *
+   * This is usually used when the new EntityStream is to be linked to to an existing EntityStream so that the events
+   * for the two EntityStreams will be processed by the same event thread (to simplify event code).
+   *
+   * @param writer the writer for the stream who would provide the data
+   * @param upStream the desired streamId, usually the one of the existing EntityStream
+   * @return a new instance of EntityStream
+   */
+  public static EntityStream newEntityStream(Writer writer, EntityStream upStream)
+  {
+    return new EntityStreamImpl(writer, upStream.hashCode());
   }
 
   private static class EntityStreamImpl implements EntityStream
   {
     final private Writer _writer;
+    final private Integer _overrideKey;
     final private Object _lock;
     private List<Observer> _observers;
     private Reader _reader;
@@ -46,9 +64,10 @@ public final class EntityStreams
     final private AtomicBoolean _notifyWriter;
     private int _chunkSize;
 
-    EntityStreamImpl(Writer writer)
+    EntityStreamImpl(Writer writer, Integer overrideKey)
     {
       _writer = writer;
+      _overrideKey = overrideKey;
       _lock = new Object();
       _observers = new ArrayList<Observer>();
       _initialized = false;
@@ -212,7 +231,8 @@ public final class EntityStreams
     private void dispatch(Runnable runnable)
     {
       // identify the event with the hashCode of this EntityStream
-      StickyEventExecutor.Event event = new StickyEventExecutor.Event(hashCode(), runnable);
+      int key = _overrideKey == null ? hashCode() : _overrideKey;
+      StickyEventExecutor.Event event = new StickyEventExecutor.Event(key, runnable);
       _executor.dispatch(event);
     }
 

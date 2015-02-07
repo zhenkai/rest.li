@@ -19,39 +19,37 @@ import java.util.concurrent.Semaphore;
 public class SyncIOBufferedWriter implements Writer
 {
   final private ServletInputStream _is;
-  final Semaphore _sem;
+  final private Object _signal;
+  private byte[] _bytes;
   private WriteHandle _wh;
-  private int _chunkSize;
-
-  final private static ByteString DONE = ByteString.copy(new byte[1]);
-  final private static ByteString ERROR = ByteString.copy(new byte[1]);
 
   public SyncIOBufferedWriter(ServletInputStream is)
   {
     _is = is;
-    _sem = new Semaphore(0);
+    _signal = new Object();
   }
 
   @Override
   public void onInit(WriteHandle wh, int chunkSize)
   {
     _wh = wh;
-    _chunkSize = chunkSize;
+    _bytes = new byte[chunkSize];
   }
 
   @Override
   public void onWritePossible()
   {
+    _signal.notify();
   }
 
   public void readFromServletInputStream()
   {
-    byte[] bytes = new byte[_chunkSize];
+
     try
     {
       while (true)
       {
-        int dataLen = _is.read(bytes);
+        int dataLen = _is.read(_bytes);
 
         if (dataLen < 0)
         {
@@ -60,15 +58,11 @@ public class SyncIOBufferedWriter implements Writer
         }
         else
         {
-          ByteString data = ByteString.copy(bytes, 0, dataLen);
-          if (_wh.isWritable())
+          if (!_wh.isWritable())
           {
-            _wh.write(data);
+            _signal.wait();
           }
-          else
-          {
-            _sem.acquire();
-          }
+          _wh.write(ByteString.copy(_bytes, 0, dataLen));
         }
       }
     }

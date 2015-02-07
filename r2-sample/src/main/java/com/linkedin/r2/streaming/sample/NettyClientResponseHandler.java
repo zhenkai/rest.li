@@ -52,19 +52,38 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
       ChannelBuffer buf = m.isChunked() ? ChannelBuffers.dynamicBuffer(e.getChannel().getConfig().getBufferFactory())
                                         : m.getContent();
 
-      _writer = new BufferedWriter(buf, ctx, 512 * 1024, 128 * 1024);
-      EntityStream entityStream = EntityStreams.newEntityStream(_writer);
+      BufferedWriter writer = new BufferedWriter(buf, ctx, 512 * 1024, 128 * 1024);
+      EntityStream entityStream = EntityStreams.newEntityStream(writer);
       if (!m.isChunked())
       {
-        _writer.setLastChunkRead();
+        writer.setLastChunkReceived();
+      }
+      else
+      {
+        // keep a reference to the writer of the unfinished stream
+        _writer = writer;
       }
 
       Channels.fireMessageReceived(ctx, builder.build(entityStream), e.getRemoteAddress());
     }
     else if (msg instanceof HttpChunk)
     {
+      BufferedWriter currentWriter = _writer;
+
+      // Sanity check
+      if (currentWriter == null) {
+        throw new IllegalStateException(
+            "received " + HttpChunk.class.getSimpleName() +
+                " without " + HttpMessage.class.getSimpleName());
+      }
       HttpChunk chunk = (HttpChunk) msg;
-      _writer.processHttpChunk(chunk);
+      if (chunk.isLast())
+      {
+        currentWriter.setLastChunkReceived();
+        // no longer need to reference the writer of finished stream
+        _writer = null;
+      }
+      currentWriter.processHttpChunk(chunk);
     }
     else {
       // Neither HttpMessage or HttpChunk
@@ -80,11 +99,9 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
     final private int _lowWaterMark;
     final private Object _lock;
     private WriteHandle _wh;
-    private int _chunkSize;
-    private boolean _lastChunkRead = false;
+    private boolean _lastChunkReceived = false;
     private boolean _isDone = false;
-    private int _allowedChunks = 0;
-    final private byte[] bytes = new byte[_chunkSize];
+    private byte[] _bytes;
 
     BufferedWriter(ChannelBuffer buffer, ChannelHandlerContext ctx, int highWaterMark, int lowWaterMark)
     {
@@ -99,22 +116,21 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
     public void onInit(WriteHandle wh, int chunkSize)
     {
       _wh = wh;
-      _chunkSize = chunkSize;
+      _bytes = new byte[chunkSize];
     }
 
     @Override
-    public void onWritePossible(int chunkNum)
+    public void onWritePossible()
     {
       synchronized (_lock)
       {
-        _allowedChunks += chunkNum;
         doWrite();
       }
     }
 
-    public void setLastChunkRead()
+    public void setLastChunkReceived()
     {
-      _lastChunkRead = true;
+      _lastChunkReceived = true;
     }
 
     public void processHttpChunk(HttpChunk httpChunk)
@@ -122,10 +138,6 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
       synchronized (_lock)
       {
         _buffer.writeBytes(httpChunk.getContent());
-        if (httpChunk.isLast())
-        {
-          _lastChunkRead = true;
-        }
 
         if (_buffer.readableBytes() > _highWaterMark && _ctx.getChannel().isReadable())
         {
@@ -139,12 +151,12 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
 
     private void doWrite()
     {
-      while (!_isDone && _allowedChunks > 0)
+      while (!_isDone && _wh.isWritable())
       {
-        int dataLen = Math.min(_chunkSize, _buffer.readableBytes());
+        int dataLen = Math.min(_bytes.length, _buffer.readableBytes());
         if (dataLen == 0)
         {
-          if (_lastChunkRead)
+          if (_lastChunkReceived)
           {
             _wh.done();
             _isDone = true;
@@ -153,9 +165,8 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
         }
         else
         {
-          _buffer.readBytes(bytes, 0, dataLen);
-          _wh.write(ByteString.copy(bytes, 0, dataLen));
-          _allowedChunks--;
+          _buffer.readBytes(_bytes, 0, dataLen);
+          _wh.write(ByteString.copy(_bytes, 0, dataLen));
           if (!_ctx.getChannel().isReadable() && _buffer.readableBytes() < _lowWaterMark)
           {
             // resume reading from socket
