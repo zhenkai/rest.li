@@ -42,9 +42,10 @@ public final class EntityStreams
    *
    * This is usually used when the new EntityStream is to be linked to to an existing EntityStream so that the events
    * for the two EntityStreams will be processed by the same event thread (to simplify event code).
+   * For example, see CipherProxy.
    *
    * @param writer the writer for the stream who would provide the data
-   * @param upStream the desired streamId, usually the one of the existing EntityStream
+   * @param upStream the existing EntityStream where the source of data is from
    * @return a new instance of EntityStream
    */
   public static EntityStream newEntityStream(Writer writer, EntityStream upStream)
@@ -60,8 +61,9 @@ public final class EntityStreams
     private List<Observer> _observers;
     private Reader _reader;
     private boolean _initialized;
+    // maintains the allowed capacity which is controlled by reader
     private Semaphore _capacity;
-    final private AtomicBoolean _notifyWriter;
+    final private AtomicBoolean _notifyWritePossible;
     private int _chunkSize;
 
     EntityStreamImpl(Writer writer, Integer overrideKey)
@@ -72,7 +74,7 @@ public final class EntityStreams
       _observers = new ArrayList<Observer>();
       _initialized = false;
       _capacity = new Semaphore(0);
-      _notifyWriter = new AtomicBoolean(true);
+      _notifyWritePossible = new AtomicBoolean(true);
       _chunkSize = 0;
     }
 
@@ -125,6 +127,7 @@ public final class EntityStreams
       public void write(final ByteString data)
       {
 
+        // Writer tries to try when the reader didn't request more data
         if(!_capacity.tryAcquire())
         {
           throw new IllegalStateException("Trying to write when WriteHandle is not writable.");
@@ -190,14 +193,15 @@ public final class EntityStreams
       @Override
       public boolean isWritable()
       {
-        if (_capacity.tryAcquire())
+        if (_capacity.availablePermits() > 0)
         {
-          _capacity.release();
           return true;
         }
         else
         {
-          _notifyWriter.set(true);
+          // According to the Writer.onWritePossible contract, we need to notify writer
+          // when it's writable again.
+          _notifyWritePossible.set(true);
           return false;
         }
       }
@@ -210,7 +214,8 @@ public final class EntityStreams
       {
         _capacity.release(chunkNum);
 
-        if (_notifyWriter.compareAndSet(true, false))
+        // notify the writer if needed
+        if (_notifyWritePossible.compareAndSet(true, false))
         {
 
           Runnable notifyWritePossible = new Runnable()
@@ -230,7 +235,7 @@ public final class EntityStreams
 
     private void dispatch(Runnable runnable)
     {
-      // identify the event with the hashCode of this EntityStream
+      // identify the event with the hashCode of this EntityStream unless an overrideKey has been provided
       int key = _overrideKey == null ? hashCode() : _overrideKey;
       StickyEventExecutor.Event event = new StickyEventExecutor.Event(key, runnable);
       _executor.dispatch(event);
