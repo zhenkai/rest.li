@@ -39,6 +39,8 @@ public class SyncIOBufferedWriter implements Writer
   @Override
   public void onWritePossible()
   {
+    // signal that write is possible so Jetty thread can continue writing
+    // if it's currently waiting
     _signal.notify();
   }
 

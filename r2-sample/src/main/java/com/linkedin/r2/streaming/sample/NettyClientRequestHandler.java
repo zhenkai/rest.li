@@ -51,11 +51,6 @@ public class NettyClientRequestHandler implements ChannelDownstreamHandler
     {
       RestRequest request = (RestRequest) msg;
 
-      // hook up the reader with the EntityStream of the request
-      // the maximum pipelining or buffering is 256 KB = 64 chunk * 4k/chunk
-      EntityStream entityStream = request.getEntityStream();
-      entityStream.setReader(new BufferedReader(ctx, 64), 4096);
-
       HttpMethod nettyMethod = HttpMethod.valueOf(request.getMethod());
       URL url = new URL(request.getURI().toString());
       String path = url.getFile();
@@ -75,7 +70,17 @@ public class NettyClientRequestHandler implements ChannelDownstreamHandler
       {
         nettyRequest.setHeader(e.getKey(), e.getValue());
       }
+
+      // always setting to chunked as the read-write in the stream is async
+      // and we have no way to know if we need to chunk unless we are willing to wait
       nettyRequest.setChunked(true);
+
+      // hook up the reader with the EntityStream of the request
+      // the maximum pipelining or buffering is 256 KB = 64 chunk * 4k/chunk
+      // probably cannot use Encoder pattern because this may cause race condition:
+      // the data chunk may be written before the headers are sent
+      EntityStream entityStream = request.getEntityStream();
+      entityStream.setReader(new BufferedReader(ctx, 64), 4096);
 
       // set out the headers first
       return nettyRequest;
@@ -111,7 +116,6 @@ public class NettyClientRequestHandler implements ChannelDownstreamHandler
     {
       ChannelBuffer channelBuffer = ChannelBuffers.wrappedBuffer(data.asByteBuffer());
       HttpChunk chunk = new DefaultHttpChunk(channelBuffer);
-      final int dataSize = data.length();
       ChannelFuture writeFuture = _ctx.getChannel().write(chunk);
       writeFuture.addListener(new ChannelFutureListener()
       {

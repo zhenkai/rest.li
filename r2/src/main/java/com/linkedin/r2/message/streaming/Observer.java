@@ -3,7 +3,8 @@ package com.linkedin.r2.message.streaming;
 import com.linkedin.data.ByteString;
 
 /**
- * Observer observes the data flow of an EntityStream {@link com.linkedin.r2.message.streaming.EntityStream}
+ * Observer passively observes the data flow of an EntityStream {@link com.linkedin.r2.message.streaming.EntityStream}
+ * i.e. observer cannot drive the flow of data in the EntityStream
  *
  * @author Zhenkai Zhu
  */

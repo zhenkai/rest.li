@@ -22,6 +22,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * This class handles the streamed response; it's adapted from the HttpChunkAggregator.
+ *
  * @author Zhenkai Zhu
  */
 public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
@@ -56,6 +58,7 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
       EntityStream entityStream = EntityStreams.newEntityStream(writer);
       if (!m.isChunked())
       {
+        // done for this response
         writer.setLastChunkReceived();
       }
       else
@@ -91,6 +94,11 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
     }
   }
 
+  /**
+   * A buffered writer that stops reading from socket if buffered bytes is larger than high water mark
+   * and resumes reading from socket if buffered bytes is smaller than low water mark.
+   *
+   */
   private static class BufferedWriter implements Writer
   {
     final private ChannelBuffer _buffer;
@@ -99,7 +107,7 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
     final private int _lowWaterMark;
     final private Object _lock;
     private WriteHandle _wh;
-    private boolean _lastChunkReceived = false;
+    private volatile boolean _lastChunkReceived = false;
     private boolean _isDone = false;
     private byte[] _bytes;
 
@@ -122,6 +130,8 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
     @Override
     public void onWritePossible()
     {
+      // we need synchronized because doWrite may be invoked by EntityStream's event thread or
+      // netty thread
       synchronized (_lock)
       {
         doWrite();
@@ -135,6 +145,8 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
 
     public void processHttpChunk(HttpChunk httpChunk)
     {
+      // we need synchronized because doWrite may be invoked by EntityStream's event thread or
+      // netty thread
       synchronized (_lock)
       {
         _buffer.writeBytes(httpChunk.getContent());
@@ -149,6 +161,7 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
       }
     }
 
+    // this method does not block
     private void doWrite()
     {
       while (!_isDone && _wh.isWritable())

@@ -45,6 +45,7 @@ public class CipherProxy implements RestRequestHandler
     final BufferedProcessor requestProcessor = new RequestProcessor(request.getEntityStream(), 100);
 
     // processor will write decoded data to new request entity stream
+    // pass in the original entity stream so the events for the two streams are processed by the same thread
     EntityStream decodedStream = EntityStreams.newEntityStream(requestProcessor, request.getEntityStream());
     RestRequestBuilder restRequestBuilder = request.builder();
     RestRequest decodedRequest = restRequestBuilder.build(decodedStream);
@@ -64,6 +65,7 @@ public class CipherProxy implements RestRequestHandler
         BufferedProcessor responseProcessor = new ResponseProcessor(result.getEntityStream(), 100);
 
         // processor will write encoded data to new response entity stream
+        // pass in the original entity stream so the events for the two streams are processed by the same thread
         EntityStream encodedStream = EntityStreams.newEntityStream(responseProcessor, result.getEntityStream());
         RestResponseBuilder restResponseBuilder = result.builder();
         RestResponse encodedResponse = restResponseBuilder.build(encodedStream);

@@ -54,6 +54,9 @@ public abstract class BaseMessage implements Message
   public BaseMessage(ByteString body)
   {
     assert body != null;
+
+    // we store both ByteString and EntityStream from of the body because it's almost free
+    // to do so
     _body = body;
     _entityStream = EntityStreams.newEntityStream(new ByteStringWriter(_body));
   }
@@ -62,11 +65,12 @@ public abstract class BaseMessage implements Message
    * This method lazy-init _body and returns it
    *
    * This is trying is mimic the old behavior because previously calling getEntity() multiple
-   * times is allowed and very cheap, although I didn't find any use case for that.
-   * If that's not required, we could remove _lock & _body and just creates the ByteString from
-   * the EntityStream.
+   * times is allowed and very cheap, so we store the ByteString in case getEntity() is called later.
    *
-   * @return the whole entity
+   * If that's not required (I didn't find a use case for this), we could remove _lock & _body and just creates
+   * the ByteString from the EntityStream.
+   *
+   * @return the whole entity in ByteString
    */
   @Override
   public ByteString getEntity()
@@ -79,6 +83,8 @@ public abstract class BaseMessage implements Message
         {
           BlockingReader reader = new BlockingReader();
           _entityStream.setReader(reader, 4096);
+
+          // this is blocking call
           _body = reader.get();
         }
       }
@@ -120,10 +126,9 @@ public abstract class BaseMessage implements Message
     {
       return _body.equals(that._body);
     }
-    else
-    {
-      return that._body == null;
-    }
+
+    // one entity stream is always different from another
+    return false;
   }
 
   @Override
@@ -139,7 +144,7 @@ public abstract class BaseMessage implements Message
   }
 
   /**
-   * A private writer that produce content based on the ByteString.
+   * A private writer that produce content based on the ByteString body
    */
   private static class ByteStringWriter implements Writer
   {
@@ -247,7 +252,6 @@ public abstract class BaseMessage implements Message
       }
       catch (IOException ex)
       {
-        // shouldn't happen
         throw new RuntimeException(ex);
       }
     }

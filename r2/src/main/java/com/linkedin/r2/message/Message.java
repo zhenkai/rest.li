@@ -21,7 +21,7 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
- * An object that represents a message, either REST or RPC, and either request or response.<p/>
+ * An object that represents a message, either request or response.<p/>
  *
  * Messages are immutable and thread-safe. It is possible to clone an existing Message, modify
  * details in the copy, and create a new Message instance that has the concrete type of the original

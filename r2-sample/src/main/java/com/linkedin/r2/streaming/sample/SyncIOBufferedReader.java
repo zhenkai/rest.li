@@ -24,15 +24,15 @@ public class SyncIOBufferedReader implements Reader
 
   final private ServletOutputStream _os;
   final private BlockingQueue<ByteString> _queue;
-  final private int _permittedChunks;
+  final private int _bufferCapacity;
 
   private ReadHandle _readHandle;
   private Throwable _e;
 
-  SyncIOBufferedReader(ServletOutputStream os, int permittedChunks)
+  SyncIOBufferedReader(ServletOutputStream os, int bufferCapacity)
   {
     _os = os;
-    _permittedChunks = permittedChunks;
+    _bufferCapacity = bufferCapacity;
     _queue = new LinkedBlockingDeque<ByteString>();
   }
 
@@ -64,7 +64,7 @@ public class SyncIOBufferedReader implements Reader
   {
     _readHandle = rh;
     // signal writer that we can accept number of _permittedChunks chunks
-    _readHandle.read(_permittedChunks);
+    _readHandle.read(_bufferCapacity);
   }
 
   public void onDataAvailable(ByteString data)
