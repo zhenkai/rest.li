@@ -24,7 +24,20 @@ public final class EntityStreams
 
   // StickEventExecutor executes events with the same key in the same thread in order.
   // We use it here to ensure the events for the same EntityStream is executed in the same thread in order.
-  final private static StickyEventExecutor _executor = new StickyEventExecutor("R2-EntityStreams-Executor", 256, 20000);
+  final private static StickyEventExecutor _executor;
+
+  static
+  {
+    _executor =new StickyEventExecutor("R2-EntityStreams-Executor", 256, 20000);
+    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        _executor.shutdown();
+      }
+    }, "R2-EntityStreams-Executor.shutdown"));
+  }
 
   /**
    * The method to create a new EntityStream with a writer for the stream
