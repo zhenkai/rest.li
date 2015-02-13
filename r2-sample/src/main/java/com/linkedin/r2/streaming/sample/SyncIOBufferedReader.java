@@ -55,15 +55,15 @@ public class SyncIOBufferedReader implements Reader
 
       data.write(_os);
 
-      // finished writing data to ServletOutputStream, now signal writer we want one more chunk of data
-      _readHandle.read(1);
+      // finished writing data to ServletOutputStream, now signal writer we want bytes
+      _readHandle.read(data.length());
     }
   }
 
   public void onInit(ReadHandle rh)
   {
     _readHandle = rh;
-    // signal writer that we can accept number of _permittedChunks chunks
+    // signal writer that we can accept number of _permittedChunks bytes
     _readHandle.read(_bufferCapacity);
   }
 

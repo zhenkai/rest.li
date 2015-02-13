@@ -20,20 +20,20 @@ public class SyncIOBufferedWriter implements Writer
 {
   final private ServletInputStream _is;
   final private Object _signal;
-  private byte[] _bytes;
+  final private byte[] _bytes;
   private WriteHandle _wh;
 
   public SyncIOBufferedWriter(ServletInputStream is)
   {
     _is = is;
+    _bytes = new byte[4096];
     _signal = new Object();
   }
 
   @Override
-  public void onInit(WriteHandle wh, int chunkSize)
+  public void onInit(WriteHandle wh)
   {
     _wh = wh;
-    _bytes = new byte[chunkSize];
   }
 
   @Override
@@ -51,20 +51,23 @@ public class SyncIOBufferedWriter implements Writer
     {
       while (true)
       {
-        int dataLen = _is.read(_bytes);
+        if (_wh.remainingCapacity() == 0)
+        {
+          _signal.wait();
+        }
 
-        if (dataLen < 0)
+        int bytesToRead = Math.min(_wh.remainingCapacity(), _bytes.length);
+
+        int bytesRead = _is.read(_bytes, 0, bytesToRead);
+
+        if (bytesRead < 0)
         {
           _wh.done();
           break;
         }
         else
         {
-          if (!_wh.isWritable())
-          {
-            _signal.wait();
-          }
-          _wh.write(ByteString.copy(_bytes, 0, dataLen));
+          _wh.write(ByteString.copy(_bytes, 0, bytesRead));
         }
       }
     }
