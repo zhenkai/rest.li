@@ -20,9 +20,9 @@ import java.util.Map;
  *
  * @author Zhenkai Zhu
  */
-public class ProxyFilter implements RestResponseFilter
+public class LoggingFilter implements RestResponseFilter
 {
-  private static final Logger _log = LoggerFactory.getLogger(ProxyFilter.class);
+  private static final Logger _log = LoggerFactory.getLogger(LoggingFilter.class);
 
   @Override
   public void onRestResponse(RestResponse res,

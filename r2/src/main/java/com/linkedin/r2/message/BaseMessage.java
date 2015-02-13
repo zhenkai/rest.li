@@ -82,7 +82,7 @@ public abstract class BaseMessage implements Message
         if (_body == null)
         {
           BlockingReader reader = new BlockingReader();
-          _entityStream.setReader(reader, 4096);
+          _entityStream.setReader(reader);
 
           // this is blocking call
           _body = reader.get();
@@ -151,7 +151,6 @@ public abstract class BaseMessage implements Message
     final ByteString _content;
     private int _offset;
     private WriteHandle _wh;
-    private int _chunkSize;
 
     ByteStringWriter(ByteString content)
     {
@@ -159,17 +158,16 @@ public abstract class BaseMessage implements Message
       _offset = 0;
     }
 
-    public void onInit(WriteHandle wh, int chunkSize)
+    public void onInit(WriteHandle wh)
     {
       _wh = wh;
-      _chunkSize = chunkSize;
     }
 
     public void onWritePossible()
     {
-      while(_wh.isWritable() && _offset < _content.length())
+      while(_wh.remainingCapacity() > 0 && _offset < _content.length())
       {
-        int bytesToWrite = Math.min(_chunkSize, _content.length() - _offset);
+        int bytesToWrite = Math.min(_wh.remainingCapacity(), _content.length() - _offset);
         _wh.write(_content.slice(_offset, bytesToWrite));
         _offset += bytesToWrite;
         if (_offset == _content.length())

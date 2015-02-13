@@ -10,7 +10,7 @@ public interface ReadHandle
   /**
    * This method signals the writer of the EntityStream that it can write more data. This method does not block.
    *
-   * @param chunkNum the additional number of chunks that the writer is permitted to write
+   * @param byteNum the additional number of bytes that the writer is permitted to write
    */
-  void read(final int chunkNum);
+  void read(final int byteNum);
 }
