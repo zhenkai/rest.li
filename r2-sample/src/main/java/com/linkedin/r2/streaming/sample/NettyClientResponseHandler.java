@@ -109,7 +109,7 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
     private WriteHandle _wh;
     private volatile boolean _lastChunkReceived = false;
     private boolean _isDone = false;
-    private byte[] _bytes;
+    final private byte[] _bytes;
 
     BufferedWriter(ChannelBuffer buffer, ChannelHandlerContext ctx, int highWaterMark, int lowWaterMark)
     {
@@ -118,13 +118,13 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
       _highWaterMark = highWaterMark;
       _lowWaterMark = lowWaterMark;
       _lock = new Object();
+      _bytes = new byte[4096];
     }
 
     @Override
-    public void onInit(WriteHandle wh, int chunkSize)
+    public void onInit(WriteHandle wh)
     {
       _wh = wh;
-      _bytes = new byte[chunkSize];
     }
 
     @Override
@@ -164,9 +164,9 @@ public class NettyClientResponseHandler extends SimpleChannelUpstreamHandler
     // this method does not block
     private void doWrite()
     {
-      while (!_isDone && _wh.isWritable())
+      while (!_isDone && _wh.remainingCapacity() > 0)
       {
-        int dataLen = Math.min(_bytes.length, _buffer.readableBytes());
+        int dataLen = Math.min(_wh.remainingCapacity(), Math.min(_bytes.length, _buffer.readableBytes()));
         if (dataLen == 0)
         {
           if (_lastChunkReceived)

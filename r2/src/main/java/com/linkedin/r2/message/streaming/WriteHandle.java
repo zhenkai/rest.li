@@ -13,8 +13,7 @@ public interface WriteHandle
    * This writes data into the EntityStream. This method does not block.
    *
    * @param data the data to be written
-   * @throws java.lang.IllegalArgumentException if the length of the data exceeds the chunkSize specified by the reader
-   * @throws java.lang.IllegalStateException if this write handle is not writable
+   * @throws java.lang.IllegalArgumentException if the length of the data exceeds remaining capacity
    */
   void write(final ByteString data);
 
@@ -31,8 +30,9 @@ public interface WriteHandle
   void error(final Throwable throwable);
 
   /**
-   * Indicates if this WriteHandle is writable.
-   * @return writable state
+   * Returns the remaining capacity in number of bytes.
+   *
+   * @return the remaining capacity in number of bytes
    */
-  boolean isWritable();
+  int remainingCapacity();
 }
