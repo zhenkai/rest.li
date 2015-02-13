@@ -76,11 +76,11 @@ public class NettyClientRequestHandler implements ChannelDownstreamHandler
       nettyRequest.setChunked(true);
 
       // hook up the reader with the EntityStream of the request
-      // the maximum pipelining or buffering is 256 KB = 64 chunk * 4k/chunk
+      // the maximum pipelining or buffering is 256 KB
       // probably cannot use Encoder pattern because this may cause race condition:
       // the data chunk may be written before the headers are sent
       EntityStream entityStream = request.getEntityStream();
-      entityStream.setReader(new BufferedReader(ctx, 64), 4096);
+      entityStream.setReader(new BufferedReader(ctx, 256 * 1024));
 
       // set out the headers first
       return nettyRequest;
@@ -108,22 +108,24 @@ public class NettyClientRequestHandler implements ChannelDownstreamHandler
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
-      // signal the Writer that we can accept _bufferSize chunks
+      // signal the Writer that we can accept _bufferSize bytes
       _readHandle.read(_bufferSize);
     }
 
     public void onDataAvailable(ByteString data)
     {
+      // shall we enforce some kind of size limit on HttpChunk? Seems not necessary...
       ChannelBuffer channelBuffer = ChannelBuffers.wrappedBuffer(data.asByteBuffer());
       HttpChunk chunk = new DefaultHttpChunk(channelBuffer);
       ChannelFuture writeFuture = _ctx.getChannel().write(chunk);
+      final int dataLen = data.length();
       writeFuture.addListener(new ChannelFutureListener()
       {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception
         {
-          // data have been written out, we can tell the writer that we can accept one more chunk
-          _readHandle.read(1);
+          // data have been written out, we can tell the writer that we can accept more bytes
+          _readHandle.read(dataLen);
         }
       });
     }

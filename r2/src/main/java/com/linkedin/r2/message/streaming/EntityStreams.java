@@ -47,48 +47,29 @@ public final class EntityStreams
    */
   public static EntityStream newEntityStream(Writer writer)
   {
-    return new EntityStreamImpl(writer, null);
+    return new EntityStreamImpl(writer);
   }
 
-  /**
-   * The method to create a new EntityStream with a writer for the stream and a specific streamId.
-   *
-   * This is usually used when the new EntityStream is to be linked to to an existing EntityStream so that the events
-   * for the two EntityStreams will be processed by the same event thread (to simplify event code).
-   * For example, see CipherProxy.
-   *
-   * @param writer the writer for the stream who would provide the data
-   * @param upStream the existing EntityStream where the source of data is from
-   * @return a new instance of EntityStream
-   */
-  public static EntityStream newEntityStream(Writer writer, EntityStream upStream)
-  {
-    return new EntityStreamImpl(writer, upStream.hashCode());
-  }
 
   private static class EntityStreamImpl implements EntityStream
   {
     final private Writer _writer;
-    final private Integer _overrideKey;
     final private Object _lock;
     private List<Observer> _observers;
     private Reader _reader;
     private boolean _initialized;
     // maintains the allowed capacity which is controlled by reader
-    private Semaphore _capacity;
-    final private AtomicBoolean _notifyWritePossible;
-    private int _chunkSize;
+    private int _capacity;
+    private boolean _notifyWritePossible;
 
-    EntityStreamImpl(Writer writer, Integer overrideKey)
+    EntityStreamImpl(Writer writer)
     {
       _writer = writer;
-      _overrideKey = overrideKey;
       _lock = new Object();
       _observers = new ArrayList<Observer>();
       _initialized = false;
-      _capacity = new Semaphore(0);
-      _notifyWritePossible = new AtomicBoolean(true);
-      _chunkSize = 0;
+      _capacity = 0;
+      _notifyWritePossible = true;
     }
 
     public void addObserver(Observer o)
@@ -100,13 +81,12 @@ public final class EntityStreams
       }
     }
 
-    public void setReader(Reader r, final int chunkSize)
+    public void setReader(Reader r)
     {
       synchronized (_lock)
       {
         checkInit();
         _reader = r;
-        _chunkSize = chunkSize;
         _initialized = true;
         _observers = Collections.unmodifiableList(_observers);
       }
@@ -117,7 +97,7 @@ public final class EntityStreams
         public void run()
         {
           final WriteHandle wh = new WriteHandleImpl();
-          _writer.onInit(wh, chunkSize);
+          _writer.onInit(wh);
         }
       };
       dispatch(notifyWriterInit);
@@ -140,16 +120,16 @@ public final class EntityStreams
       public void write(final ByteString data)
       {
 
-        // Writer tries to try when the reader didn't request more data
-        if(!_capacity.tryAcquire())
-        {
-          throw new IllegalStateException("Trying to write when WriteHandle is not writable.");
-        }
+        int dataLen = data.length();
 
-        if (data.length() > _chunkSize)
+        // Writer tries to try when the reader didn't request more data
+        synchronized (_lock)
         {
-          throw new IllegalArgumentException("Data length " + data.length() +
-              " is larger than the desired chunk size: " + _chunkSize);
+          if (_capacity < dataLen)
+          {
+            throw new IllegalArgumentException("Data size " + dataLen + " is larger than remaining capacity.");
+          }
+          _capacity -= dataLen;
         }
 
         Runnable notifyReadPossible = new Runnable()
@@ -204,18 +184,15 @@ public final class EntityStreams
       }
 
       @Override
-      public boolean isWritable()
+      public int remainingCapacity()
       {
-        if (_capacity.availablePermits() > 0)
+        synchronized (_lock)
         {
-          return true;
-        }
-        else
-        {
-          // According to the Writer.onWritePossible contract, we need to notify writer
-          // when it's writable again.
-          _notifyWritePossible.set(true);
-          return false;
+          if (_capacity == 0)
+          {
+            _notifyWritePossible = true;
+          }
+          return _capacity;
         }
       }
     }
@@ -225,32 +202,35 @@ public final class EntityStreams
       @Override
       public void read(final int chunkNum)
       {
-        _capacity.release(chunkNum);
-
-        // notify the writer if needed
-        if (_notifyWritePossible.compareAndSet(true, false))
+        synchronized (_lock)
         {
+          _capacity += chunkNum;
 
-          Runnable notifyWritePossible = new Runnable()
+          // notify the writer if needed
+          if (_notifyWritePossible)
           {
-            @Override
-            public void run()
+
+            Runnable notifyWritePossible = new Runnable()
             {
+              @Override
+              public void run()
               {
-                _writer.onWritePossible();
+                {
+                  _writer.onWritePossible();
+                }
               }
-            }
-          };
-          dispatch(notifyWritePossible);
+            };
+            dispatch(notifyWritePossible);
+            _notifyWritePossible = false;
+          }
         }
       }
     }
 
     private void dispatch(Runnable runnable)
     {
-      // identify the event with the hashCode of this EntityStream unless an overrideKey has been provided
-      int key = _overrideKey == null ? hashCode() : _overrideKey;
-      StickyEventExecutor.Event event = new StickyEventExecutor.Event(key, runnable);
+      // identify the event with the hashCode of this EntityStream
+      StickyEventExecutor.Event event = new StickyEventExecutor.Event(hashCode(), runnable);
       _executor.dispatch(event);
     }
 
