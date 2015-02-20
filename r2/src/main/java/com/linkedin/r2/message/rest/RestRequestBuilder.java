@@ -18,6 +18,7 @@
 package com.linkedin.r2.message.rest;
 
 
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.message.streaming.EntityStream;
@@ -104,16 +105,16 @@ public final class RestRequestBuilder
   }
 
   @Override
-  public RestRequest build()
+  public RestRequest build(ByteString entity)
   {
-    return new RestRequestImpl(getEntity(), getHeaders(), getCookies(), getURI(), getMethod());
+    return new RestRequestImpl(entity, getHeaders(), getCookies(), getURI(), getMethod());
   }
 
   @Override
-  public RestRequest buildCanonical()
+  public RestRequest buildCanonical(ByteString entity)
   {
     return new RestRequestImpl(
-        getEntity(), getCanonicalHeaders(), getCanonicalCookies(), getURI().normalize(), getMethod());
+        entity, getCanonicalHeaders(), getCanonicalCookies(), getURI().normalize(), getMethod());
   }
 
   @Override

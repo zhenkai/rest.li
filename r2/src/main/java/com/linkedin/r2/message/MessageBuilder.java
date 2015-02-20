@@ -48,65 +48,39 @@ import com.linkedin.r2.message.streaming.EntityStream;
  */
 public interface MessageBuilder<B extends MessageBuilder<B>>
 {
-  /**
-   * Sets the entity for this message.<p/>
-   *
-   * Because {@link com.linkedin.data.ByteString}s are immutable, this does not result in a copy.
-   *
-   * @param entity the entity to set for this message
-   *
-   * @return this builder
-   */
-  B setEntity(ByteString entity);
-
-  /**
-   * Sets the entity for this message.<p/>
-   *
-   * This method copies the underlying byte[] to prevent accidental modification to the array.
-   *
-   * @param entity the entity to set for this message
-   *
-   * @return this builder
-   */
-  B setEntity(byte[] entity);
-
-  /**
-   * Returns the entity for this message.
-   *
-   * @return the entity for this message
-   */
-  ByteString getEntity();
 
   /**
    * Constructs an immutable {@link Message} using the settings configured in this builder.
    * Subsequent changes to this builder will not change the underlying message.
    *
+   * @param entity the bytestring entity for this message
    * @return a Message from the settings in this builder
    */
-  Message build();
+  Message build(ByteString entity);
 
   /**
    * Similar to {@link #build}, but the returned Message is in canonical form.
    *
+   * @param entity the bytestring entity for this message
    * @return a Message from the settings in this builder.
    */
-  Message buildCanonical();
+  Message buildCanonical(ByteString entity);
 
 
   /**
    * Constructs an {@link Message} using the settings configured in this builder and the supplied EntityStream.
    * Subsequent changes to this builder will not change the underlying message.
    *
+   * @param stream the entity stream for this message
    * @return a Message from the settings in this builder and the supplied EntityStream
-   * @throws IllegalArgumentException if {@link #setEntity} has been called.
    */
   Message build(EntityStream stream);
 
   /**
    * Similar to {@link #build}, but the returned Message is in canonical form.
    *
+   * @param stream the entity stream for this message
    * @return a Message from the settings in this builder and the supplied EntityStream
-   * @throws IllegalArgumentException if {@link #setEntity} has been called.
    */
   Message buildCanonical(EntityStream stream);
 }

@@ -66,7 +66,6 @@ public abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>
    */
   public BaseRestMessageBuilder(RestMessage message)
   {
-    super(message);
     setHeaders(message.getHeaders());
     setCookies(message.getCookies());
   }

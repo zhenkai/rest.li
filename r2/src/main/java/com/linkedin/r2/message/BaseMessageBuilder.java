@@ -28,50 +28,6 @@ import com.linkedin.util.ArgumentUtil;
  */
 public abstract class BaseMessageBuilder<B extends BaseMessageBuilder<B>> implements MessageBuilder<B>
 {
-  private ByteString _entity;
-
-  /**
-   * Construct a new instance with an empty entity body.
-   */
-  public BaseMessageBuilder()
-  {
-    _entity = ByteString.empty();
-  }
-
-  /**
-   * Construct a new instance by copying the entity body from the specified {@link Message}.
-   *
-   * @param message the {@link Message} from which the entity should be obtained.
-   */
-  public BaseMessageBuilder(Message message)
-  {
-    setEntity(message.getEntity());
-  }
-
-  @Override
-  public B setEntity(ByteString entity)
-  {
-    ArgumentUtil.notNull(entity, "entity");
-
-    _entity = entity;
-    return thisBuilder();
-  }
-
-  @Override
-  public B setEntity(byte[] entity)
-  {
-    ArgumentUtil.notNull(entity, "entity");
-
-    _entity = ByteString.copy(entity);
-    return thisBuilder();
-  }
-
-  @Override
-  public ByteString getEntity()
-  {
-    return _entity;
-  }
-
   @SuppressWarnings("unchecked")
   protected B thisBuilder()
   {

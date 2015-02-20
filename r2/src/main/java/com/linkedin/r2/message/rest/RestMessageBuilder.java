@@ -18,7 +18,10 @@
 package com.linkedin.r2.message.rest;
 
 
+import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.Message;
 import com.linkedin.r2.message.MessageBuilder;
+import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.util.List;
 import java.util.Map;
@@ -145,21 +148,37 @@ public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends Mes
   List<String> getHeaderValues(String name);
 
   /**
-   * Constructs an immutable {@link RestMessage} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change this response. The concrete
-   * type of this builder (for example {@link com.linkedin.r2.message.rest.RestResponseBuilder}) will
-   * be used to build the appropriate concrete type.
+   * Constructs an immutable RestMessage using the settings configured in this builder.
+   * Subsequent changes to this builder will not change the underlying message.
    *
+   * @param entity the bytestring entity for this message
    * @return a RestMessage from the settings in this builder
    */
-  @Override
-  RestMessage build();
+  RestMessage build(ByteString entity);
 
   /**
-   * Similar to {@link #build}, but the returned Message is in canonical form.
+   * Similar to {@link #build}, but the returned RestMessage is in canonical form.
    *
-   * @return a RestMessage from the settings in this builder
+   * @param entity the bytestring entity for this message
+   * @return a RestMessage from the settings in this builder.
    */
-  @Override
-  RestMessage buildCanonical();
+  RestMessage buildCanonical(ByteString entity);
+
+
+  /**
+   * Constructs an RestMessage using the settings configured in this builder and the supplied EntityStream.
+   * Subsequent changes to this builder will not change the underlying message.
+   *
+   * @param stream the entity stream for this message
+   * @return a RestMessage from the settings in this builder and the supplied EntityStream
+   */
+  RestMessage build(EntityStream stream);
+
+  /**
+   * Similar to {@link #build}, but the returned RestMessage is in canonical form.
+   *
+   * @param stream the entity stream for this message
+   * @return a RestMessage from the settings in this builder and the supplied EntityStream
+   */
+  RestMessage buildCanonical(EntityStream stream);
 }

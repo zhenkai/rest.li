@@ -17,6 +17,9 @@
 /* $Id$ */
 package com.linkedin.r2.message;
 
+import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
+
 /**
  * @author Chris Pettitt
  * @version $Revision$
@@ -25,20 +28,36 @@ public interface ResponseBuilder<B extends ResponseBuilder<B>> extends MessageBu
 {
   /**
    * Constructs an immutable {@link Response} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change this response. The concrete
-   * type of this builder (for example {@link com.linkedin.r2.message.rpc.RpcResponseBuilder}) will
-   * be used to build the appropriate concrete type.
+   * Subsequent changes to this builder will not change the underlying message.
    *
+   * @param entity the bytestring entity for this message
    * @return a Response from the settings in this builder
    */
-  @Override
-  Response build();
+  Response build(ByteString entity);
 
   /**
-   * Similar to {@link #build}, but the returned Message is in canonical form.
+   * Similar to {@link #build}, but the returned Response is in canonical form.
    *
-   * @return a Response from the settings in this builder
+   * @param entity the bytestring entity for this message
+   * @return a Response from the settings in this builder.
    */
-  @Override
-  Response buildCanonical();
+  Response buildCanonical(ByteString entity);
+
+
+  /**
+   * Constructs an {@link Response} using the settings configured in this builder and the supplied EntityStream.
+   * Subsequent changes to this builder will not change the underlying message.
+   *
+   * @param stream the entity stream for this message
+   * @return a Response from the settings in this builder and the supplied EntityStream
+   */
+  Response build(EntityStream stream);
+
+  /**
+   * Similar to {@link #build}, but the returned Response is in canonical form.
+   *
+   * @param stream the entity stream for this message
+   * @return a Response from the settings in this builder and the supplied EntityStream
+   */
+  Response buildCanonical(EntityStream stream);
 }

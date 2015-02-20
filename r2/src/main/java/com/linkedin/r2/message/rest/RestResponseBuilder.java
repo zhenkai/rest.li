@@ -17,6 +17,7 @@
 /* $Id$ */
 package com.linkedin.r2.message.rest;
 
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.ResponseBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.message.streaming.EntityStream;
@@ -73,15 +74,15 @@ public final class RestResponseBuilder
   }
 
   @Override
-  public RestResponse build()
+  public RestResponse build(ByteString entity)
   {
-    return new RestResponseImpl(getEntity(), getHeaders(), getCookies(), getStatus());
+    return new RestResponseImpl(entity, getHeaders(), getCookies(), getStatus());
   }
 
   @Override
-  public RestResponse buildCanonical()
+  public RestResponse buildCanonical(ByteString entity)
   {
-    return new RestResponseImpl(getEntity(), getCanonicalHeaders(), getCanonicalCookies(), getStatus());
+    return new RestResponseImpl(entity, getCanonicalHeaders(), getCanonicalCookies(), getStatus());
   }
 
   @Override

@@ -17,6 +17,9 @@
 /* $Id$ */
 package com.linkedin.r2.message;
 
+import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
+
 import java.net.URI;
 
 /**
@@ -42,20 +45,36 @@ public interface RequestBuilder<B extends RequestBuilder<B>> extends MessageBuil
 
   /**
    * Constructs an immutable {@link Request} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change this request. The concrete
-   * type of this builder (for example {@link com.linkedin.r2.message.rpc.RpcRequestBuilder}) will
-   * be used to build the appropriate concrete type.
+   * Subsequent changes to this builder will not change the underlying message.
    *
+   * @param entity the bytestring entity for this message
    * @return a Request from the settings in this builder
    */
-  @Override
-  Request build();
+  Request build(ByteString entity);
 
   /**
-   * Similar to {@link #build}, but the returned Message is in canonical form.
+   * Similar to {@link #build}, but the returned Request is in canonical form.
    *
+   * @param entity the bytestring entity for this message
    * @return a Request from the settings in this builder.
    */
-  @Override
-  Request buildCanonical();
+  Request buildCanonical(ByteString entity);
+
+
+  /**
+   * Constructs an {@link Request} using the settings configured in this builder and the supplied EntityStream.
+   * Subsequent changes to this builder will not change the underlying message.
+   *
+   * @param stream the entity stream for this message
+   * @return a Request from the settings in this builder and the supplied EntityStream
+   */
+  Request build(EntityStream stream);
+
+  /**
+   * Similar to {@link #build}, but the returned Request is in canonical form.
+   *
+   * @param stream the entity stream for this message
+   * @return a Request from the settings in this builder and the supplied EntityStream
+   */
+  Request buildCanonical(EntityStream stream);
 }
