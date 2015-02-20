@@ -20,14 +20,13 @@ package com.linkedin.r2.filter;
 /**
  * A marker interface for filters. This filter is the most generic and does not provide any
  * filtering capability. See {@link com.linkedin.r2.filter.message.MessageFilter},
- * {@link com.linkedin.r2.filter.message.rpc.RpcFilter}, {@link com.linkedin.r2.filter.message.rest.RestFilter},
+ * {@link com.linkedin.r2.filter.message.rest.StreamFilter},
  * etc., for interfaces that do provide filtering capabilities.
  *
  * @author Chris Pettitt
  * @version $Revision$
  * @see com.linkedin.r2.filter.message.MessageFilter
- * @see com.linkedin.r2.filter.message.rpc.RpcFilter
- * @see com.linkedin.r2.filter.message.rest.RestFilter
+ * @see com.linkedin.r2.filter.message.rest.StreamFilter
  */
 public interface Filter
 {

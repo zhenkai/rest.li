@@ -17,28 +17,29 @@
 /* $Id$ */
 package com.linkedin.r2.message;
 
+import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
+
 /**
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface ResponseBuilder<B extends ResponseBuilder<B>> extends MessageBuilder<B>
+public interface ResponseBuilder<B extends ResponseBuilder<B>> extends StreamMessageBuilder<B>
 {
   /**
-   * Constructs an immutable {@link Response} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change this response. The concrete
-   * type of this builder (for example {@link com.linkedin.r2.message.rpc.RpcResponseBuilder}) will
-   * be used to build the appropriate concrete type.
+   * Constructs an {@link Response} using the settings configured in this builder and the supplied EntityStream.
+   * Subsequent changes to this builder will not change the underlying message.
    *
-   * @return a Response from the settings in this builder
+   * @param stream the entity stream for this message
+   * @return a Response from the settings in this builder and the supplied EntityStream
    */
-  @Override
-  Response build();
+  Response build(EntityStream stream);
 
   /**
-   * Similar to {@link #build}, but the returned Message is in canonical form.
+   * Similar to {@link #build}, but the returned Response is in canonical form.
    *
-   * @return a Response from the settings in this builder
+   * @param stream the entity stream for this message
+   * @return a Response from the settings in this builder and the supplied EntityStream
    */
-  @Override
-  Response buildCanonical();
+  Response buildCanonical(EntityStream stream);
 }

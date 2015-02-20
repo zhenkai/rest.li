@@ -2,11 +2,11 @@ package com.linkedin.r2.streaming.sample;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
-import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.Client;
-import com.linkedin.r2.transport.common.RestRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandler;
 
 import java.net.URI;
 
@@ -16,7 +16,7 @@ import java.net.URI;
  *
  * @author Zhenkai Zhu
  */
-public class UriRewriteProxy implements RestRequestHandler
+public class UriRewriteProxy implements StreamRequestHandler
 {
   final private Client _client;
   final private UriRewriter _uriRewriter;
@@ -28,14 +28,14 @@ public class UriRewriteProxy implements RestRequestHandler
   }
 
   @Override
-  public void handleRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
+  public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
   {
     URI newUri = _uriRewriter.rewrite(request.getURI());
-    RestRequestBuilder builder = request.builder();
+    StreamRequestBuilder builder = request.builder();
     builder.setURI(newUri);
-    RestRequest newRequest = builder.build(request.getEntityStream());
+    StreamRequest newRequest = builder.build(request.getEntityStream());
 
-    _client.restRequest(newRequest, requestContext, callback);
+    _client.streamRequest(newRequest, requestContext, callback);
   }
 
   public interface UriRewriter

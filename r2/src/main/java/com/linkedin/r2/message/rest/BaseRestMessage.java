@@ -18,13 +18,11 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.message.BaseStreamMessage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.BaseMessage;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 
@@ -32,40 +30,21 @@ import com.linkedin.r2.message.streaming.EntityStream;
  * @author Chris Pettitt
  * @version $Revision$
  */
-/* package private */ abstract class BaseRestMessage extends BaseMessage implements RestMessage
+/* package private */ abstract class BaseRestMessage extends BaseStreamMessage implements RestMessage
 {
   private final Map<String, String> _headers;
 
   private final List<String> _cookies;
 
-  protected BaseRestMessage(ByteString entity, Map<String, String> headers, List<String> cookies)
+  protected BaseRestMessage(EntityStream entityStream, Map<String, String> headers, List<String> cookies)
   {
-    super(entity);
+    super(entityStream);
 
     assert headers != null;
     assert cookies != null;
     _headers = headers;
     _cookies = cookies;
   }
-
-  protected BaseRestMessage(EntityStream stream, Map<String, String> headers, List<String> cookies)
-  {
-    super(stream);
-
-    assert cookies != null;
-    assert headers != null;
-    _headers = headers;
-    _cookies = cookies;
-  }
-
-  @Override
-  public RestMessageBuilder<? extends RestMessageBuilder<?>> restBuilder()
-  {
-    return builder();
-  }
-
-  @Override
-  public abstract RestMessageBuilder<? extends RestMessageBuilder<?>> builder();
 
   @Override
   public String getHeader(String name)

@@ -19,6 +19,8 @@ package com.linkedin.r2.caprep.db;
 
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 
 /**
  * Interface for replaying captured request/response pairs.
@@ -35,5 +37,5 @@ public interface DbSource
    * @param <T> a subclass of Request.
    * @return the Response object for the specified request, or null if no response is found.
    */
-  <T extends Response> T replay(Request req);
+  <T extends RestResponse> T replay(RestRequest req);
 }

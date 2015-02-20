@@ -18,8 +18,7 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.r2.message.BaseMessageBuilder;
-import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.message.BaseStreamMessageBuilder;
 import com.linkedin.util.ArgumentUtil;
 
 import java.util.ArrayList;
@@ -37,8 +36,8 @@ import java.util.TreeMap;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>>
-    extends BaseMessageBuilder<B>
+/* package private */ abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>>
+    extends BaseStreamMessageBuilder<B>
     implements RestMessageBuilder<B>
 {
   private static final String CANONICAL_REGEX = "[ \t\n\r]+";
@@ -66,7 +65,6 @@ public abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>
    */
   public BaseRestMessageBuilder(RestMessage message)
   {
-    super(message);
     setHeaders(message.getHeaders());
     setCookies(message.getCookies());
   }
@@ -182,7 +180,7 @@ public abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>
    */
   public B unsafeAddHeaderValue(String name, String value)
   {
-    // This is "safe" because we explicitly state in MessageBuilder that the builder is not thread
+    // This is "safe" because we explicitly state in StreamMessageBuilder that the builder is not thread
     // safe and proper external synchronization must be used to use instances across threads.
     final String current = _headers.get(name);
 

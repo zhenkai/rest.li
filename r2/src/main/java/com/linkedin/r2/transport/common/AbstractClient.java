@@ -19,9 +19,15 @@ package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.FullEntityReader;
+import com.linkedin.r2.message.streaming.Reader;
 
 import java.net.URI;
 import java.util.Collections;
@@ -69,8 +75,61 @@ public abstract class AbstractClient implements Client
   }
 
   @Override
+  public void streamRequest(StreamRequest request, Callback<StreamResponse> callback)
+  {
+    streamRequest(request, _EMPTY_CONTEXT, callback);
+  }
+
+  @Override
+  public void restRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
+  {
+    streamRequest(request, requestContext, adaptToStreamCallback(callback));
+  }
+
+  @Override
   public Map<String, Object> getMetadata(URI uri)
   {
     return Collections.emptyMap();
+  }
+
+  private static Callback<StreamResponse> adaptToStreamCallback(final Callback<RestResponse> callback)
+  {
+    return new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        callback.onError(e);
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        RestResponseBuilder builder = new RestResponseBuilder(result);
+        Callback<ByteString> assemblyFinishCallback = getAssemblyFinishCallback(callback, builder);
+        Reader reader = new FullEntityReader(assemblyFinishCallback);
+        result.getEntityStream().setReader(reader);
+      }
+    };
+  }
+
+  private static Callback<ByteString> getAssemblyFinishCallback(final Callback<RestResponse> callback,
+                                                                final RestResponseBuilder builder)
+  {
+    return new Callback<ByteString>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        callback.onError(e);
+      }
+
+      @Override
+      public void onSuccess(ByteString result)
+      {
+        RestResponse restResponse = builder.setEntity(result).build();
+        callback.onSuccess(restResponse);
+      }
+    };
   }
 }
