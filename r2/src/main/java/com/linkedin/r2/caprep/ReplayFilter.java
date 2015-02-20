@@ -21,6 +21,7 @@ package com.linkedin.r2.caprep;
 import com.linkedin.r2.caprep.db.DbSource;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
@@ -69,7 +70,7 @@ public class ReplayFilter implements RestRequestFilter
     }
   }
 
-  private <RES extends Response> boolean replayResponse(Request req, RequestContext requestContext,
+  private <RES extends Response> boolean replayResponse(RestRequest req, RequestContext requestContext,
                               NextFilter<? extends Request, RES> nextFilter)
   {
     @SuppressWarnings("unchecked")

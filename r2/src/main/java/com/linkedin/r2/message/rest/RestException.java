@@ -25,12 +25,9 @@ import com.linkedin.r2.RemoteInvocationException;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class RestException extends RemoteInvocationException
+public class RestException extends StreamException
 {
   private static final long serialVersionUID = 1;
-
-  private final RestResponse _response;
-
   /**
    * Construct a new instance, using the specified response message.
    *
@@ -39,8 +36,7 @@ public class RestException extends RemoteInvocationException
   public RestException(RestResponse response)
   {
     // TODO: we should probably should check the content-type / charset and decode appropriately
-    super(response.getEntity().asAvroString());
-    _response = response;
+    super(response, response.getEntity().asAvroString());
   }
 
   /**
@@ -51,8 +47,7 @@ public class RestException extends RemoteInvocationException
    */
   public RestException(RestResponse response, Throwable cause)
   {
-    super(cause);
-    _response = response;
+    super(response, cause);
   }
 
   /**
@@ -64,8 +59,7 @@ public class RestException extends RemoteInvocationException
    */
   public RestException(RestResponse response, String message, Throwable cause)
   {
-    super(message, cause);
-    _response = response;
+    super(response, message, cause);
   }
 
   /**
@@ -76,8 +70,7 @@ public class RestException extends RemoteInvocationException
    */
   public RestException(RestResponse response, String message)
   {
-    super(message);
-    _response = response;
+    super(response, message);
   }
 
   /**
@@ -87,14 +80,14 @@ public class RestException extends RemoteInvocationException
    */
   public RestResponse getResponse()
   {
-    return _response;
+    return (RestResponse) super.getResponse();
   }
 
   @Override
   public String toString()
   {
     return "RestException{" +
-            "_response=" + _response +
+            "_response=" + getResponse() +
             "} ";
   }
 

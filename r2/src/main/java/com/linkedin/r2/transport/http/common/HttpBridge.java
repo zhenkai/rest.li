@@ -24,6 +24,10 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamException;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
@@ -45,14 +49,14 @@ public class HttpBridge
    *          occurs
    * @return the callback to receive the incoming HTTP response
    */
-  public static TransportCallback<RestResponse> restToHttpCallback(final TransportCallback<RestResponse> callback,
+  public static TransportCallback<StreamResponse> restToHttpCallback(final TransportCallback<StreamResponse> callback,
                                                         RestRequest request)
   {
     final URI uri = request.getURI();
-    return new TransportCallback<RestResponse>()
+    return new TransportCallback<StreamResponse>()
     {
       @Override
-      public void onResponse(TransportResponse<RestResponse> response)
+      public void onResponse(TransportResponse<StreamResponse> response)
       {
         if (response.hasError())
         {
@@ -65,7 +69,7 @@ public class HttpBridge
         else if (!RestStatus.isOK(response.getResponse().getStatus()))
         {
           response =
-              TransportResponseImpl.error(new RestException(response.getResponse(),
+              TransportResponseImpl.error(new StreamException(response.getResponse(),
                                                             "Received error "
                                                                 + response.getResponse()
                                                                           .getStatus()
@@ -95,6 +99,13 @@ public class HttpBridge
             .build();
   }
 
+  public static StreamRequest toStreamRequest(StreamRequest request, Map<String, String> headers)
+  {
+    return new StreamRequestBuilder(request)
+        .unsafeSetHeaders(headers)
+        .build(request.getEntityStream());
+  }
+
   /**
    * Wrap transport callback for outgoing "generic" http response with a callback to pass
    * to the application REST server.
@@ -102,19 +113,19 @@ public class HttpBridge
    * @param callback the callback to receive the outgoing HTTP response
    * @return the callback to receive the outgoing REST response
    */
-  public static TransportCallback<RestResponse> httpToRestCallback(final TransportCallback<RestResponse> callback)
+  public static TransportCallback<StreamResponse> httpToRestCallback(final TransportCallback<StreamResponse> callback)
   {
-    return new TransportCallback<RestResponse>()
+    return new TransportCallback<StreamResponse>()
     {
       @Override
-      public void onResponse(TransportResponse<RestResponse> response)
+      public void onResponse(TransportResponse<StreamResponse> response)
       {
         if (response.hasError())
         {
           final Throwable ex = response.getError();
-          if (ex instanceof RestException)
+          if (ex instanceof StreamException)
           {
-            callback.onResponse(TransportResponseImpl.success(((RestException) ex).getResponse(),
+            callback.onResponse(TransportResponseImpl.success(((StreamException) ex).getResponse(),
                                                               response.getWireAttributes()));
             return;
           }

@@ -19,6 +19,8 @@ package com.linkedin.r2.caprep.db;
 
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,23 +33,23 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class TransientDb implements DbSource, DbSink
 {
-  private final ConcurrentMap<Request, Response> _db = new ConcurrentHashMap<Request, Response>();
+  private final ConcurrentMap<RestRequest, RestResponse> _db = new ConcurrentHashMap<RestRequest, RestResponse>();
 
   @Override
-  public void record(Request req, Response res)
+  public void record(RestRequest req, RestResponse res)
   {
     _db.put(canonicalize(req), res);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T extends Response> T replay(Request req)
+  public <T extends RestResponse> T replay(RestRequest req)
   {
     return (T)_db.get(canonicalize(req));
   }
 
-  private Request canonicalize(Request req)
+  private RestRequest canonicalize(RestRequest req)
   {
-    return req.requestBuilder().buildCanonical();
+    return req.builder().buildCanonical();
   }
 }

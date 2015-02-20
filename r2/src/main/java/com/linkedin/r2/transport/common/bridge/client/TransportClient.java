@@ -23,6 +23,8 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 
 import java.util.Map;
@@ -42,10 +44,10 @@ public interface TransportClient
    * @param wireAttrs attributes that should be sent over the wire to the server
    * @param callback the callback to invoke with the response
    */
-  void restRequest(RestRequest request,
+  void streamRequest(StreamRequest request,
                    RequestContext requestContext,
                    Map<String, String> wireAttrs,
-                   TransportCallback<RestResponse> callback);
+                   TransportCallback<StreamResponse> callback);
 
   /**
    * Starts asynchronous shutdown of the client. This method should block minimally, if at all.

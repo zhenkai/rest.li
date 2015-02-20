@@ -17,13 +17,16 @@
 /* $Id$ */
 package com.linkedin.r2.message;
 
+import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
+
 import java.net.URI;
 
 /**
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RequestBuilder<B extends RequestBuilder<B>> extends MessageBuilder<B>
+public interface RequestBuilder<B extends RequestBuilder<B>> extends StreamMessageBuilder<B>
 {
   /**
    * Sets the URI for this request.
@@ -41,21 +44,19 @@ public interface RequestBuilder<B extends RequestBuilder<B>> extends MessageBuil
   URI getURI();
 
   /**
-   * Constructs an immutable {@link Request} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change this request. The concrete
-   * type of this builder (for example {@link com.linkedin.r2.message.rpc.RpcRequestBuilder}) will
-   * be used to build the appropriate concrete type.
+   * Constructs an {@link Request} using the settings configured in this builder and the supplied EntityStream.
+   * Subsequent changes to this builder will not change the underlying message.
    *
-   * @return a Request from the settings in this builder
+   * @param stream the entity stream for this message
+   * @return a Request from the settings in this builder and the supplied EntityStream
    */
-  @Override
-  Request build();
+  Request build(EntityStream stream);
 
   /**
-   * Similar to {@link #build}, but the returned Message is in canonical form.
+   * Similar to {@link #build}, but the returned Request is in canonical form.
    *
-   * @return a Request from the settings in this builder.
+   * @param stream the entity stream for this message
+   * @return a Request from the settings in this builder and the supplied EntityStream
    */
-  @Override
-  Request buildCanonical();
+  Request buildCanonical(EntityStream stream);
 }

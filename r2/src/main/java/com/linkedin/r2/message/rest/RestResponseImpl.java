@@ -1,66 +1,44 @@
-/*
-   Copyright (c) 2012 LinkedIn Corp.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
-/* $Id$ */
 package com.linkedin.r2.message.rest;
 
-
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.ByteStringWriter;
 import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.util.ArgumentUtil;
 
 import java.util.List;
 import java.util.Map;
 
-
 /**
- * @author Chris Pettitt
- * @version $Revision$
+ * @author Zhenkai Zhu
  */
-/* package private */ final class RestResponseImpl extends BaseRestMessage implements RestResponse
+/* package private */ final class RestResponseImpl extends StreamResponseImpl implements RestResponse
 {
-  private final int _status;
+  private final ByteString _entity;
 
-  /* package private */ RestResponseImpl(
-      ByteString entity, Map<String, String> headers, List<String> cookies, int status)
+  /* package private */ RestResponseImpl(ByteString entity, Map<String, String> headers, List<String> cookies, int status)
   {
-    super(entity, headers, cookies);
-    _status = status;
+    super(EntityStreams.emptyStream(), headers, cookies, status);
+    ArgumentUtil.notNull(entity, "entity");
+    _entity = entity;
   }
 
-  /* package private */ RestResponseImpl(EntityStream stream, Map<String, String> headers, List<String> cookies, int status)
+  @Override
+  public ByteString getEntity()
   {
-    super(stream, headers, cookies);
-    _status = status;
+    return _entity;
   }
 
-  public int getStatus()
+  @Override
+  public EntityStream getEntityStream()
   {
-    return _status;
+    return EntityStreams.newEntityStream(new ByteStringWriter(_entity));
   }
 
   @Override
   public RestResponseBuilder builder()
   {
     return new RestResponseBuilder(this);
-  }
-
-  @Override
-  public RestResponseBuilder responseBuilder()
-  {
-    return builder();
   }
 
   @Override
@@ -80,14 +58,14 @@ import java.util.Map;
     }
 
     RestResponseImpl that = (RestResponseImpl) o;
-    return _status == that._status;
+    return _entity == that._entity;
   }
 
   @Override
   public int hashCode()
   {
     int result = super.hashCode();
-    result = 31 * result + _status;
+    result = 31 * result + _entity.hashCode();
     return result;
   }
 
@@ -100,9 +78,9 @@ import java.util.Map;
         .append("cookies=")
         .append(getCookies())
         .append(",status=")
-        .append(_status)
+        .append(getStatus())
         .append(",entityLength=")
-        .append(getEntity().length())
+        .append(_entity.length())
         .append("]");
     return builder.toString();
   }

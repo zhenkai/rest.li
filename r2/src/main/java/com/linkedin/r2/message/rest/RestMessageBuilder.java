@@ -18,7 +18,9 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.r2.message.MessageBuilder;
+import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.StreamMessageBuilder;
+import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +30,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends MessageBuilder<B>
+public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends StreamMessageBuilder<B>
 {
   /**
    * Replaces the headers in this message with a copy of the supplied headers. Changes to the
@@ -143,23 +145,4 @@ public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends Mes
    * @return a list of values for the header or {@code null} if no values exist.
    */
   List<String> getHeaderValues(String name);
-
-  /**
-   * Constructs an immutable {@link RestMessage} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change this response. The concrete
-   * type of this builder (for example {@link com.linkedin.r2.message.rest.RestResponseBuilder}) will
-   * be used to build the appropriate concrete type.
-   *
-   * @return a RestMessage from the settings in this builder
-   */
-  @Override
-  RestMessage build();
-
-  /**
-   * Similar to {@link #build}, but the returned Message is in canonical form.
-   *
-   * @return a RestMessage from the settings in this builder
-   */
-  @Override
-  RestMessage buildCanonical();
 }

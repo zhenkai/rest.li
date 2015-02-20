@@ -19,6 +19,8 @@ package com.linkedin.r2.filter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 
 import java.util.Map;
 
@@ -49,7 +51,7 @@ import java.util.Map;
  *  <dt>Filter Priority</dt>
  *  <dd>
  *      It is possible to implement a generic message filter and a message filter specific to a
- *      request type (RPC or REST). In general, this should be avoided. If a filter implements both
+ *      request type. In general, this should be avoided. If a filter implements both
  *      types of interfaces then the more specific one is invoked and the less specific one is
  *      ignored.
  *  </dd>
@@ -101,7 +103,7 @@ public interface FilterChain
    * @param requestContext context for the request
    * @param wireAttrs the initial set of wire attributes
    */
-  void onRestRequest(RestRequest req,
+  void onRequest(StreamRequest req,
                      RequestContext requestContext,
                      Map<String, String> wireAttrs);
 
@@ -114,7 +116,7 @@ public interface FilterChain
    * @param requestContext context for the request
    * @param wireAttrs the initial set of wire attributes
    */
-  void onRestResponse(RestResponse res,
+  void onResponse(StreamResponse res,
                       RequestContext requestContext,
                       Map<String, String> wireAttrs);
 
@@ -127,7 +129,7 @@ public interface FilterChain
    * @param requestContext context for the request
    * @param wireAttrs the initial set of wire attributes
    */
-  void onRestError(Exception ex,
+  void onError(Exception ex,
                    RequestContext requestContext,
                    Map<String, String> wireAttrs);
 }

@@ -23,6 +23,8 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.AbstractClient;
 
 import java.util.HashMap;
@@ -47,13 +49,13 @@ public class TransportClientAdapter extends AbstractClient
   }
 
   @Override
-  public void restRequest(RestRequest request,
+  public void streamRequest(StreamRequest request,
                           RequestContext requestContext,
-                          Callback<RestResponse> callback)
+                          Callback<StreamResponse> callback)
   {
     final Map<String, String> wireAttrs = new HashMap<String, String>();
     //make a copy of the caller's RequestContext to ensure that we have a unique instance per-request
-    _client.restRequest(request, new RequestContext(requestContext), wireAttrs, new TransportCallbackAdapter<RestResponse>(callback));
+    _client.streamRequest(request, new RequestContext(requestContext), wireAttrs, new TransportCallbackAdapter<StreamResponse>(callback));
   }
 
   @Override

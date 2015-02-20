@@ -22,6 +22,8 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.TransportClientFactory;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -50,12 +52,12 @@ public class LazyClient implements TransportClient
   }
 
   @Override
-  public void restRequest(RestRequest request,
+  public void streamRequest(StreamRequest request,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          TransportCallback<RestResponse> callback)
+                          TransportCallback<StreamResponse> callback)
   {
-    getWrappedClient().restRequest(request, requestContext, wireAttrs, callback);
+    getWrappedClient().streamRequest(request, requestContext, wireAttrs, callback);
   }
 
   @Override

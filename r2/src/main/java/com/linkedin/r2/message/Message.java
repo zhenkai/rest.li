@@ -18,45 +18,21 @@
 package com.linkedin.r2.message;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
  * An object that represents a message, either request or response.<p/>
- *
- * Messages are immutable and thread-safe. It is possible to clone an existing Message, modify
- * details in the copy, and create a new Message instance that has the concrete type of the original
- * message (REST/RPC, request/response) using the {@link #builder()} method.
  *
  * @see com.linkedin.r2.message.rest.RestRequest
  * @see com.linkedin.r2.message.rest.RestResponse
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface Message
+public interface Message extends StreamMessage
 {
   /**
    * Returns the whole entity for this message.
-   * If the entity is streamed, this method reads from the entity stream and may block.
-   *
-   * @throws IllegalStateException if the entity is streamed and the entity stream has been consumed.
+   * *
    * @return the entity for this message
    */
   ByteString getEntity();
-
-  /**
-   * Returns the EntityStream for this message. The entity stream can only be read once (i.e. Message
-   * does not keep a copy of the whole entity).
-   *
-   * @return the EntityStream of this message.
-   */
-  EntityStream getEntityStream();
-
-  /**
-   * Returns a {@link MessageBuilder}, which provides a means of constructing a new message using
-   * this message as a starting point. Changes made with the builder are not reflected by this
-   * message instance.
-   *
-   * @return a builder for this message
-   */
-  MessageBuilder<? extends MessageBuilder<?>> builder();
 }
