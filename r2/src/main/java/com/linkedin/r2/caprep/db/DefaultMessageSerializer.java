@@ -24,6 +24,7 @@ import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestBuilder;
 import com.linkedin.r2.message.Response;
 import com.linkedin.r2.message.ResponseBuilder;
+import com.linkedin.r2.message.StreamMessageBuilder;
 import com.linkedin.r2.message.rest.RestMessage;
 import com.linkedin.r2.message.rest.RestMessageBuilder;
 import com.linkedin.r2.message.rest.RestRequest;
@@ -89,32 +90,22 @@ public class DefaultMessageSerializer implements MessageSerializer
   private static final String STATUS_200 = "200";
 
   @Override
-  public void writeRequest(OutputStream out, Request req) throws IOException
+  public void writeRequest(OutputStream out, RestRequest req) throws IOException
   {
     writeReqLine(out, req);
-    if (req instanceof RestRequest)
-    {
-      writeHeaders(out, (RestRequest)req, HttpConstants.REQUEST_COOKIE_HEADER_NAME);
-    }
-    else
-    {
-      write(out, CRLF);
-    }
+
+    writeHeaders(out, req, HttpConstants.REQUEST_COOKIE_HEADER_NAME);
+
     writeEntity(out, req);
   }
 
   @Override
-  public void writeResponse(OutputStream out, Response res) throws IOException
+  public void writeResponse(OutputStream out, RestResponse res) throws IOException
   {
     writeResLine(out, res);
-    if (res instanceof RestResponse)
-    {
-      writeHeaders(out, (RestResponse)res, HttpConstants.RESPONSE_COOKIE_HEADER_NAME);
-    }
-    else
-    {
-      write(out, CRLF);
-    }
+
+    writeHeaders(out, res, HttpConstants.RESPONSE_COOKIE_HEADER_NAME);
+
     writeEntity(out, res);
   }
 
@@ -124,7 +115,8 @@ public class DefaultMessageSerializer implements MessageSerializer
     final RestRequestBuilder builder = new RestRequestBuilder(URI.create(""));
     readReqLine(builder, in);
     readHeaders(builder, in, HttpConstants.REQUEST_COOKIE_HEADER_NAME);
-    readEntity(builder, in);
+    builder.setEntity(readEntity(in));
+
     return builder.build();
   }
 
@@ -134,7 +126,7 @@ public class DefaultMessageSerializer implements MessageSerializer
     final RestResponseBuilder builder = new RestResponseBuilder();
     readResLine(builder, in);
     readHeaders(builder, in, HttpConstants.RESPONSE_COOKIE_HEADER_NAME);
-    readEntity(builder, in);
+    builder.setEntity(readEntity(in));
     return builder.build();
   }
 
@@ -206,7 +198,7 @@ public class DefaultMessageSerializer implements MessageSerializer
     }
   }
 
-  private void readEntity(MessageBuilder<?> builder, InputStream in) throws IOException
+  private ByteString readEntity(InputStream in) throws IOException
   {
     final ByteArrayOutputStream out = new ByteArrayOutputStream();
     final byte[] buf = new byte[1024];
@@ -229,7 +221,7 @@ public class DefaultMessageSerializer implements MessageSerializer
       entity = ByteString.copy(eb);
     }
 
-    builder.setEntity(entity);
+    return entity;
   }
 
   private void writeReqLine(OutputStream out, Request req) throws IOException
