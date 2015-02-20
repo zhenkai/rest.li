@@ -39,6 +39,27 @@ public final class EntityStreams
     }, "R2-EntityStreams-Executor.shutdown"));
   }
 
+  private final static EntityStream EMPTY_STREAM = newEntityStream(new Writer()
+  {
+    private WriteHandle _wh;
+    @Override
+    public void onInit(WriteHandle wh)
+    {
+      _wh = wh;
+    }
+
+    @Override
+    public void onWritePossible()
+    {
+      _wh.done();
+    }
+  });
+
+  public static EntityStream emptyStream()
+  {
+    return EMPTY_STREAM;
+  }
+
   /**
    * The method to create a new EntityStream with a writer for the stream
    *

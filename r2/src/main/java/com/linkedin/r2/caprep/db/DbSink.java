@@ -19,6 +19,8 @@ package com.linkedin.r2.caprep.db;
 
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -37,5 +39,5 @@ public interface DbSink
    * @param res the response to be recorded.
    * @throws IOException
    */
-  void record(Request req, Response res) throws IOException;
+  void record(RestRequest req, RestResponse res) throws IOException;
 }

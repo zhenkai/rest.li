@@ -21,12 +21,12 @@ package com.linkedin.r2.message;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface Response extends Message
+public interface Response extends StreamMessage
 {
   /**
    * Returns a {@link ResponseBuilder}, which provides a means of constructing a new response using
    * this response as a starting point. Changes made with the builder are not reflected by this
-   * response instance. The concrete type (for example {@link com.linkedin.r2.message.rpc.RpcResponse})
+   * response instance. The concrete type
    * is preserved when building the new response.
    *
    * @return a builder for this response

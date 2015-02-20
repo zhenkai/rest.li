@@ -26,6 +26,8 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -63,37 +65,37 @@ public class TrackerClientTest
 
     RestRequest restRequest = new RestRequestBuilder(uri).build();
     Map<String, String> restWireAttrs = new HashMap<String, String>();
-    TestTransportCallback<RestResponse> restCallback =
-        new TestTransportCallback<RestResponse>();
+    TestTransportCallback<StreamResponse> restCallback =
+        new TestTransportCallback<StreamResponse>();
 
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    client.streamRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
 
     assertFalse(restCallback.response.hasError());
-    assertEquals(wrappedClient.restRequest, restRequest);
+    assertEquals(wrappedClient.streamRequest, restRequest);
     assertEquals(wrappedClient.restWireAttrs, restWireAttrs);
   }
 
   public static class TestClient implements TransportClient
   {
-    public RestRequest                     restRequest;
+    public StreamRequest                   streamRequest;
     public RequestContext                  restRequestContext;
     public Map<String, String>             restWireAttrs;
-    public TransportCallback<RestResponse> restCallback;
+    public TransportCallback<StreamResponse> streamCallback;
 
     public boolean                         shutdownCalled;
 
     @Override
-    public void restRequest(RestRequest request,
+    public void streamRequest(StreamRequest request,
                             RequestContext requestContext,
                             Map<String, String> wireAttrs,
-                            TransportCallback<RestResponse> callback)
+                            TransportCallback<StreamResponse> callback)
     {
-      restRequest = request;
+      streamRequest = request;
       restRequestContext = requestContext;
       restWireAttrs = wireAttrs;
-      restCallback = callback;
+      streamCallback = callback;
 
-      callback.onResponse(TransportResponseImpl.<RestResponse> success(new RestResponseBuilder().build(), wireAttrs));
+      callback.onResponse(TransportResponseImpl.<StreamResponse> success(new RestResponseBuilder().build(), wireAttrs));
     }
 
     @Override

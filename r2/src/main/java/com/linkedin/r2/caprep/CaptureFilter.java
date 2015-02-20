@@ -22,6 +22,7 @@ import com.linkedin.r2.caprep.db.DbSink;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.RequestFilter;
 import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
@@ -89,9 +90,9 @@ public class CaptureFilter implements RequestFilter, RestResponseFilter
     nextFilter.onError(ex, requestContext, wireAttrs);
   }
 
-  private void saveResponse(Response res, RequestContext requestContext)
+  private void saveResponse(RestResponse res, RequestContext requestContext)
   {
-    final Request req = (Request) requestContext.removeLocalAttr(REQ_ATTR);
+    final RestRequest req = (RestRequest) requestContext.removeLocalAttr(REQ_ATTR);
     if (req != null)
     {
       _log.debug("Saving response for request: " + req.getURI());
