@@ -26,7 +26,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -80,11 +80,10 @@ public class HttpJettyServer implements HttpServer
   @Override
   public void start() throws IOException
   {
-    _server = new Server();
-    SelectChannelConnector connector = new SelectChannelConnector();
-    connector.setPort(_port);
-    _server.setConnectors(new Connector[] { connector });
-    _server.setThreadPool(new QueuedThreadPool(_threadPoolSize));
+    _server = new Server(new QueuedThreadPool(_threadPoolSize));
+    ServerConnector http = new ServerConnector(_server);
+    http.setPort(_port);
+    _server.setConnectors(new Connector[] { http });
     ServletContextHandler root =
         new ServletContextHandler(_server, _contextPath, ServletContextHandler.SESSIONS);
     root.addServlet(new ServletHolder(_servlet), "/*");
