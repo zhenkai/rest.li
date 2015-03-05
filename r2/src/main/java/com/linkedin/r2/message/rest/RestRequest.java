@@ -29,15 +29,8 @@ import com.linkedin.r2.message.Request;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestRequest extends RestMessage, Request
+public interface RestRequest extends RestMessage, Request, RestRequestHeaders
 {
-  /**
-   * Returns the REST method for this request.
-   *
-   * @return the REST method for this request
-   * @see com.linkedin.r2.message.rest.RestMethod
-   */
-  String getMethod();
 
   /**
    * Returns a {@link RestRequestBuilder}, which provides a means of constructing a new request using

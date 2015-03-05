@@ -34,18 +34,10 @@ import com.linkedin.r2.message.Response;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestResponse extends RestMessage, Response
+public interface RestResponse extends RestMessage, Response, RestResponseHeaders
 {
   RestResponse NO_RESPONSE = new RestResponseImpl(
       ByteString.empty(), Collections.<String, String>emptyMap(), Collections.<String>emptyList(), 0);
-
-  /**
-   * Returns the status for this response.
-   *
-   * @return the status for this response
-   * @see com.linkedin.r2.message.rest.RestStatus
-   */
-  int getStatus();
 
   /**
    * Returns a {@link RestResponseBuilder}, which provides a means of constructing a new
