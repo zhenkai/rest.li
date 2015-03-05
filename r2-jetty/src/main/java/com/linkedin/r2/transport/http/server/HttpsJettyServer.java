@@ -22,7 +22,10 @@ package com.linkedin.r2.transport.http.server;
 
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
@@ -53,25 +56,26 @@ public class HttpsJettyServer extends HttpJettyServer
   }
 
   @Override
-  protected Connector[] getConnectors()
+  protected Connector[] getConnectors(Server server)
   {
     SslContextFactory sslContextFactory = new SslContextFactory();
     sslContextFactory.setKeyStorePath(_keyStore);
     sslContextFactory.setKeyStorePassword(_keyStorePassword);
-    sslContextFactory.setTrustStore(_keyStore);
+    sslContextFactory.setTrustStorePath(_keyStore);
     sslContextFactory.setTrustStorePassword(_keyStorePassword);
 
-    Connector sslConnector = new SslSelectChannelConnector(sslContextFactory);
-    sslConnector.setPort(_sslPort);
+    SslConnectionFactory sslFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
+    ServerConnector https = new ServerConnector(server, sslFactory, new HttpConnectionFactory());
+    https.setPort(_sslPort);
 
-    Connector[] httpConnectors = super.getConnectors();
+    Connector[] httpConnectors = super.getConnectors(server);
     Connector[] connectors = new Connector[httpConnectors.length + 1];
     int i  = 0;
     for (Connector c : httpConnectors)
     {
       connectors[i++] = c;
     }
-    connectors[i++] = sslConnector;
+    connectors[i++] = https;
 
     return connectors;
   }
