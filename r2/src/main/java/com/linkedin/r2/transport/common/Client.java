@@ -23,6 +23,8 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseHeaders;
+import com.linkedin.r2.message.streaming.Decider;
 
 import java.net.URI;
 import java.util.Map;
@@ -76,6 +78,11 @@ public interface Client
    */
   void restRequest(RestRequest request, RequestContext requestContext,
                    Callback<RestResponse> callback);
+
+  void restRequest(RestRequest request, Decider<RestResponseHeaders> dictator, Callback<RestResponse> callback);
+
+  void restRequest(RestRequest request, RequestContext requestContext, Decider<RestResponseHeaders> dictator,
+                     Callback<RestResponse> callback);
 
   /**
    * Initiates asynchronous shutdown of the client. This method should block minimally, if at all.

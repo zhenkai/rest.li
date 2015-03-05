@@ -20,7 +20,11 @@ package com.linkedin.r2.transport.http.server;
 
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestRequestHeaders;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.streaming.Decider;
+import com.linkedin.r2.message.streaming.Deciders;
+import com.linkedin.r2.message.streaming.NoDecider;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -30,6 +34,7 @@ import com.linkedin.r2.transport.http.common.HttpBridge;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +44,7 @@ import java.util.Map;
 public class HttpDispatcher
 {
   private final TransportDispatcher _dispatcher;
+  private final Decider<RestRequestHeaders> _decider;
 
   /**
    * Construct a new instance which delegates to the specified dispatcher.
@@ -47,7 +53,18 @@ public class HttpDispatcher
    */
   public HttpDispatcher(TransportDispatcher dispatcher)
   {
+    this(dispatcher, Deciders.<RestRequestHeaders>noDecider());
+  }
+
+  /**
+   * Construct a new instance which delegates to the specified dispatcher.
+   *
+   * @param dispatcher the {@link TransportDispatcher} to which requests are delegated.
+   */
+  public HttpDispatcher(TransportDispatcher dispatcher, Decider<RestRequestHeaders> decider)
+  {
     _dispatcher = dispatcher;
+    _decider = decider;
   }
 
   /**
@@ -85,10 +102,15 @@ public class HttpDispatcher
       {
         default:
         case REST:
-          _dispatcher.handleRestRequest(HttpBridge.toRestRequest(req, headers),
-                                        wireAttrs,
-                                        context, HttpBridge.httpToRestCallback(callback)
-          );
+          if (_decider.shouldStream(req))
+          {
+            _dispatcher.handleRestRequest(HttpBridge.toRestRequest(req, headers),
+                                          wireAttrs, context, HttpBridge.httpToRestCallback(callback));
+          }
+          else
+          {
+
+          }
       }
     }
     catch (Exception e)
