@@ -1,39 +1,38 @@
 package com.linkedin.r2.message.streaming;
 
-import com.linkedin.r2.message.rest.RestHeaders;
+import com.linkedin.r2.message.rest.RequestHeaders;
 
 /**
  * @author Zhenkai Zhu
  */
 public final class Deciders
 {
-  @SuppressWarnings("unchecked")
-  public static <T extends RestHeaders> Decider<T> yesDecider()
+  public static StreamDecider alwaysStream()
   {
-    return (Decider<T>) YES_DECIDER;
+    return ALWAYS_STREAM;
   }
 
-  @SuppressWarnings("unchecked")
-  public static <T extends RestHeaders> Decider<T> noDecider()
+  public static StreamDecider noStream()
   {
-    return (Decider<T>) NO_DECIDER;
+    return NO_STREAM;
   }
 
-  private static final Decider YES_DECIDER = new Decider<RestHeaders>()
+
+  private static final StreamDecider ALWAYS_STREAM = new StreamDecider()
   {
     @Override
-    public boolean shouldStream(RestHeaders headers)
+    public StreamDecision decide(RequestHeaders headers)
     {
-      return true;
+      return StreamDecision.STREAM_ENTITY;
     }
   };
 
-  private static final Decider NO_DECIDER = new Decider<RestHeaders>()
+  private static final StreamDecider NO_STREAM = new StreamDecider()
   {
     @Override
-    public boolean shouldStream(RestHeaders headers)
+    public StreamDecision decide(RequestHeaders headers)
     {
-      return false;
+      return StreamDecision.FULL_ENTITY;
     }
   };
 

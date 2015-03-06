@@ -3,7 +3,7 @@ package com.linkedin.r2.message.rest;
 /**
  * @author Zhenkai Zhu
  */
-public interface RestRequestHeaders extends RestHeaders
+public interface RequestHeaders extends RestHeaders
 {
   /**
    * Returns the REST method for this request.

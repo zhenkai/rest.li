@@ -20,7 +20,6 @@ package com.linkedin.r2.message.rest;
 
 import java.util.Collections;
 
-import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.Response;
 import com.linkedin.r2.message.streaming.EntityStreams;
 
@@ -35,7 +34,7 @@ import com.linkedin.r2.message.streaming.EntityStreams;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface StreamResponse extends RestMessage, Response, RestResponseHeaders
+public interface StreamResponse extends RestMessage, Response, ResponseHeaders
 {
   StreamResponse NO_RESPONSE = new StreamResponseImpl(
       EntityStreams.emptyStream(), Collections.<String, String>emptyMap(), Collections.<String>emptyList(), 0);

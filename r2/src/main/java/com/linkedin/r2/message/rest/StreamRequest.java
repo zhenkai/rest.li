@@ -29,7 +29,7 @@ import com.linkedin.r2.message.Request;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface StreamRequest extends RestMessage, Request, RestRequestHeaders
+public interface StreamRequest extends RestMessage, Request, RequestHeaders
 {
 
   /**
