@@ -21,7 +21,7 @@ package com.linkedin.r2.message;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface Response extends Message
+public interface Response extends StreamMessage
 {
   /**
    * Returns a {@link ResponseBuilder}, which provides a means of constructing a new response using

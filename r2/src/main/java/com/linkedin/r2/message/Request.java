@@ -23,7 +23,7 @@ import java.net.URI;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface Request extends Message
+public interface Request extends StreamMessage
 {
   /**
    * Returns the URI for this request.

@@ -26,7 +26,7 @@ import java.net.URI;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RequestBuilder<B extends RequestBuilder<B>> extends MessageBuilder<B>
+public interface RequestBuilder<B extends RequestBuilder<B>> extends StreamMessageBuilder<B>
 {
   /**
    * Sets the URI for this request.
@@ -42,24 +42,6 @@ public interface RequestBuilder<B extends RequestBuilder<B>> extends MessageBuil
    * @return the URI for this request
    */
   URI getURI();
-
-  /**
-   * Constructs an immutable {@link Request} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change the underlying message.
-   *
-   * @param entity the bytestring entity for this message
-   * @return a Request from the settings in this builder
-   */
-  Request build(ByteString entity);
-
-  /**
-   * Similar to {@link #build}, but the returned Request is in canonical form.
-   *
-   * @param entity the bytestring entity for this message
-   * @return a Request from the settings in this builder.
-   */
-  Request buildCanonical(ByteString entity);
-
 
   /**
    * Constructs an {@link Request} using the settings configured in this builder and the supplied EntityStream.

@@ -19,8 +19,7 @@ package com.linkedin.r2.message.rest;
 
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.Message;
-import com.linkedin.r2.message.MessageBuilder;
+import com.linkedin.r2.message.StreamMessageBuilder;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.util.List;
@@ -31,7 +30,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends MessageBuilder<B>
+public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends StreamMessageBuilder<B>
 {
   /**
    * Replaces the headers in this message with a copy of the supplied headers. Changes to the

@@ -18,7 +18,7 @@
 package com.linkedin.r2.message;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.util.ArgumentUtil;
 
 /**
  * An object that builds new messages (rest/rpc, request/response).<p/>
@@ -46,41 +46,26 @@ import com.linkedin.r2.message.streaming.EntityStream;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface MessageBuilder<B extends MessageBuilder<B>>
+public interface MessageBuilder<B extends MessageBuilder<B>> extends StreamMessageBuilder<B>
 {
+  B setEntity(ByteString entity);
+
+  B setEntity(byte[] entity);
+
+  ByteString getEntity();
 
   /**
    * Constructs an immutable {@link Message} using the settings configured in this builder.
    * Subsequent changes to this builder will not change the underlying message.
    *
-   * @param entity the bytestring entity for this message
    * @return a Message from the settings in this builder
    */
-  Message build(ByteString entity);
+  Message build();
 
   /**
    * Similar to {@link #build}, but the returned Message is in canonical form.
    *
-   * @param entity the bytestring entity for this message
    * @return a Message from the settings in this builder.
    */
-  Message buildCanonical(ByteString entity);
-
-
-  /**
-   * Constructs an {@link Message} using the settings configured in this builder and the supplied EntityStream.
-   * Subsequent changes to this builder will not change the underlying message.
-   *
-   * @param stream the entity stream for this message
-   * @return a Message from the settings in this builder and the supplied EntityStream
-   */
-  Message build(EntityStream stream);
-
-  /**
-   * Similar to {@link #build}, but the returned Message is in canonical form.
-   *
-   * @param stream the entity stream for this message
-   * @return a Message from the settings in this builder and the supplied EntityStream
-   */
-  Message buildCanonical(EntityStream stream);
+  Message buildCanonical();
 }

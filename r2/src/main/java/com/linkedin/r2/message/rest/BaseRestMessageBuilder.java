@@ -18,8 +18,7 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.r2.message.BaseMessageBuilder;
-import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.message.BaseStreamMessageBuilder;
 import com.linkedin.util.ArgumentUtil;
 
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ import java.util.TreeMap;
  * @version $Revision$
  */
 public abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>>
-    extends BaseMessageBuilder<B>
+    extends BaseStreamMessageBuilder<B>
     implements RestMessageBuilder<B>
 {
   private static final String CANONICAL_REGEX = "[ \t\n\r]+";

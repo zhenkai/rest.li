@@ -19,6 +19,7 @@ package com.linkedin.r2.message.rest;
 
 
 import com.linkedin.r2.message.Message;
+import com.linkedin.r2.message.StreamMessage;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestMessage extends RestHeaders, Message
+public interface RestMessage extends RestHeaders, StreamMessage
 {
   /**
    * Returns a {@link RestMessageBuilder}, which provides a means of constructing a new message using

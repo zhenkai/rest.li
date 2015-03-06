@@ -24,26 +24,8 @@ import com.linkedin.r2.message.streaming.EntityStream;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface ResponseBuilder<B extends ResponseBuilder<B>> extends MessageBuilder<B>
+public interface ResponseBuilder<B extends ResponseBuilder<B>> extends StreamMessageBuilder<B>
 {
-  /**
-   * Constructs an immutable {@link Response} using the settings configured in this builder.
-   * Subsequent changes to this builder will not change the underlying message.
-   *
-   * @param entity the bytestring entity for this message
-   * @return a Response from the settings in this builder
-   */
-  Response build(ByteString entity);
-
-  /**
-   * Similar to {@link #build}, but the returned Response is in canonical form.
-   *
-   * @param entity the bytestring entity for this message
-   * @return a Response from the settings in this builder.
-   */
-  Response buildCanonical(ByteString entity);
-
-
   /**
    * Constructs an {@link Response} using the settings configured in this builder and the supplied EntityStream.
    * Subsequent changes to this builder will not change the underlying message.
