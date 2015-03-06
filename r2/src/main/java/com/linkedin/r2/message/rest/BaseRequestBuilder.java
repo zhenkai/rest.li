@@ -31,7 +31,7 @@ import java.net.URI;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public abstract class BaseRequestBuilder<B extends BaseRequestBuilder<B>>
+/* package private */ abstract class BaseRequestBuilder<B extends BaseRequestBuilder<B>>
         extends BaseRestMessageBuilder<B>
         implements RequestBuilder<B>, RestMessageBuilder<B>
 {

@@ -7,7 +7,7 @@ import java.net.URI;
 /**
  * @author Zhenkai Zhu
  */
-public class StreamRequestBuilder extends BaseRequestBuilder<StreamRequestBuilder>
+public final class StreamRequestBuilder extends BaseRequestBuilder<StreamRequestBuilder>
 {
   /**
    * Constructs a new builder using the given uri.

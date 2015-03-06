@@ -1,12 +1,13 @@
 package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.util.ArgumentUtil;
 
 /**
  * @author Zhenkai Zhu
  */
-public final class RestResponseBuilder extends StreamResponseBuilder
+public final class RestResponseBuilder extends BaseResponseBuilder<RestResponseBuilder>
 {
   private ByteString _entity = ByteString.empty();
 
@@ -47,5 +48,17 @@ public final class RestResponseBuilder extends StreamResponseBuilder
   public RestResponse buildCanonical()
   {
     return new RestResponseImpl(_entity, getCanonicalHeaders(), getCanonicalCookies(), getStatus());
+  }
+
+  @Override
+  public StreamResponse build(EntityStream entityStream)
+  {
+    return new StreamResponseImpl(entityStream, getHeaders(), getCookies(), getStatus());
+  }
+
+  @Override
+  public StreamResponse buildCanonical(EntityStream entityStream)
+  {
+    return new StreamResponseImpl(entityStream, getCanonicalHeaders(), getCanonicalCookies(), getStatus());
   }
 }

@@ -36,7 +36,7 @@ import java.util.TreeMap;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>>
+/* package private */ abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>>
     extends BaseStreamMessageBuilder<B>
     implements RestMessageBuilder<B>
 {
