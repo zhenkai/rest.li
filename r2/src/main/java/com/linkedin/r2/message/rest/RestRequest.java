@@ -7,4 +7,9 @@ import com.linkedin.r2.message.Message;
  */
 public interface RestRequest extends StreamRequest, Message
 {
+  @Override
+  RestRequestBuilder builder();
+
+  @Override
+  RestRequestBuilder requestBuilder();
 }
