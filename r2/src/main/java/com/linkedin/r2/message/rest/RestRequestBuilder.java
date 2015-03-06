@@ -1,6 +1,7 @@
 package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.util.ArgumentUtil;
 
 import java.net.URI;
@@ -8,7 +9,7 @@ import java.net.URI;
 /**
  * @author Zhenkai Zhu
  */
-public final class RestRequestBuilder extends StreamRequestBuilder
+public final class RestRequestBuilder extends BaseRequestBuilder<RestRequestBuilder>
 {
   private ByteString _entity = ByteString.empty();
 
@@ -52,5 +53,17 @@ public final class RestRequestBuilder extends StreamRequestBuilder
   public RestRequest buildCanonical()
   {
     return new RestRequestImpl(_entity, getCanonicalHeaders(), getCanonicalCookies(), getURI(), getMethod());
+  }
+
+  @Override
+  public StreamRequest build(EntityStream entityStream)
+  {
+    return new StreamRequestImpl(entityStream, getHeaders(), getCookies(), getURI(), getMethod());
+  }
+
+  @Override
+  public StreamRequest buildCanonical(EntityStream entityStream)
+  {
+    return new StreamRequestImpl(entityStream, getCanonicalHeaders(), getCanonicalCookies(), getURI().normalize(), getMethod());
   }
 }

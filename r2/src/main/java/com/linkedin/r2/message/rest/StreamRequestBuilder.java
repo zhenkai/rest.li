@@ -1,44 +1,14 @@
-/*
-   Copyright (c) 2012 LinkedIn Corp.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
-/* $Id$ */
 package com.linkedin.r2.message.rest;
 
-
-import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.RequestBuilder;
-import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.message.streaming.EntityStream;
-import com.linkedin.util.ArgumentUtil;
 
 import java.net.URI;
 
-
 /**
- * @author Chris Pettitt
- * @version $Revision$
+ * @author Zhenkai Zhu
  */
-public class StreamRequestBuilder
-        extends BaseRestMessageBuilder<StreamRequestBuilder>
-        implements RequestBuilder<StreamRequestBuilder>, RestMessageBuilder<StreamRequestBuilder>
+public class StreamRequestBuilder extends BaseRequestBuilder<StreamRequestBuilder>
 {
-  private URI _uri;
-
-  private String _method = RestMethod.GET;
-
   /**
    * Constructs a new builder using the given uri.
    *
@@ -46,7 +16,7 @@ public class StreamRequestBuilder
    */
   public StreamRequestBuilder(URI uri)
   {
-    setURI(uri);
+    super(uri);
   }
 
   /**
@@ -58,62 +28,6 @@ public class StreamRequestBuilder
   public StreamRequestBuilder(StreamRequest request)
   {
     super(request);
-
-    setURI(request.getURI());
-    setMethod(request.getMethod());
-  }
-
-  @Override
-  public URI getURI()
-  {
-    return _uri;
-  }
-
-  @Override
-  public StreamRequestBuilder setURI(URI uri)
-  {
-    ArgumentUtil.notNull(uri, "uri");
-
-    _uri = uri;
-    return this;
-  }
-
-  /**
-   * Sets the REST method for this request.
-   *
-   * @param method the REST method to set
-   * @return this builder
-   * @see com.linkedin.r2.message.rest.RestMethod
-   */
-  public StreamRequestBuilder setMethod(String method)
-  {
-    ArgumentUtil.notNull(method, "method");
-
-    _method = method;
-    return this;
-  }
-
-  /**
-   * Returns the REST method for this request.
-   *
-   * @return the REST method for this request
-   * @see com.linkedin.r2.message.rest.RestMethod
-   */
-  public String getMethod()
-  {
-    return _method;
-  }
-
-  @Override
-  protected void validateCookieHeader(String name)
-  {
-    if (name.equalsIgnoreCase(HttpConstants.REQUEST_COOKIE_HEADER_NAME))
-    {
-      String message = String.format(
-          "Header %s are not allowed to be added as a request header.",
-          HttpConstants.REQUEST_COOKIE_HEADER_NAME);
-      throw new IllegalArgumentException(message);
-    }
   }
 
   @Override

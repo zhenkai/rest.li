@@ -145,22 +145,4 @@ public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends Str
    * @return a list of values for the header or {@code null} if no values exist.
    */
   List<String> getHeaderValues(String name);
-
-
-  /**
-   * Constructs an RestMessage using the settings configured in this builder and the supplied EntityStream.
-   * Subsequent changes to this builder will not change the underlying message.
-   *
-   * @param stream the entity stream for this message
-   * @return a RestMessage from the settings in this builder and the supplied EntityStream
-   */
-  RestMessage build(EntityStream stream);
-
-  /**
-   * Similar to {@link #build}, but the returned RestMessage is in canonical form.
-   *
-   * @param stream the entity stream for this message
-   * @return a RestMessage from the settings in this builder and the supplied EntityStream
-   */
-  RestMessage buildCanonical(EntityStream stream);
 }
