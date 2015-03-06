@@ -54,7 +54,7 @@ public class HttpDispatcher
    */
   public HttpDispatcher(TransportDispatcher dispatcher)
   {
-    this(dispatcher, Deciders.<RestRequestHeaders>noDecider());
+    this(dispatcher, Deciders.<RestRequestHeaders>yesDecider());
   }
 
   /**

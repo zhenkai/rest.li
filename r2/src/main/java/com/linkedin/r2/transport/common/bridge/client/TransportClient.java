@@ -22,9 +22,7 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestRequestHeaders;
 import com.linkedin.r2.message.rest.RestResponse;
-import com.linkedin.r2.message.streaming.Decider;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 
 import java.util.Map;
@@ -47,7 +45,6 @@ public interface TransportClient
   void restRequest(RestRequest request,
                    RequestContext requestContext,
                    Map<String, String> wireAttrs,
-                   Decider<RestRequestHeaders> dictator,
                    TransportCallback<RestResponse> callback);
 
   /**
