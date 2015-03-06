@@ -18,13 +18,15 @@
 package com.linkedin.r2.transport.http.server;
 
 
+import com.linkedin.common.callback.Callback;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestHeaders;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.streaming.Decider;
 import com.linkedin.r2.message.streaming.Deciders;
-import com.linkedin.r2.message.streaming.NoDecider;
+import com.linkedin.r2.message.streaming.EntityAssembler;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -34,7 +36,6 @@ import com.linkedin.r2.transport.http.common.HttpBridge;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -88,9 +89,9 @@ public class HttpDispatcher
    * @param context the request context.
    * @param callback the callback to be invoked with the response or error.
    */
-  public void handleRequest(RestRequest req,
-                            RequestContext context,
-                            TransportCallback<RestResponse> callback)
+  public void handleRequest(final RestRequest req,
+                            final RequestContext context,
+                            final TransportCallback<RestResponse> callback)
   {
     final Map<String, String> headers = new HashMap<String, String>(req.getHeaders());
     final Map<String, String> wireAttrs = WireAttributeHelper.removeWireAttributes(headers);
@@ -109,7 +110,24 @@ public class HttpDispatcher
           }
           else
           {
+            Callback<ByteString> finishCallback = new Callback<ByteString>()
+            {
+              @Override
+              public void onError(Throwable e)
+              {
+                throw new RuntimeException("Error receiving the request entity.", e);
+              }
 
+              @Override
+              public void onSuccess(ByteString result)
+              {
+                RestRequest fullReq = req.builder().build(result);
+                _dispatcher.handleRestRequest(HttpBridge.toRestRequest(fullReq, headers),
+                    wireAttrs, context, HttpBridge.httpToRestCallback(callback));
+              }
+            };
+
+            req.getEntityStream().setReader(new EntityAssembler(finishCallback));
           }
       }
     }
