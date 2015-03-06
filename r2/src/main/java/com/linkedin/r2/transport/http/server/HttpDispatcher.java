@@ -18,15 +18,9 @@
 package com.linkedin.r2.transport.http.server;
 
 
-import com.linkedin.common.callback.Callback;
-import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestRequestHeaders;
 import com.linkedin.r2.message.rest.RestResponse;
-import com.linkedin.r2.message.streaming.Decider;
-import com.linkedin.r2.message.streaming.Deciders;
-import com.linkedin.r2.message.streaming.EntityAssembler;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -45,7 +39,6 @@ import java.util.Map;
 public class HttpDispatcher
 {
   private final TransportDispatcher _dispatcher;
-  private final Decider<RestRequestHeaders> _decider;
 
   /**
    * Construct a new instance which delegates to the specified dispatcher.
@@ -54,18 +47,7 @@ public class HttpDispatcher
    */
   public HttpDispatcher(TransportDispatcher dispatcher)
   {
-    this(dispatcher, Deciders.<RestRequestHeaders>yesDecider());
-  }
-
-  /**
-   * Construct a new instance which delegates to the specified dispatcher.
-   *
-   * @param dispatcher the {@link TransportDispatcher} to which requests are delegated.
-   */
-  public HttpDispatcher(TransportDispatcher dispatcher, Decider<RestRequestHeaders> decider)
-  {
     _dispatcher = dispatcher;
-    _decider = decider;
   }
 
   /**
@@ -89,9 +71,9 @@ public class HttpDispatcher
    * @param context the request context.
    * @param callback the callback to be invoked with the response or error.
    */
-  public void handleRequest(final RestRequest req,
-                            final RequestContext context,
-                            final TransportCallback<RestResponse> callback)
+  public void handleRequest(RestRequest req,
+                            RequestContext context,
+                            TransportCallback<RestResponse> callback)
   {
     final Map<String, String> headers = new HashMap<String, String>(req.getHeaders());
     final Map<String, String> wireAttrs = WireAttributeHelper.removeWireAttributes(headers);
@@ -103,32 +85,10 @@ public class HttpDispatcher
       {
         default:
         case REST:
-          if (_decider.shouldStream(req))
-          {
-            _dispatcher.handleRestRequest(HttpBridge.toRestRequest(req, headers),
-                                          wireAttrs, context, HttpBridge.httpToRestCallback(callback));
-          }
-          else
-          {
-            Callback<ByteString> finishCallback = new Callback<ByteString>()
-            {
-              @Override
-              public void onError(Throwable e)
-              {
-                throw new RuntimeException("Error receiving the request entity.", e);
-              }
-
-              @Override
-              public void onSuccess(ByteString result)
-              {
-                RestRequest fullReq = req.builder().build(result);
-                _dispatcher.handleRestRequest(HttpBridge.toRestRequest(fullReq, headers),
-                    wireAttrs, context, HttpBridge.httpToRestCallback(callback));
-              }
-            };
-
-            req.getEntityStream().setReader(new EntityAssembler(finishCallback));
-          }
+          _dispatcher.handleRestRequest(HttpBridge.toRestRequest(req, headers),
+                                        wireAttrs,
+                                        context, HttpBridge.httpToRestCallback(callback)
+          );
       }
     }
     catch (Exception e)
