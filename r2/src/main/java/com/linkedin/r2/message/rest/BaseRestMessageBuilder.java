@@ -180,7 +180,7 @@ public abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>
    */
   public B unsafeAddHeaderValue(String name, String value)
   {
-    // This is "safe" because we explicitly state in MessageBuilder that the builder is not thread
+    // This is "safe" because we explicitly state in StreamMessageBuilder that the builder is not thread
     // safe and proper external synchronization must be used to use instances across threads.
     final String current = _headers.get(name);
 

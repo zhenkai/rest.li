@@ -26,7 +26,7 @@ import com.linkedin.r2.message.streaming.EntityStream;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public final class StreamResponseBuilder
+public class StreamResponseBuilder
         extends BaseRestMessageBuilder<StreamResponseBuilder>
         implements ResponseBuilder<StreamResponseBuilder>, RestMessageBuilder<StreamResponseBuilder>
 {
