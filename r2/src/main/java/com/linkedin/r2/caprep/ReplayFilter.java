@@ -20,7 +20,7 @@ package com.linkedin.r2.caprep;
 
 import com.linkedin.r2.caprep.db.DbSource;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ReplayFilter implements RestRequestFilter
+public class ReplayFilter implements StreamRequestFilter
 {
   private static final Logger _log = LoggerFactory.getLogger(ReplayFilter.class);
 

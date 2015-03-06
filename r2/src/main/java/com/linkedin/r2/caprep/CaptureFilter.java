@@ -21,7 +21,7 @@ package com.linkedin.r2.caprep;
 import com.linkedin.r2.caprep.db.DbSink;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.RequestFilter;
-import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class CaptureFilter implements RequestFilter, RestResponseFilter
+public class CaptureFilter implements RequestFilter, StreamResponseFilter
 {
   private static final Logger _log = LoggerFactory.getLogger(CaptureFilter.class);
 

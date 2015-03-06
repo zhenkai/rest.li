@@ -20,13 +20,15 @@ package com.linkedin.r2.filter;
 import com.linkedin.r2.filter.message.MessageFilter;
 import com.linkedin.r2.filter.message.RequestFilter;
 import com.linkedin.r2.filter.message.ResponseFilter;
-import com.linkedin.r2.filter.message.rest.RestRequestFilter;
-import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,71 +40,57 @@ import java.util.Map;
  */
 /* package private */ class FilterChainImpl implements FilterChain
 {
-  private final List<MessageFilter> _rpcFilters;
   private final List<MessageFilter> _restFilters;
 
   public FilterChainImpl()
   {
-    _rpcFilters = Collections.emptyList();
     _restFilters = Collections.emptyList();
   }
 
-  private FilterChainImpl(List<MessageFilter> rpcFilters, List<MessageFilter> restFilters)
+  private FilterChainImpl(List<MessageFilter> restFilters)
   {
-    _rpcFilters = Collections.unmodifiableList(new ArrayList<MessageFilter>(rpcFilters));
     _restFilters = Collections.unmodifiableList(new ArrayList<MessageFilter>(restFilters));
   }
 
   @Override
   public FilterChain addFirst(Filter filter)
   {
-    return new FilterChainImpl(addFirstRpc(filter), addFirstRest(filter));
+    return new FilterChainImpl(addFirstRest(filter));
   }
 
   @Override
   public FilterChain addLast(Filter filter)
   {
-    return new FilterChainImpl(addLastRpc(filter), addLastRest(filter));
+    return new FilterChainImpl(addLastRest(filter));
   }
 
   @Override
-  public void onRestRequest(RestRequest req, RequestContext requestContext,
+  public void onRequest(StreamRequest req, RequestContext requestContext,
                             Map<String, String> wireAttrs)
   {
-    new FilterChainIterator<RestRequest, RestResponse>(_restFilters, 0)
+    new FilterChainIterator<StreamRequest, StreamResponse>(_restFilters, 0)
             .onRequest(req, requestContext, wireAttrs);
   }
 
   @Override
-  public void onRestResponse(RestResponse res, RequestContext requestContext,
+  public void onResponse(StreamResponse res, RequestContext requestContext,
                              Map<String, String> wireAttrs)
   {
-    new FilterChainIterator<RestRequest, RestResponse>(_restFilters, _restFilters.size())
+    new FilterChainIterator<StreamRequest, StreamResponse>(_restFilters, _restFilters.size())
             .onResponse(res, requestContext, wireAttrs);
   }
 
   @Override
-  public void onRestError(Exception ex, RequestContext requestContext,
+  public void onError(Exception ex, RequestContext requestContext,
                           Map<String, String> wireAttrs)
   {
-    new FilterChainIterator<RestRequest, RestResponse>(_restFilters, _restFilters.size())
+    new FilterChainIterator<StreamRequest, StreamResponse>(_restFilters, _restFilters.size())
             .onError(ex, requestContext, wireAttrs);
-  }
-
-  private List<MessageFilter> addFirstRpc(Filter filter)
-  {
-    return doAddFirst(_rpcFilters, adaptRpcFilter(filter));
   }
 
   private List<MessageFilter> addFirstRest(Filter filter)
   {
     return doAddFirst(_restFilters, adaptRestFilter(filter));
-  }
-
-  @Deprecated
-  private List<MessageFilter> addLastRpc(Filter filter)
-  {
-    return doAddLast(_rpcFilters, adaptRpcFilter(filter));
   }
 
   private List<MessageFilter> addLastRest(Filter filter)
@@ -126,37 +114,12 @@ import java.util.Map;
     return newFilters;
   }
 
-  private MessageFilter adaptRpcFilter(Filter filter)
-  {
-    final RequestFilter reqFilter;
-    if (filter instanceof RequestFilter)
-    {
-      reqFilter = (RequestFilter) filter;
-    }
-    else
-    {
-      reqFilter = null;
-    }
-
-    final ResponseFilter resFilter;
-    if (filter instanceof ResponseFilter)
-    {
-      resFilter = (ResponseFilter) filter;
-    }
-    else
-    {
-      resFilter = null;
-    }
-
-    return new ComposedFilter(reqFilter, resFilter);
-  }
-
   private static MessageFilter adaptRestFilter(Filter filter)
   {
     final RequestFilter reqFilter;
-    if (filter instanceof RestRequestFilter)
+    if (filter instanceof StreamRequestFilter)
     {
-      reqFilter = adaptRestRequestFilter((RestRequestFilter) filter);
+      reqFilter = adaptStreamRequestFilter((StreamRequestFilter) filter);
     }
     else if (filter instanceof RequestFilter)
     {
@@ -168,9 +131,9 @@ import java.util.Map;
     }
 
     final ResponseFilter resFilter;
-    if (filter instanceof RestResponseFilter)
+    if (filter instanceof StreamResponseFilter)
     {
-      resFilter = adaptRestResponseFilter((RestResponseFilter) filter);
+      resFilter = adaptStreamResponseFilter((StreamResponseFilter) filter);
     }
     else if (filter instanceof ResponseFilter)
     {
@@ -184,27 +147,27 @@ import java.util.Map;
     return new ComposedFilter(reqFilter, resFilter);
   }
 
-  private static RequestFilter adaptRestRequestFilter(final RestRequestFilter restFilter)
+  private static RequestFilter adaptStreamRequestFilter(final StreamRequestFilter restFilter)
   {
-    return new RestRequestFilterAdapter(restFilter);
+    return new StreamRequestFilterAdapter(restFilter);
   }
 
-  private static ResponseFilter adaptRestResponseFilter(final RestResponseFilter restFilter)
+  private static ResponseFilter adaptStreamResponseFilter(final StreamResponseFilter restFilter)
   {
-    return new RestResponseFilterAdapter(restFilter);
+    return new StreamResponseFilterAdapter(restFilter);
   }
 
   @SuppressWarnings("unchecked")
-  private static NextFilter<RestRequest, RestResponse> adaptRestNextFilter(NextFilter<?, ?> nextFilter)
+  private static NextFilter<StreamRequest, StreamResponse> adaptRestNextFilter(NextFilter<?, ?> nextFilter)
   {
-    return (NextFilter<RestRequest, RestResponse>)nextFilter;
+    return (NextFilter<StreamRequest, StreamResponse>)nextFilter;
   }
 
-  private static final class RestRequestFilterAdapter implements RequestFilter
+  private static final class StreamRequestFilterAdapter implements RequestFilter
   {
-    private final RestRequestFilter _restFilter;
+    private final StreamRequestFilter _restFilter;
 
-    private RestRequestFilterAdapter(RestRequestFilter restFilter)
+    private StreamRequestFilterAdapter(StreamRequestFilter restFilter)
     {
       _restFilter = restFilter;
     }
@@ -215,18 +178,18 @@ import java.util.Map;
                           Map<String, String> wireAttrs,
                           NextFilter<Request, Response> nextFilter)
     {
-      _restFilter.onRestRequest((RestRequest) req,
+      _restFilter.onRequest((StreamRequest) req,
                                 requestContext,
                                 wireAttrs,
                                 adaptRestNextFilter(nextFilter));
     }
   }
 
-  private static final class RestResponseFilterAdapter implements ResponseFilter
+  private static final class StreamResponseFilterAdapter implements ResponseFilter
   {
-    private final RestResponseFilter _restFilter;
+    private final StreamResponseFilter _restFilter;
 
-    private RestResponseFilterAdapter(RestResponseFilter restFilter)
+    private StreamResponseFilterAdapter(StreamResponseFilter restFilter)
     {
       _restFilter = restFilter;
     }
@@ -236,7 +199,7 @@ import java.util.Map;
                            Map<String, String> wireAttrs,
                            NextFilter<Request, Response> nextFilter)
     {
-      _restFilter.onRestResponse((RestResponse) res,
+      _restFilter.onResponse((StreamResponse) res,
                                  requestContext,
                                  wireAttrs,
                                  adaptRestNextFilter(nextFilter));
@@ -248,7 +211,7 @@ import java.util.Map;
                         Map<String, String> wireAttrs,
                         NextFilter<Request, Response> nextFilter)
     {
-      _restFilter.onRestError(ex,
+      _restFilter.onError(ex,
                               requestContext,
                               wireAttrs,
                               adaptRestNextFilter(nextFilter));

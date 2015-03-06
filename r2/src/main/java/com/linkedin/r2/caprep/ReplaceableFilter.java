@@ -23,8 +23,8 @@ import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.RequestFilter;
 import com.linkedin.r2.filter.message.ResponseFilter;
 import com.linkedin.r2.filter.message.rest.RestFilter;
-import com.linkedin.r2.filter.message.rest.RestRequestFilter;
-import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
@@ -83,9 +83,9 @@ public class ReplaceableFilter implements RestFilter
                             NextFilter<RestRequest, RestResponse> nextFilter)
   {
     final Filter filter = _filter;
-    if (filter instanceof RestRequestFilter)
+    if (filter instanceof StreamRequestFilter)
     {
-      ((RestRequestFilter) filter).onRestRequest(req, requestContext, wireAttrs, nextFilter);
+      ((StreamRequestFilter) filter).onRestRequest(req, requestContext, wireAttrs, nextFilter);
     }
     else
     {
@@ -100,9 +100,9 @@ public class ReplaceableFilter implements RestFilter
                              NextFilter<RestRequest, RestResponse> nextFilter)
   {
     final Filter filter = _filter;
-    if (filter instanceof RestResponseFilter)
+    if (filter instanceof StreamResponseFilter)
     {
-      ((RestResponseFilter) filter).onRestResponse(res, requestContext, wireAttrs, nextFilter);
+      ((StreamResponseFilter) filter).onRestResponse(res, requestContext, wireAttrs, nextFilter);
     }
     else
     {
@@ -117,9 +117,9 @@ public class ReplaceableFilter implements RestFilter
                           NextFilter<RestRequest, RestResponse> nextFilter)
   {
     final Filter filter = _filter;
-    if (filter instanceof RestResponseFilter)
+    if (filter instanceof StreamResponseFilter)
     {
-      ((RestResponseFilter) filter).onRestError(ex, requestContext, wireAttrs, nextFilter);
+      ((StreamResponseFilter) filter).onRestError(ex, requestContext, wireAttrs, nextFilter);
     }
     else
     {

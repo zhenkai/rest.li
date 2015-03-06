@@ -15,20 +15,15 @@
 */
 
 /* $Id$ */
-package com.linkedin.r2.filter;
+package com.linkedin.r2.filter.message.rest;
 
 /**
- * A marker interface for filters. This filter is the most generic and does not provide any
- * filtering capability. See {@link com.linkedin.r2.filter.message.MessageFilter},
- * {@link com.linkedin.r2.filter.message.rest.StreamFilter},
- * etc., for interfaces that do provide filtering capabilities.
+ * A filter that processes {@link com.linkedin.r2.message.rest.RestRequest}s and
+ * {@link com.linkedin.r2.message.rest.RestResponse}s.
  *
  * @author Chris Pettitt
- * @version $Revision$
- * @see com.linkedin.r2.filter.message.MessageFilter
- * @see com.linkedin.r2.filter.message.rest.StreamFilter
  */
-public interface Filter
+public interface StreamFilter extends StreamRequestFilter, StreamResponseFilter
 {
 
 }

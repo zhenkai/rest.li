@@ -19,7 +19,7 @@ package com.linkedin.r2.filter.transport;
 
 
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ResponseFilter implements RestResponseFilter
+public class ResponseFilter implements StreamResponseFilter
 {
   private static final String CALLBACK_ATTR = ResponseFilter.class.getName() + ".callback";
 

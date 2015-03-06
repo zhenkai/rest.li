@@ -2,7 +2,7 @@ package com.linkedin.r2.streaming.sample;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -20,7 +20,7 @@ import java.util.Map;
  *
  * @author Zhenkai Zhu
  */
-public class LoggingFilter implements RestResponseFilter
+public class LoggingFilter implements StreamResponseFilter
 {
   private static final Logger _log = LoggerFactory.getLogger(LoggingFilter.class);
 
