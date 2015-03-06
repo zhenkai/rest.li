@@ -39,13 +39,4 @@ public interface Message extends StreamMessage
    * @return the entity for this message
    */
   ByteString getEntity();
-
-  /**
-   * Returns a {@link MessageBuilder}, which provides a means of constructing a new message using
-   * this message as a starting point. Changes made with the builder are not reflected by this
-   * message instance.
-   *
-   * @return a builder for this message
-   */
-  MessageBuilder<? extends MessageBuilder<?>> builder();
 }

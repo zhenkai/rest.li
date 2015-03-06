@@ -1,67 +1,41 @@
-/*
-   Copyright (c) 2012 LinkedIn Corp.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
-/* $Id$ */
 package com.linkedin.r2.message.rest;
-
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.WriteHandle;
+import com.linkedin.r2.message.streaming.Writer;
+import com.linkedin.util.ArgumentUtil;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-
 /**
- * @author Chris Pettitt
- * @version $Revision$
+ * @author Zhenkai Zhu
  */
-/* package private */ final class RestRequestImpl extends BaseRestMessage implements RestRequest
+/* package private */ final class RestRequestImpl extends StreamRequestImpl implements RestRequest
 {
-  private final URI _uri;
+  private final ByteString _entity;
 
-  private final String _method;
-
-  /* package private */ RestRequestImpl(
-      ByteString entity, Map<String, String> headers, List<String> cookies, URI uri, String method)
+  /* package private */ RestRequestImpl(ByteString entity, Map<String, String> headers,
+                                        List<String> cookies, URI uri, String method)
   {
-    super(entity, headers, cookies);
-
-    assert uri != null;
-    assert method != null;
-
-    _uri = uri;
-    _method = method;
+    super(EntityStreams.emptyStream(), headers, cookies, uri, method);
+    ArgumentUtil.notNull(entity, "entity");
+    _entity = entity;
   }
 
-  /* package private */ RestRequestImpl(EntityStream stream, Map<String, String> headers, List<String> cookies, URI uri, String method)
+  @Override
+  public ByteString getEntity()
   {
-    super(stream, headers, cookies);
-
-    assert uri != null;
-    assert method != null;
-
-    _uri = uri;
-    _method = method;
+    return _entity;
   }
 
-  public URI getURI()
+  @Override
+  public EntityStream getEntityStream()
   {
-    return _uri;
+    return EntityStreams.newEntityStream(new ByteStringWriter(_entity));
   }
 
   @Override
@@ -74,11 +48,6 @@ import java.util.Map;
   public RestRequestBuilder requestBuilder()
   {
     return builder();
-  }
-
-  public String getMethod()
-  {
-    return _method;
   }
 
   @Override
@@ -98,15 +67,14 @@ import java.util.Map;
     }
 
     RestRequestImpl that = (RestRequestImpl) o;
-    return _method.equals(that._method) && _uri.equals(that._uri);
+    return _entity.equals(that._entity);
   }
 
   @Override
   public int hashCode()
   {
     int result = super.hashCode();
-    result = 31 * result + _uri.hashCode();
-    result = 31 * result + _method.hashCode();
+    result = result + 31 * _entity.hashCode();
     return result;
   }
 
@@ -119,12 +87,47 @@ import java.util.Map;
         .append("cookies=")
         .append(getCookies())
         .append(",uri=")
-        .append(_uri)
+        .append(getURI())
         .append(",method=")
-        .append(_method)
+        .append(getMethod())
         .append(",entityLength=")
-        .append(getEntity().length())
+        .append(_entity.length())
         .append("]");
     return builder.toString();
+  }
+
+  /**
+   * A private writer that produce content based on the ByteString body
+   */
+  private static class ByteStringWriter implements Writer
+  {
+    final ByteString _content;
+    private int _offset;
+    private WriteHandle _wh;
+
+    ByteStringWriter(ByteString content)
+    {
+      _content = content;
+      _offset = 0;
+    }
+
+    public void onInit(WriteHandle wh)
+    {
+      _wh = wh;
+    }
+
+    public void onWritePossible()
+    {
+      while(_wh.remainingCapacity() > 0 && _offset < _content.length())
+      {
+        int bytesToWrite = Math.min(_wh.remainingCapacity(), _content.length() - _offset);
+        _wh.write(_content.slice(_offset, bytesToWrite));
+        _offset += bytesToWrite;
+        if (_offset == _content.length())
+        {
+          _wh.done();
+        }
+      }
+    }
   }
 }

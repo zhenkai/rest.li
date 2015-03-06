@@ -146,23 +146,6 @@ public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends Str
    */
   List<String> getHeaderValues(String name);
 
-  /**
-   * Constructs an immutable RestMessage using the settings configured in this builder.
-   * Subsequent changes to this builder will not change the underlying message.
-   *
-   * @param entity the bytestring entity for this message
-   * @return a RestMessage from the settings in this builder
-   */
-  RestMessage build(ByteString entity);
-
-  /**
-   * Similar to {@link #build}, but the returned RestMessage is in canonical form.
-   *
-   * @param entity the bytestring entity for this message
-   * @return a RestMessage from the settings in this builder.
-   */
-  RestMessage buildCanonical(ByteString entity);
-
 
   /**
    * Constructs an RestMessage using the settings configured in this builder and the supplied EntityStream.
