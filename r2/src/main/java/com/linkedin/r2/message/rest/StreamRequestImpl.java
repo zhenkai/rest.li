@@ -53,15 +53,9 @@ import java.util.Map;
   }
 
   @Override
-  public StreamRequestBuilder builder()
-  {
-    return new StreamRequestBuilder(this);
-  }
-
-  @Override
   public StreamRequestBuilder requestBuilder()
   {
-    return builder();
+    return new StreamRequestBuilder(this);
   }
 
   public String getMethod()

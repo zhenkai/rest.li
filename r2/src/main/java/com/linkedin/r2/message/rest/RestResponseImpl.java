@@ -42,12 +42,6 @@ import java.util.Map;
   }
 
   @Override
-  public RestResponseBuilder responseBuilder()
-  {
-    return builder();
-  }
-
-  @Override
   public boolean equals(Object o)
   {
     if (this == o)

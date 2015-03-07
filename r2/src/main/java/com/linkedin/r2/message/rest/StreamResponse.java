@@ -27,25 +27,12 @@ import com.linkedin.r2.message.streaming.EntityStreams;
 /**
  * An object that contains details of a REST response.<p/>
  *
- * New instances can be created using the
- * {@link BaseResponseBuilder}. An existing RestResponse can be used as a prototype for
- * building a new StreamResponse using the {@link #builder()} method.
- *
  * @author Chris Pettitt
+ * @author Zhenkai Zhu
  * @version $Revision$
  */
 public interface StreamResponse extends RestMessage, Response, ResponseHeaders
 {
   StreamResponse NO_RESPONSE = new StreamResponseImpl(
       EntityStreams.emptyStream(), Collections.<String, String>emptyMap(), Collections.<String>emptyList(), 0);
-
-  /**
-   * Returns a {@link BaseResponseBuilder}, which provides a means of constructing a new
-   * response using this response as a starting point. Changes made with the builder are
-   * not reflected by this response instance.
-   *
-   * @return a builder for this response
-   */
-  @Override
-  BaseResponseBuilder builder();
 }

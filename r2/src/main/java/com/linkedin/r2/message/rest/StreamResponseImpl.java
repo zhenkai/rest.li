@@ -44,15 +44,9 @@ import java.util.Map;
   }
 
   @Override
-  public StreamResponseBuilder builder()
-  {
-    return new StreamResponseBuilder(this);
-  }
-
-  @Override
   public StreamResponseBuilder responseBuilder()
   {
-    return builder();
+    return new StreamResponseBuilder(this);
   }
 
   @Override

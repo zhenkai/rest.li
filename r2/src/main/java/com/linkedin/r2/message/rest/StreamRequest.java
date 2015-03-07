@@ -22,23 +22,10 @@ import com.linkedin.r2.message.Request;
 /**
  * An object that contains details of a REST request.<p/>
  *
- * New instances can be created using the
- * {@link StreamRequestBuilder}. An existing RestRequest can be used as a prototype for
- * building a new RestRequest using the {@link #builder()} method.
- *
  * @author Chris Pettitt
+ * @author Zhenkai Zhu
  * @version $Revision$
  */
 public interface StreamRequest extends RestMessage, Request, RequestHeaders
 {
-
-  /**
-   * Returns a {@link StreamRequestBuilder}, which provides a means of constructing a new request using
-   * this request as a starting point. Changes made with the builder are not reflected by this
-   * request instance.
-   *
-   * @return a builder for this request
-   */
-  @Override
-  StreamRequestBuilder builder();
 }

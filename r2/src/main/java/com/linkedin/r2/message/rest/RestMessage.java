@@ -28,11 +28,6 @@ import java.util.Map;
 /**
  * An object that represents a REST message, either a request or a response.<p/>
  *
- * Instances of RestMessage are immutable and thread-safe. It is possible to clone an existing
- * RestMessage, modify details in the copy, and create a new RestMessage instance that has the
- * concrete type of the original message (request or response) using the {@link #restBuilder()}
- * method.
- *
  * @see RestRequest
  * @see RestResponse
  * @author Chris Pettitt
@@ -40,12 +35,4 @@ import java.util.Map;
  */
 public interface RestMessage extends RestHeaders, StreamMessage
 {
-  /**
-   * Returns a {@link RestMessageBuilder}, which provides a means of constructing a new message using
-   * this message as a starting point. Changes made with the builder are not reflected by this
-   * message instance.
-   *
-   * @return a builder for this message
-   */
-  RestMessageBuilder<? extends RestMessageBuilder<?>> restBuilder();
 }

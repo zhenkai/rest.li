@@ -22,10 +22,6 @@ import com.linkedin.data.ByteString;
 /**
  * An object that represents a message, either request or response.<p/>
  *
- * Messages are immutable and thread-safe. It is possible to clone an existing Message, modify
- * details in the copy, and create a new Message instance that has the concrete type of the original
- * message (REST/RPC, request/response) using the {@link #builder()} method.
- *
  * @see com.linkedin.r2.message.rest.RestRequest
  * @see com.linkedin.r2.message.rest.RestResponse
  * @author Chris Pettitt

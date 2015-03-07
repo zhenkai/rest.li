@@ -7,9 +7,5 @@ import com.linkedin.r2.message.Message;
  */
 public interface RestResponse extends StreamResponse, Message
 {
-  @Override
   RestResponseBuilder builder();
-
-  @Override
-  RestResponseBuilder responseBuilder();
 }

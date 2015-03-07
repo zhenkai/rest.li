@@ -47,15 +47,6 @@ import com.linkedin.r2.message.streaming.EntityStream;
   }
 
   @Override
-  public RestMessageBuilder<? extends RestMessageBuilder<?>> restBuilder()
-  {
-    return builder();
-  }
-
-  @Override
-  public abstract RestMessageBuilder<? extends RestMessageBuilder<?>> builder();
-
-  @Override
   public String getHeader(String name)
   {
     return _headers.get(name);
