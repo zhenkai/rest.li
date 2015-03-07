@@ -35,7 +35,7 @@ public interface Request extends StreamMessage
   /**
    * Returns a {@link RequestBuilder}, which provides a means of constructing a new request using
    * this request as a starting point. Changes made with the builder are not reflected by this
-   * request instance. The concrete type (for example {@link com.linkedin.r2.message.rpc.RpcRequest})
+   * request instance. The concrete type
    * is preserved when building the new request.
    *
    * @return a builder for this request
