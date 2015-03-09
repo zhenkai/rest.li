@@ -55,7 +55,7 @@ import com.linkedin.r2.message.streaming.EntityStream;
    * @return this builder
    * @see com.linkedin.r2.message.rest.RestStatus
    */
-  public BaseResponseBuilder setStatus(int status)
+  public B setStatus(int status)
   {
     _status = status;
     return thisBuilder();
