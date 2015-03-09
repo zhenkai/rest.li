@@ -40,35 +40,35 @@ import java.util.Map;
  */
 /* package private */ class FilterChainImpl implements FilterChain
 {
-  private final List<MessageFilter> _restFilters;
+  private final List<MessageFilter> _streamFilters;
 
   public FilterChainImpl()
   {
-    _restFilters = Collections.emptyList();
+    _streamFilters = Collections.emptyList();
   }
 
-  private FilterChainImpl(List<MessageFilter> restFilters)
+  private FilterChainImpl(List<MessageFilter> streamFilters)
   {
-    _restFilters = Collections.unmodifiableList(new ArrayList<MessageFilter>(restFilters));
+    _streamFilters = Collections.unmodifiableList(new ArrayList<MessageFilter>(streamFilters));
   }
 
   @Override
   public FilterChain addFirst(Filter filter)
   {
-    return new FilterChainImpl(addFirstRest(filter));
+    return new FilterChainImpl(addFirstStream(filter));
   }
 
   @Override
   public FilterChain addLast(Filter filter)
   {
-    return new FilterChainImpl(addLastRest(filter));
+    return new FilterChainImpl(addLastStream(filter));
   }
 
   @Override
   public void onRequest(StreamRequest req, RequestContext requestContext,
                             Map<String, String> wireAttrs)
   {
-    new FilterChainIterator<StreamRequest, StreamResponse>(_restFilters, 0)
+    new FilterChainIterator<StreamRequest, StreamResponse>(_streamFilters, 0)
             .onRequest(req, requestContext, wireAttrs);
   }
 
@@ -76,7 +76,7 @@ import java.util.Map;
   public void onResponse(StreamResponse res, RequestContext requestContext,
                              Map<String, String> wireAttrs)
   {
-    new FilterChainIterator<StreamRequest, StreamResponse>(_restFilters, _restFilters.size())
+    new FilterChainIterator<StreamRequest, StreamResponse>(_streamFilters, _streamFilters.size())
             .onResponse(res, requestContext, wireAttrs);
   }
 
@@ -84,18 +84,18 @@ import java.util.Map;
   public void onError(Exception ex, RequestContext requestContext,
                           Map<String, String> wireAttrs)
   {
-    new FilterChainIterator<StreamRequest, StreamResponse>(_restFilters, _restFilters.size())
+    new FilterChainIterator<StreamRequest, StreamResponse>(_streamFilters, _streamFilters.size())
             .onError(ex, requestContext, wireAttrs);
   }
 
-  private List<MessageFilter> addFirstRest(Filter filter)
+  private List<MessageFilter> addFirstStream(Filter filter)
   {
-    return doAddFirst(_restFilters, adaptRestFilter(filter));
+    return doAddFirst(_streamFilters, adaptStreamFilter(filter));
   }
 
-  private List<MessageFilter> addLastRest(Filter filter)
+  private List<MessageFilter> addLastStream(Filter filter)
   {
-    return doAddLast(_restFilters, adaptRestFilter(filter));
+    return doAddLast(_streamFilters, adaptStreamFilter(filter));
   }
 
   private <T> List<T> doAddFirst(List<T> list, T obj)
@@ -114,7 +114,7 @@ import java.util.Map;
     return newFilters;
   }
 
-  private static MessageFilter adaptRestFilter(Filter filter)
+  private static MessageFilter adaptStreamFilter(Filter filter)
   {
     final RequestFilter reqFilter;
     if (filter instanceof StreamRequestFilter)
@@ -147,29 +147,29 @@ import java.util.Map;
     return new ComposedFilter(reqFilter, resFilter);
   }
 
-  private static RequestFilter adaptStreamRequestFilter(final StreamRequestFilter restFilter)
+  private static RequestFilter adaptStreamRequestFilter(final StreamRequestFilter streamFilter)
   {
-    return new StreamRequestFilterAdapter(restFilter);
+    return new StreamRequestFilterAdapter(streamFilter);
   }
 
-  private static ResponseFilter adaptStreamResponseFilter(final StreamResponseFilter restFilter)
+  private static ResponseFilter adaptStreamResponseFilter(final StreamResponseFilter streamFilter)
   {
-    return new StreamResponseFilterAdapter(restFilter);
+    return new StreamResponseFilterAdapter(streamFilter);
   }
 
   @SuppressWarnings("unchecked")
-  private static NextFilter<StreamRequest, StreamResponse> adaptRestNextFilter(NextFilter<?, ?> nextFilter)
+  private static NextFilter<StreamRequest, StreamResponse> adaptStreamNextFilter(NextFilter<?, ?> nextFilter)
   {
     return (NextFilter<StreamRequest, StreamResponse>)nextFilter;
   }
 
   private static final class StreamRequestFilterAdapter implements RequestFilter
   {
-    private final StreamRequestFilter _restFilter;
+    private final StreamRequestFilter _streamFilter;
 
-    private StreamRequestFilterAdapter(StreamRequestFilter restFilter)
+    private StreamRequestFilterAdapter(StreamRequestFilter streamFilter)
     {
-      _restFilter = restFilter;
+      _streamFilter = streamFilter;
     }
 
     @Override
@@ -178,20 +178,20 @@ import java.util.Map;
                           Map<String, String> wireAttrs,
                           NextFilter<Request, Response> nextFilter)
     {
-      _restFilter.onRequest((StreamRequest) req,
-                                requestContext,
-                                wireAttrs,
-                                adaptRestNextFilter(nextFilter));
+      _streamFilter.onRequest((StreamRequest) req,
+          requestContext,
+          wireAttrs,
+          adaptStreamNextFilter(nextFilter));
     }
   }
 
   private static final class StreamResponseFilterAdapter implements ResponseFilter
   {
-    private final StreamResponseFilter _restFilter;
+    private final StreamResponseFilter _streamFilter;
 
-    private StreamResponseFilterAdapter(StreamResponseFilter restFilter)
+    private StreamResponseFilterAdapter(StreamResponseFilter streamFilter)
     {
-      _restFilter = restFilter;
+      _streamFilter = streamFilter;
     }
 
     @Override
@@ -199,10 +199,10 @@ import java.util.Map;
                            Map<String, String> wireAttrs,
                            NextFilter<Request, Response> nextFilter)
     {
-      _restFilter.onResponse((StreamResponse) res,
-                                 requestContext,
-                                 wireAttrs,
-                                 adaptRestNextFilter(nextFilter));
+      _streamFilter.onResponse((StreamResponse) res,
+          requestContext,
+          wireAttrs,
+          adaptStreamNextFilter(nextFilter));
     }
 
     @Override
@@ -211,10 +211,10 @@ import java.util.Map;
                         Map<String, String> wireAttrs,
                         NextFilter<Request, Response> nextFilter)
     {
-      _restFilter.onError(ex,
-                              requestContext,
-                              wireAttrs,
-                              adaptRestNextFilter(nextFilter));
+      _streamFilter.onError(ex,
+          requestContext,
+          wireAttrs,
+          adaptStreamNextFilter(nextFilter));
     }
   }
 }
