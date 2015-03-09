@@ -20,6 +20,7 @@ package com.linkedin.r2.caprep;
 
 import com.linkedin.r2.caprep.db.DbSource;
 import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
 import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ReplayFilter implements StreamRequestFilter
+public class ReplayFilter implements RestRequestFilter
 {
   private static final Logger _log = LoggerFactory.getLogger(ReplayFilter.class);
 
@@ -69,7 +70,7 @@ public class ReplayFilter implements StreamRequestFilter
     }
   }
 
-  private <RES extends Response> boolean replayResponse(Request req, RequestContext requestContext,
+  private <RES extends Response> boolean replayResponse(RestRequest req, RequestContext requestContext,
                               NextFilter<? extends Request, RES> nextFilter)
   {
     @SuppressWarnings("unchecked")
