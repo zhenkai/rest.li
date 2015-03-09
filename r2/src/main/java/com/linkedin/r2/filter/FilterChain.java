@@ -103,7 +103,7 @@ public interface FilterChain
    * @param requestContext context for the request
    * @param wireAttrs the initial set of wire attributes
    */
-  void onRequest(StreamRequest req,
+  void onStreamRequest(StreamRequest req,
                      RequestContext requestContext,
                      Map<String, String> wireAttrs);
 
@@ -111,25 +111,59 @@ public interface FilterChain
    * Runs the response through the filter chain with the supplied wire attributes and local
    * attributes. See interface-level documentation for details about wire attributes and local
    * attributes.
-   *
-   * @param res the response to send through the filter chain
+   *  @param res the response to send through the filter chain
    * @param requestContext context for the request
    * @param wireAttrs the initial set of wire attributes
    */
-  void onResponse(StreamResponse res,
-                      RequestContext requestContext,
-                      Map<String, String> wireAttrs);
+  void onStreamResponse(StreamResponse res,
+                        RequestContext requestContext,
+                        Map<String, String> wireAttrs);
 
   /**
    * Runs the error through the filter chain with the supplied wire attributes and local
    * attributes. See interface-level documentation for details about wire attributes and local
    * attributes.
-   *
-   * @param ex the error to send through the filter chain
+   *  @param ex the error to send through the filter chain
    * @param requestContext context for the request
    * @param wireAttrs the initial set of wire attributes
    */
-  void onError(Exception ex,
-                   RequestContext requestContext,
-                   Map<String, String> wireAttrs);
+  void onStreamError(Exception ex,
+                     RequestContext requestContext,
+                     Map<String, String> wireAttrs);
+
+  /**
+   * Runs the request through the filter chain with the supplied wire attributes and local
+   * attributes. See interface-level documentation for details about wire attributes and local
+   * attributes.
+   *  @param req the request to send through the filter chain
+   * @param requestContext context for the request
+   * @param wireAttrs the initial set of wire attributes
+   */
+  void onRestRequest(RestRequest req,
+                       RequestContext requestContext,
+                       Map<String, String> wireAttrs);
+
+  /**
+   * Runs the response through the filter chain with the supplied wire attributes and local
+   * attributes. See interface-level documentation for details about wire attributes and local
+   * attributes.
+   * @param res the response to send through the filter chain
+   * @param requestContext context for the request
+   * @param wireAttrs the initial set of wire attributes
+   */
+  void onRestResponse(RestResponse res,
+                        RequestContext requestContext,
+                        Map<String, String> wireAttrs);
+
+  /**
+   * Runs the error through the filter chain with the supplied wire attributes and local
+   * attributes. See interface-level documentation for details about wire attributes and local
+   * attributes.
+   *  @param ex the error to send through the filter chain
+   * @param requestContext context for the request
+   * @param wireAttrs the initial set of wire attributes
+   */
+  void onRestError(Exception ex,
+                     RequestContext requestContext,
+                     Map<String, String> wireAttrs);
 }

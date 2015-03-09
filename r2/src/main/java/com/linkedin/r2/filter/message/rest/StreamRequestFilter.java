@@ -37,16 +37,15 @@ public interface StreamRequestFilter extends Filter
 {
   /**
    * Method to be invoked for each {@link RestRequest} message.
-   *
-   * @param req the {@link RestRequest} message.
-   * @param requestContext the {@link RequestContext} of the request.
+   *  @param req the {@link com.linkedin.r2.message.rest.RestRequest} message.
+   * @param requestContext the {@link com.linkedin.r2.message.RequestContext} of the request.
    * @param wireAttrs the wire attributes of the request.
    * @param nextFilter the next filter in the chain.  Concrete implementations should invoke
-   *                   {@link NextFilter#onRequest} to continue the filter chain.
+*                   {@link com.linkedin.r2.filter.NextFilter#onRequest} to continue the filter chain.
    */
 
-  void onRequest(StreamRequest req,
-                     RequestContext requestContext,
-                     Map<String, String> wireAttrs,
-                     NextFilter<StreamRequest, StreamResponse> nextFilter);
+  void onStreamRequest(StreamRequest req,
+                       RequestContext requestContext,
+                       Map<String, String> wireAttrs,
+                       NextFilter<StreamRequest, StreamResponse> nextFilter);
 }

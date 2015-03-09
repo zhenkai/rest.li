@@ -37,29 +37,27 @@ public interface StreamResponseFilter extends Filter
 {
   /**
    * Method to be invoked for each {@link RestResponse} message.
-   *
-   * @param res the {@link com.linkedin.r2.message.rest.StreamResponse} message.
-   * @param requestContext the {@link RequestContext} of the request.
+   *  @param res the {@link com.linkedin.r2.message.rest.StreamResponse} message.
+   * @param requestContext the {@link com.linkedin.r2.message.RequestContext} of the request.
    * @param wireAttrs the wire attributes of the response.
    * @param nextFilter the next filter in the chain.  Concrete implementations should invoke
-   *                   {@link NextFilter#onResponse} to continue the filter chain.
+*                   {@link com.linkedin.r2.filter.NextFilter#onResponse} to continue the filter chain.
    */
-  void onResponse(StreamResponse res,
-                      RequestContext requestContext,
-                      Map<String, String> wireAttrs,
-                      NextFilter<StreamRequest, StreamResponse> nextFilter);
+  void onStreamResponse(StreamResponse res,
+                        RequestContext requestContext,
+                        Map<String, String> wireAttrs,
+                        NextFilter<StreamRequest, StreamResponse> nextFilter);
 
   /**
    * Method to be invoked when an error is encountered.
-   *
-   * @param ex the {@link Throwable} representation of the error.
-   * @param requestContext the {@link RequestContext} of the request.
+   *  @param ex the {@link Throwable} representation of the error.
+   * @param requestContext the {@link com.linkedin.r2.message.RequestContext} of the request.
    * @param wireAttrs the wire attributes of the response (if any).
    * @param nextFilter the next filter in the chain.  Concrete implementations should invoke
-   *                   {@link NextFilter#onError} to continue the filter chain.
+*                   {@link com.linkedin.r2.filter.NextFilter#onError} to continue the filter chain.
    */
-  void onError(Throwable ex,
-                   RequestContext requestContext,
-                   Map<String, String> wireAttrs,
-                   NextFilter<StreamRequest, StreamResponse> nextFilter);
+  void onStreamError(Throwable ex,
+                     RequestContext requestContext,
+                     Map<String, String> wireAttrs,
+                     NextFilter<StreamRequest, StreamResponse> nextFilter);
 }
