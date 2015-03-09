@@ -31,7 +31,6 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-@Deprecated
 public interface RestRequestFilter extends Filter
 {
   /**

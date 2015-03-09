@@ -23,7 +23,6 @@ package com.linkedin.r2.filter.message.rest;
  *
  * @author Chris Pettitt
  */
-@Deprecated
 public interface RestFilter extends RestRequestFilter, RestResponseFilter
 {
 
