@@ -66,8 +66,8 @@ public class SimpleLoggingFilter implements StreamFilter
   }
 
   @Override
-  public void onStreamRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
-                              NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
+                            NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     trace("onRestRequest", req, wireAttrs, requestContext);
     requestContext.putLocalAttr(REQUEST_URI, req.getURI());
@@ -76,16 +76,16 @@ public class SimpleLoggingFilter implements StreamFilter
   }
 
   @Override
-  public void onStreamResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs,
-                               NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs,
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     trace("onRestResponse", res, wireAttrs, requestContext);
     nextFilter.onResponse(res, requestContext, wireAttrs);
   }
 
   @Override
-  public void onStreamError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
-                            NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     warn("onRestError", ex, wireAttrs, requestContext);
     nextFilter.onError(ex, requestContext, wireAttrs);
