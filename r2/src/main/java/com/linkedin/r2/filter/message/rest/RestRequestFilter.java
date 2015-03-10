@@ -30,7 +30,12 @@ import java.util.Map;
  *
  * @author Chris Pettitt
  * @version $Revision$
+ *
+ * @deprecated use {@link com.linkedin.r2.filter.message.rest.StreamRequestFilter} instead
+ *
+ * TODO [ZZ]: update compression filters & caprep filters and remove this interface
  */
+@Deprecated
 public interface RestRequestFilter extends Filter
 {
   /**
