@@ -5,7 +5,7 @@ import com.linkedin.r2.message.rest.RequestHeaders;
 /**
  * @author Zhenkai Zhu
  */
-public final class Deciders
+public final class StreamDeciders
 {
   public static StreamDecider alwaysStream()
   {
@@ -36,5 +36,5 @@ public final class Deciders
     }
   };
 
-  private Deciders(){}
+  private StreamDeciders(){}
 }

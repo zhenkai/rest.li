@@ -22,9 +22,15 @@ import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.StreamDecider;
+import com.linkedin.r2.message.streaming.StreamDeciders;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
+import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
+import javax.mail.event.TransportAdapter;
 import java.util.Map;
 
 /**
@@ -34,31 +40,57 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class FilterChainDispatcher implements TransportDispatcher
+public class FilterChainDispatcher implements StreamDispatcher
 {
   private final FilterChain _filters;
 
-  /**
-   * Construct a new instance by composing the specified {@link TransportDispatcher} and
-   * {@link FilterChain}.
-   *
-   * @param dispatcher the {@link TransportDispatcher} to be composed.
-   * @param filters the {@link FilterChain} to be composed.
-   */
+
   public FilterChainDispatcher(TransportDispatcher dispatcher,
+                               FilterChain filters)
+  {
+    this(dispatcher, NO_STREAM_SUPPORT, StreamDeciders.noStream(), filters);
+  }
+
+  public FilterChainDispatcher(StreamDispatcher streamDispatcher,
+                               FilterChain filters)
+  {
+    this(NO_REST_SUPPORT, streamDispatcher, StreamDeciders.alwaysStream(), filters);
+  }
+
+  public FilterChainDispatcher(TransportDispatcher dispatcher,
+                               StreamDispatcher streamDispatcher,
+                               StreamDecider streamDecider,
                                FilterChain filters)
   {
     _filters = filters
             .addFirst(new ResponseFilter())
-            .addLast(new DispatcherRequestFilter(dispatcher));
+            .addLast(new DispatcherRequestFilter(dispatcher, streamDispatcher, streamDecider));
   }
 
   @Override
-  public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
+  public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs,
                                 RequestContext requestContext,
-                                TransportCallback<RestResponse> callback)
+                                TransportCallback<StreamResponse> callback)
   {
     ResponseFilter.registerCallback(callback, requestContext);
-    _filters.onRestRequest(req, requestContext, wireAttrs);
+    _filters.onRequest(req, requestContext, wireAttrs);
   }
+
+  private static final TransportDispatcher NO_REST_SUPPORT = new TransportDispatcher()
+  {
+    @Override
+    public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<RestResponse> callback)
+    {
+      throw new UnsupportedOperationException("No TransportDispatcher was provided.");
+    }
+  };
+
+  private static final StreamDispatcher NO_STREAM_SUPPORT = new StreamDispatcher()
+  {
+    @Override
+    public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<StreamResponse> callback)
+    {
+      throw new UnsupportedOperationException("No StreamDispatcher was provided.");
+    }
+  };
 }

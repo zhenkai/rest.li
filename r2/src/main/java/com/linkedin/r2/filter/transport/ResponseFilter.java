@@ -23,6 +23,8 @@ import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.NullTransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
@@ -56,22 +58,22 @@ public class ResponseFilter implements StreamResponseFilter
   }
 
   @Override
-  public void onRestResponse(RestResponse res, RequestContext requestContext,
+  public void onResponse(StreamResponse res, RequestContext requestContext,
                              Map<String, String> wireAttrs,
-                             NextFilter<RestRequest, RestResponse> nextFilter)
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    final TransportCallback<RestResponse> callback = getCallback(requestContext);
+    final TransportCallback<StreamResponse> callback = getCallback(requestContext);
     callback.onResponse(TransportResponseImpl.success(res, wireAttrs));
     nextFilter.onResponse(res, requestContext, wireAttrs);
   }
 
   @Override
-  public void onRestError(Throwable ex, RequestContext requestContext,
+  public void onError(Throwable ex, RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          NextFilter<RestRequest, RestResponse> nextFilter)
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    final TransportCallback<RestResponse> callback = getCallback(requestContext);
-    callback.onResponse(TransportResponseImpl.<RestResponse>error(ex, wireAttrs));
+    final TransportCallback<StreamResponse> callback = getCallback(requestContext);
+    callback.onResponse(TransportResponseImpl.<StreamResponse>error(ex, wireAttrs));
     nextFilter.onError(ex, requestContext, wireAttrs);
   }
 

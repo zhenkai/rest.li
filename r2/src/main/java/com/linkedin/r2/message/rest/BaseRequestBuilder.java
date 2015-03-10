@@ -18,10 +18,8 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
-import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.util.ArgumentUtil;
 
 import java.net.URI;

@@ -24,6 +24,11 @@ public final class RestRequestBuilder extends BaseRequestBuilder<RestRequestBuil
     _entity = request.getEntity();
   }
 
+  public RestRequestBuilder(StreamRequest request)
+  {
+    super(request);
+  }
+
   public RestRequestBuilder setEntity(ByteString entity)
   {
     ArgumentUtil.notNull(entity, "entity");
