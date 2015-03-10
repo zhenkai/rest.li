@@ -20,8 +20,6 @@ package com.linkedin.r2.filter;
 import com.linkedin.r2.filter.message.MessageFilter;
 import com.linkedin.r2.filter.message.RequestFilter;
 import com.linkedin.r2.filter.message.ResponseFilter;
-import com.linkedin.r2.filter.message.rest.RestRequestFilter;
-import com.linkedin.r2.filter.message.rest.RestResponseFilter;
 import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.Request;
@@ -57,13 +55,13 @@ import java.util.Map;
   @Override
   public FilterChain addFirst(Filter filter)
   {
-    return  new FilterChainImpl(doAddFirst(_streamFilters, adaptFilter(filter)));
+    return new FilterChainImpl(addFirstStream(filter));
   }
 
   @Override
   public FilterChain addLast(Filter filter)
   {
-    return new FilterChainImpl(doAddLast(_streamFilters, adaptFilter(filter)));
+    return new FilterChainImpl(addLastStream(filter));
   }
 
   @Override
@@ -90,6 +88,16 @@ import java.util.Map;
             .onError(ex, requestContext, wireAttrs);
   }
 
+  private List<MessageFilter> addFirstStream(Filter filter)
+  {
+    return doAddFirst(_streamFilters, adaptStreamFilter(filter));
+  }
+
+  private List<MessageFilter> addLastStream(Filter filter)
+  {
+    return doAddLast(_streamFilters, adaptStreamFilter(filter));
+  }
+
   private <T> List<T> doAddFirst(List<T> list, T obj)
   {
     final List<T> newFilters = new ArrayList<T>(list.size() + 1);
@@ -106,14 +114,10 @@ import java.util.Map;
     return newFilters;
   }
 
-  private static MessageFilter adaptFilter(Filter filter)
+  private static MessageFilter adaptStreamFilter(Filter filter)
   {
     final RequestFilter reqFilter;
-    if (filter instanceof RestRequestFilter)
-    {
-      reqFilter = adaptRestRequestFilter((RestRequestFilter) filter);
-    }
-    else if (filter instanceof StreamRequestFilter)
+    if (filter instanceof StreamRequestFilter)
     {
       reqFilter = adaptStreamRequestFilter((StreamRequestFilter) filter);
     }
@@ -127,11 +131,7 @@ import java.util.Map;
     }
 
     final ResponseFilter resFilter;
-    if (filter instanceof RestResponseFilter)
-    {
-      resFilter = adaptRestResponseFilter((RestResponseFilter) filter);
-    }
-    else if (filter instanceof StreamResponseFilter)
+    if (filter instanceof StreamResponseFilter)
     {
       resFilter = adaptStreamResponseFilter((StreamResponseFilter) filter);
     }
@@ -215,106 +215,6 @@ import java.util.Map;
           requestContext,
           wireAttrs,
           adaptStreamNextFilter(nextFilter));
-    }
-  }
-
-  // ------------------ Rest filters -------------------------
-  private static RequestFilter adaptRestRequestFilter(final RestRequestFilter restFilter)
-  {
-    return new RestRequestFilterAdapter(restFilter);
-  }
-
-  private static ResponseFilter adaptRestResponseFilter(final RestResponseFilter restFilter)
-  {
-    return new RestResponseFilterAdapter(restFilter);
-  }
-
-  private static final class RestRequestFilterAdapter implements RequestFilter
-  {
-    private final RestRequestFilter _restFilter;
-
-    private RestRequestFilterAdapter(RestRequestFilter restFilter)
-    {
-      _restFilter = restFilter;
-    }
-
-    @Override
-    public void onRequest(Request req,
-                          RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          NextFilter<Request, Response> nextFilter)
-    {
-      if (req instanceof RestRequest)
-      {
-        _restFilter.onRestRequest((RestRequest) req, requestContext, wireAttrs, new RestToStreamNextFilterAdapter(nextFilter));
-      }
-      else
-      {
-        nextFilter.onRequest(req, requestContext, wireAttrs);
-      }
-    }
-  }
-
-  private static final class RestResponseFilterAdapter implements ResponseFilter
-  {
-    private final RestResponseFilter _restFilter;
-
-    private RestResponseFilterAdapter(RestResponseFilter restFilter)
-    {
-      _restFilter = restFilter;
-    }
-
-    @Override
-    public void onResponse(Response res,
-                           RequestContext requestContext,
-                           Map<String, String> wireAttrs,
-                           NextFilter<Request, Response> nextFilter)
-    {
-      if (res instanceof RestResponse)
-      {
-        _restFilter.onRestResponse((RestResponse) res, requestContext, wireAttrs, new RestToStreamNextFilterAdapter(nextFilter));
-      }
-      else
-      {
-        nextFilter.onResponse(res, requestContext, wireAttrs);
-      }
-    }
-
-    @Override
-    public void onError(Throwable ex,
-                        RequestContext requestContext,
-                        Map<String, String> wireAttrs,
-                        NextFilter<Request, Response> nextFilter)
-    {
-      // TODO: cannot really tell whether rest or stream
-    }
-  }
-
-  private static class RestToStreamNextFilterAdapter implements NextFilter<RestRequest, RestResponse>
-  {
-    private final NextFilter<StreamRequest, StreamResponse> _nextFilter;
-
-    RestToStreamNextFilterAdapter(NextFilter<Request, Response> nextFilter)
-    {
-      _nextFilter = adaptStreamNextFilter(nextFilter);
-    }
-
-    @Override
-    public void onRequest(RestRequest request, RequestContext requestContext, Map<String, String> wireAttrs)
-    {
-      _nextFilter.onRequest(request, requestContext, wireAttrs);
-    }
-
-    @Override
-    public void onResponse(RestResponse response, RequestContext requestContext, Map<String, String> wireAttrs)
-    {
-      _nextFilter.onResponse(response, requestContext, wireAttrs);
-    }
-
-    @Override
-    public void onError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs)
-    {
-      _nextFilter.onError(ex, requestContext, wireAttrs);
     }
   }
 }
