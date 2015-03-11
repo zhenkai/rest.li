@@ -18,6 +18,10 @@ public final class RestResponseBuilder extends BaseResponseBuilder<RestResponseB
     super(response);
     _entity = response.getEntity();
   }
+  public RestResponseBuilder(StreamResponse response)
+  {
+    super(response);
+  }
 
   public RestResponseBuilder setEntity(ByteString entity)
   {

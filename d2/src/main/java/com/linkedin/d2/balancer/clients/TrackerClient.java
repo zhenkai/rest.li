@@ -23,10 +23,14 @@ import com.linkedin.d2.balancer.LoadBalancerClient;
 import com.linkedin.d2.balancer.properties.PartitionData;
 import com.linkedin.d2.balancer.strategies.degrader.DegraderLoadBalancerStrategyConfig;
 import com.linkedin.d2.balancer.util.LoadBalancerUtil;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.Observer;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -135,12 +139,12 @@ public class TrackerClient implements LoadBalancerClient
     }
 
   @Override
-  public void restRequest(RestRequest request,
+  public void streamRequest(StreamRequest request,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          TransportCallback<RestResponse> callback)
+                          TransportCallback<StreamResponse> callback)
   {
-    _wrappedClient.restRequest(request, requestContext, wireAttrs, new TrackerClientCallback<RestResponse>(callback, _callTracker.startCall()));
+    _wrappedClient.streamRequest(request, requestContext, wireAttrs, new TrackerClientCallback(callback, _callTracker.startCall()));
   }
 
   @Override
@@ -211,12 +215,12 @@ public class TrackerClient implements LoadBalancerClient
         + ", _uri=" + _uri + ", _partitionStates=" + _partitionStates + ", _wrappedClient=" + _wrappedClient + "]";
   }
 
-  public class TrackerClientCallback<T> implements TransportCallback<T>
+  private static class TrackerClientCallback implements TransportCallback<StreamResponse>
   {
-    private TransportCallback<T> _wrappedCallback;
+    private TransportCallback<StreamResponse> _wrappedCallback;
     private CallCompletion       _callCompletion;
 
-    public TrackerClientCallback(TransportCallback<T> wrappedCallback,
+    public TrackerClientCallback(TransportCallback<StreamResponse> wrappedCallback,
                                  CallCompletion callCompletion)
     {
       _wrappedCallback = wrappedCallback;
@@ -224,38 +228,63 @@ public class TrackerClient implements LoadBalancerClient
     }
 
     @Override
-    public void onResponse(TransportResponse<T> response)
+    public void onResponse(TransportResponse<StreamResponse> response)
     {
       if (response.hasError())
       {
         Throwable throwable = response.getError();
-        if (throwable instanceof RemoteInvocationException)
-        {
-          Throwable originalThrowable = LoadBalancerUtil.findOriginalThrowable(throwable);
-          if (originalThrowable instanceof ConnectException)
-          {
-            _callCompletion.endCallWithError(ErrorType.CONNECT_EXCEPTION);
-          }
-          else if (originalThrowable instanceof ClosedChannelException)
-          {
-            _callCompletion.endCallWithError(ErrorType.CLOSED_CHANNEL_EXCEPTION);
-          }
-          else
-          {
-            _callCompletion.endCallWithError(ErrorType.REMOTE_INVOCATION_EXCEPTION);
-          }
-        }
-        else
-        {
-          _callCompletion.endCallWithError();
-        }
+        handleError(_callCompletion, throwable);
       }
       else
       {
-        _callCompletion.endCall();
+        // TODO [ZZ]: what if the user code never reads response entity stream??
+        Observer observer = new Observer()
+        {
+          @Override
+          public void onDataAvailable(ByteString data)
+          {
+          }
+
+          @Override
+          public void onDone()
+          {
+            _callCompletion.endCall();
+          }
+
+          @Override
+          public void onError(Throwable e)
+          {
+            handleError(_callCompletion, e);
+          }
+        };
+        response.getResponse().getEntityStream().addObserver(observer);
       }
 
       _wrappedCallback.onResponse(response);
+    }
+  }
+
+  private static void handleError(CallCompletion callCompletion, Throwable throwable)
+  {
+    if (throwable instanceof RemoteInvocationException)
+    {
+      Throwable originalThrowable = LoadBalancerUtil.findOriginalThrowable(throwable);
+      if (originalThrowable instanceof ConnectException)
+      {
+        callCompletion.endCallWithError(ErrorType.CONNECT_EXCEPTION);
+      }
+      else if (originalThrowable instanceof ClosedChannelException)
+      {
+        callCompletion.endCallWithError(ErrorType.CLOSED_CHANNEL_EXCEPTION);
+      }
+      else
+      {
+        callCompletion.endCallWithError(ErrorType.REMOTE_INVOCATION_EXCEPTION);
+      }
+    }
+    else
+    {
+      callCompletion.endCallWithError();
     }
   }
 

@@ -44,20 +44,6 @@ public interface TransportClient
    * @param wireAttrs attributes that should be sent over the wire to the server
    * @param callback the callback to invoke with the response
    */
-  void restRequest(RestRequest request,
-                   RequestContext requestContext,
-                   Map<String, String> wireAttrs,
-                   TransportCallback<RestResponse> callback);
-
-  /**
-   * Asynchronously issues the given request. The given callback is invoked when the response is
-   * received.
-   *
-   * @param request the request to issue
-   * @param requestContext context for the request
-   * @param wireAttrs attributes that should be sent over the wire to the server
-   * @param callback the callback to invoke with the response
-   */
   void streamRequest(StreamRequest request,
                    RequestContext requestContext,
                    Map<String, String> wireAttrs,
