@@ -25,18 +25,20 @@ import com.linkedin.r2.RemoteInvocationException;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class RestException extends StreamException
+public class StreamException extends RemoteInvocationException
 {
   private static final long serialVersionUID = 1;
+
+  private final StreamResponse _response;
+
   /**
-   * Construct a new instance, using the specified response message.
+   * Construct a new instance using the specified response message and exception message.
    *
    * @param response the {@link RestResponse} message for this exception.
    */
-  public RestException(RestResponse response)
+  public StreamException(StreamResponse response)
   {
-    // TODO: we should probably should check the content-type / charset and decode appropriately
-    super(response, response.getEntity().asAvroString());
+    _response = response;
   }
 
   /**
@@ -45,9 +47,10 @@ public class RestException extends StreamException
    * @param response the {@link RestResponse} message for this exception.
    * @param cause the cause of this exception.
    */
-  public RestException(RestResponse response, Throwable cause)
+  public StreamException(StreamResponse response, Throwable cause)
   {
-    super(response, cause);
+    super(cause);
+    _response = response;
   }
 
   /**
@@ -57,9 +60,10 @@ public class RestException extends StreamException
    * @param message the exception message for this exception.
    * @param cause the cause of this exception.
    */
-  public RestException(RestResponse response, String message, Throwable cause)
+  public StreamException(StreamResponse response, String message, Throwable cause)
   {
-    super(response, message, cause);
+    super(message, cause);
+    _response = response;
   }
 
   /**
@@ -68,9 +72,10 @@ public class RestException extends StreamException
    * @param response the {@link RestResponse} message for this exception.
    * @param message the exception message for this exception.
    */
-  public RestException(RestResponse response, String message)
+  public StreamException(StreamResponse response, String message)
   {
-    super(response, message);
+    super(message);
+    _response = response;
   }
 
   /**
@@ -78,41 +83,17 @@ public class RestException extends StreamException
    *
    * @return the {@link RestResponse} contained by this exception.
    */
-  public RestResponse getResponse()
+  public StreamResponse getResponse()
   {
-    return (RestResponse) super.getResponse();
+    return _response;
   }
 
   @Override
   public String toString()
   {
-    return "RestException{" +
-            "_response=" + getResponse() +
+    return "StreamException{" +
+            "_response=" + _response +
             "} ";
-  }
-
-  /**
-   * Factory method to obtain a new instance for a specified HTTP status code with the given cause.
-   *
-   * @param status the HTTP status code for the exception.
-   * @param throwable the throwable to be used as the cause for this exception.
-   * @return a new instance, as described above.
-   */
-  public static RestException forError(int status, Throwable throwable)
-  {
-    return new RestException(RestStatus.responseForError(status, throwable), throwable);
-  }
-
-  /**
-   * Factory method to obtain a new instance for the specified HTTP status code.
-   *
-   * @param status the HTTP status code for the exception.
-   * @param detail the detail message to be returned with this exception.
-   * @return a new instance, as described above.
-   */
-  public static RestException forError(int status, String detail)
-  {
-    return new RestException(RestStatus.responseForStatus(status, detail));
   }
 
 }
