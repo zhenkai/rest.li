@@ -50,7 +50,7 @@ public class HttpBridge
    * @return the callback to receive the incoming HTTP response
    */
   public static TransportCallback<StreamResponse> restToHttpCallback(final TransportCallback<StreamResponse> callback,
-                                                        RestRequest request)
+                                                        StreamRequest request)
   {
     final URI uri = request.getURI();
     return new TransportCallback<StreamResponse>()

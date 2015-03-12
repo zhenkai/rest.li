@@ -22,13 +22,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
+import com.linkedin.r2.message.rest.StreamRequest;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelDownstreamHandler;
 import org.jboss.netty.handler.ssl.SslHandler;
-
-import com.linkedin.r2.message.rest.RestRequest;
 
 public class SslRequestHandler extends SimpleChannelDownstreamHandler
 {
@@ -80,8 +79,8 @@ public class SslRequestHandler extends SimpleChannelDownstreamHandler
   @Override
   public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception
   {
-    RestRequest restRequest = (RestRequest) e.getMessage();
-    URI uri = restRequest.getURI();
+    StreamRequest streamRequest = (StreamRequest) e.getMessage();
+    URI uri = streamRequest.getURI();
     String scheme = uri.getScheme();
     if (_firstTimeScheme == null)
     {

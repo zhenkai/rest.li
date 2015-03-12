@@ -27,6 +27,8 @@ import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
@@ -76,6 +78,7 @@ import org.slf4j.LoggerFactory;
 /* package private */ class HttpNettyClient implements TransportClient
 {
   static final Logger LOG = LoggerFactory.getLogger(HttpNettyClient.class);
+  /* package private */ static final Object CHANNEL_RELEASE_SIGNAL = new Object();
   private static final int HTTP_DEFAULT_PORT = 80;
   private static final int HTTPS_DEFAULT_PORT = 443;
 
@@ -282,10 +285,10 @@ import org.slf4j.LoggerFactory;
   }
 
   @Override
-  public void restRequest(RestRequest request,
+  public void streamRequest(StreamRequest request,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          TransportCallback<RestResponse> callback)
+                          TransportCallback<StreamResponse> callback)
   {
     MessageType.setMessageType(MessageType.Type.REST, wireAttrs);
     writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.restToHttpCallback(callback, request));
@@ -318,7 +321,7 @@ import org.slf4j.LoggerFactory;
           for (Channel c : _allChannels)
           {
             @SuppressWarnings("unchecked")
-            TransportCallback<RestResponse> callback = c.getPipeline().get(RAPResponseHandler.class).removeAttachment(c.getPipeline().getContext(RAPResponseHandler.class));
+            TransportCallback<StreamResponse> callback = c.getPipeline().get(RAPResponseHandler.class).removeAttachment(c.getPipeline().getContext(RAPResponseHandler.class));
             if (callback != null)
             {
               errorResponse(callback,
@@ -372,15 +375,15 @@ import org.slf4j.LoggerFactory;
     }
   }
 
-  private void writeRequestWithTimeout(RestRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
-                                       TransportCallback<RestResponse> callback)
+  private void writeRequestWithTimeout(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
+                                       TransportCallback<StreamResponse> callback)
   {
     // By wrapping the callback in a Timeout callback before passing it along, we deny the rest
     // of the code access to the unwrapped callback.  This ensures two things:
     // 1. The user callback will always be invoked, since the Timeout will eventually expire
     // 2. The user callback is never invoked more than once
-    TimeoutTransportCallback<RestResponse> timeoutCallback =
-        new TimeoutTransportCallback<RestResponse>(_scheduler,
+    TimeoutTransportCallback<StreamResponse> timeoutCallback =
+        new TimeoutTransportCallback<StreamResponse>(_scheduler,
                                                    _callbackExecutor,
                                                    _requestTimeout,
                                                    TimeUnit.MILLISECONDS,
@@ -389,8 +392,8 @@ import org.slf4j.LoggerFactory;
     writeRequest(request, requestContext, wireAttrs, timeoutCallback);
   }
 
-  private void writeRequest(RestRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
-                            final TimeoutTransportCallback<RestResponse> callback)
+  private void writeRequest(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
+                            final TimeoutTransportCallback<StreamResponse> callback)
   {
     State state = _state.get();
     if (state != State.RUNNING)
@@ -412,9 +415,32 @@ import org.slf4j.LoggerFactory;
       port = scheme.equalsIgnoreCase("http") ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
 
-    final RestRequest newRequest = new RestRequestBuilder(request)
-        .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
-        .build();
+    final StreamRequest newRequest = request;
+    // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
+    // request without body, it seems not working with streaming
+//    try
+//    {
+//      newRequest= QueryTunnelUtil.encode(new RestRequestBuilder(request)
+//                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+//                                             .build(),
+//                                         requestContext,
+//                                         _queryPostThreshold);
+//    }
+//    catch (IOException e)
+//    {
+//      errorResponse(callback, e);
+//      return;
+//    }
+//    catch (URISyntaxException e)
+//    {
+//      errorResponse(callback, e);
+//      return;
+//    }
+//    catch (MessagingException e)
+//    {
+//      errorResponse(callback, e);
+//      return;
+//    }
 
     // TODO investigate DNS resolution and timing
     SocketAddress address = new InetSocketAddress(host, port);
@@ -592,8 +618,8 @@ import org.slf4j.LoggerFactory;
       ChannelPipeline pipeline = Channels.pipeline();
 
       pipeline.addLast("codec", new HttpClientCodec());
-      pipeline.addLast("dechunker", new HttpChunkAggregator(_maxResponseSize));
-      pipeline.addLast("rapiCodec", new RAPClientCodec());
+      //pipeline.addLast("dechunker", new HttpChunkAggregator(_maxResponseSize));
+      pipeline.addLast("rapiCodec", new RAPClientCodec(_scheduler, _requestTimeout, _maxResponseSize));
       // Could introduce an ExecutionHandler here (before RAPResponseHandler)
       // to execute the response handling on a different thread.
       pipeline.addLast("responseHandler", _responseHandler);

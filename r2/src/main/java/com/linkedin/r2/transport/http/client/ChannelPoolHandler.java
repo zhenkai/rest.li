@@ -51,6 +51,7 @@ class ChannelPoolHandler extends UpstreamHandlerWithAttachment<AsyncPool<Channel
   @Override
   public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
   {
+
     AsyncPool<Channel> pool = removeAttachment(ctx);
     if (pool != null)
     {
