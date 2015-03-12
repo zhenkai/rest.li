@@ -2,6 +2,7 @@ package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.util.ArgumentUtil;
 
 /**
@@ -18,9 +19,15 @@ public final class RestResponseBuilder extends BaseResponseBuilder<RestResponseB
     super(response);
     _entity = response.getEntity();
   }
+
   public RestResponseBuilder(StreamResponse response)
   {
     super(response);
+  }
+
+  public RestResponseBuilder(StreamResponseBuilder builder)
+  {
+    this(builder.build(EntityStreams.emptyStream()));
   }
 
   public RestResponseBuilder setEntity(ByteString entity)
