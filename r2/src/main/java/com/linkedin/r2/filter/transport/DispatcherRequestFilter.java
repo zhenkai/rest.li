@@ -37,6 +37,7 @@ import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +50,7 @@ import java.util.Map;
  */
 public class DispatcherRequestFilter implements StreamRequestFilter
 {
+  private final static String CONTENT_LENGTH_HEADER = "Content-Length";
   private final TransportDispatcher _dispatcher;
   private final StreamDispatcher _streamDispatcher;
   private final StreamDecider _streamDecider;
@@ -136,7 +138,7 @@ public class DispatcherRequestFilter implements StreamRequestFilter
       public void onSuccess(ByteString result)
       {
         RestRequestBuilder builder = new RestRequestBuilder(req);
-        builder.setEntity(result);
+        builder.setEntity(result).setHeader(CONTENT_LENGTH_HEADER, String.valueOf(result.length()));
         _dispatcher.handleRestRequest(builder.build(),
             wireAttrs, requestContext, adaptToRestResponseCallback(createCallback(requestContext, nextFilter)));
       }

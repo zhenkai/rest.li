@@ -27,6 +27,8 @@ import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
@@ -199,10 +201,10 @@ import org.slf4j.LoggerFactory;
   }
 
   @Override
-  public void restRequest(RestRequest request,
+  public void streamRequest(StreamRequest request,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          TransportCallback<RestResponse> callback)
+                          TransportCallback<StreamResponse> callback)
   {
     MessageType.setMessageType(MessageType.Type.REST, wireAttrs);
     writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.restToHttpCallback(callback, request));
@@ -234,7 +236,7 @@ import org.slf4j.LoggerFactory;
           // Timeout any requests still pending response
           for (Channel c : _allChannels)
           {
-            TransportCallback<RestResponse> callback = c.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).getAndRemove();
+            TransportCallback<StreamResponse> callback = c.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).getAndRemove();
             if (callback != null)
             {
               errorResponse(callback, new TimeoutException("Operation did not complete before shutdown"));
@@ -290,16 +292,16 @@ import org.slf4j.LoggerFactory;
     }
   }
 
-  private void writeRequestWithTimeout(RestRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
-                                       TransportCallback<RestResponse> callback)
+  private void writeRequestWithTimeout(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
+                                       TransportCallback<StreamResponse> callback)
   {
-    ExecutionCallback<RestResponse> executionCallback = new ExecutionCallback<RestResponse>(_callbackExecutors, callback);
+    ExecutionCallback<StreamResponse> executionCallback = new ExecutionCallback<StreamResponse>(_callbackExecutors, callback);
     // By wrapping the callback in a Timeout callback before passing it along, we deny the rest
     // of the code access to the unwrapped callback.  This ensures two things:
     // 1. The user callback will always be invoked, since the Timeout will eventually expire
     // 2. The user callback is never invoked more than once
-    TimeoutTransportCallback<RestResponse> timeoutCallback =
-        new TimeoutTransportCallback<RestResponse>(_scheduler,
+    TimeoutTransportCallback<StreamResponse> timeoutCallback =
+        new TimeoutTransportCallback<StreamResponse>(_scheduler,
                                                    _requestTimeout,
                                                    TimeUnit.MILLISECONDS,
                                                    executionCallback,
@@ -307,8 +309,8 @@ import org.slf4j.LoggerFactory;
     writeRequest(request, requestContext, wireAttrs, timeoutCallback);
   }
 
-  private void writeRequest(RestRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
-                            final TimeoutTransportCallback<RestResponse> callback)
+  private void writeRequest(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
+                            final TimeoutTransportCallback<StreamResponse> callback)
   {
     State state = _state.get();
     if (state != State.RUNNING)
@@ -330,9 +332,32 @@ import org.slf4j.LoggerFactory;
       port = "http".equalsIgnoreCase(scheme) ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
 
-    final RestRequest newRequest = new RestRequestBuilder(request)
-        .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
-        .build();
+    final StreamRequest newRequest = request;
+    // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
+    // request without body, it seems not working with streaming
+//    try
+//    {
+//      newRequest= QueryTunnelUtil.encode(new RestRequestBuilder(request)
+//                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+//                                             .build(),
+//                                         requestContext,
+//                                         _queryPostThreshold);
+//    }
+//    catch (IOException e)
+//    {
+//      errorResponse(callback, e);
+//      return;
+//    }
+//    catch (URISyntaxException e)
+//    {
+//      errorResponse(callback, e);
+//      return;
+//    }
+//    catch (MessagingException e)
+//    {
+//      errorResponse(callback, e);
+//      return;
+//    }
 
     final SocketAddress address;
     try
@@ -515,8 +540,7 @@ import org.slf4j.LoggerFactory;
     protected void initChannel(NioSocketChannel ch) throws Exception
     {
       ch.pipeline().addLast("codec", new HttpClientCodec(4096, _maxHeaderSize, _maxChunkSize));
-      ch.pipeline().addLast("dechunker", new HttpObjectAggregator(_maxResponseSize));
-      ch.pipeline().addLast("rapiCodec", new RAPClientCodec());
+      ch.pipeline().addLast("rapiCodec", new RAPClientCodec(_scheduler, _requestTimeout, _maxResponseSize));
       ch.pipeline().addLast("responseHandler", _responseHandler);
       if (_sslContext != null)
       {

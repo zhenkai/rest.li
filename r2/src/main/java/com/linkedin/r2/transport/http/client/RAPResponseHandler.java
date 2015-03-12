@@ -20,11 +20,10 @@
 
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.r2.message.rest.RestResponse;
-import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
-import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -51,27 +50,27 @@ import org.slf4j.LoggerFactory;
  * @version $Revision: $
  */
 @ChannelHandler.Sharable
-class RAPResponseHandler extends SimpleChannelInboundHandler<RestResponse>
+class RAPResponseHandler extends SimpleChannelInboundHandler<StreamResponse>
 {
   private static Logger LOG = LoggerFactory.getLogger(RAPResponseHandler.class);
 
-  public static final AttributeKey<TransportCallback<RestResponse>> CALLBACK_ATTR_KEY
+  public static final AttributeKey<TransportCallback<StreamResponse>> CALLBACK_ATTR_KEY
       = AttributeKey.valueOf("Callback");
 
   @Override
-  protected void channelRead0(ChannelHandlerContext ctx, RestResponse response) throws Exception
+  protected void channelRead0(ChannelHandlerContext ctx, StreamResponse response) throws Exception
   {
     final Map<String, String> headers = new HashMap<String, String>(response.getHeaders());
     final Map<String, String> wireAttrs =
       new HashMap<String, String>(WireAttributeHelper.removeWireAttributes(headers));
 
-    final RestResponse newResponse = new RestResponseBuilder(response)
-                                          .unsafeSetHeaders(headers)
-                                          .build();
+    final StreamResponse newResponse = new StreamResponseBuilder(response)
+        .unsafeSetHeaders(headers)
+                                          .build(response.getEntityStream());
     // In general there should always be a callback to handle a received message,
     // but it could have been removed due to a previous exception or closure on the
     // channel
-    TransportCallback<RestResponse> callback = ctx.channel().attr(CALLBACK_ATTR_KEY).getAndRemove();
+    TransportCallback<StreamResponse> callback = ctx.channel().attr(CALLBACK_ATTR_KEY).getAndRemove();
     if (callback != null)
     {
       LOG.debug("{}: handling a response", ctx.channel().remoteAddress());
@@ -81,22 +80,21 @@ class RAPResponseHandler extends SimpleChannelInboundHandler<RestResponse>
     {
       LOG.debug("{}: dropped a response", ctx.channel().remoteAddress());
     }
-    ctx.fireChannelRead(response);
   }
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
   {
-    TransportCallback<RestResponse> callback = ctx.channel().attr(CALLBACK_ATTR_KEY).getAndRemove();
+    TransportCallback<StreamResponse> callback = ctx.channel().attr(CALLBACK_ATTR_KEY).getAndRemove();
     if (callback != null)
     {
       LOG.debug(ctx.channel().remoteAddress() + ": exception on active channel", cause);
-      callback.onResponse(TransportResponseImpl.<RestResponse>error(
+      callback.onResponse(TransportResponseImpl.<StreamResponse>error(
               HttpNettyClient.toException(cause), Collections.<String,String>emptyMap()));
     }
     else
     {
-      LOG.debug(ctx.channel().remoteAddress() + ": exception on idle channel", cause);
+      LOG.debug(ctx.channel().remoteAddress() + ": exception on potentially active channel", cause);
     }
     ctx.fireExceptionCaught(cause);
   }
@@ -107,17 +105,17 @@ class RAPResponseHandler extends SimpleChannelInboundHandler<RestResponse>
     // XXX this seems a bit odd, but if the channel closed before downstream layers received a response, we
     // have to deal with that ourselves (it does not get turned into an exception by downstream
     // layers, even though some other protocol errors do)
-
-    TransportCallback<RestResponse> callback = ctx.channel().attr(CALLBACK_ATTR_KEY).getAndRemove();
+    TransportCallback<StreamResponse> callback = ctx.channel().attr(CALLBACK_ATTR_KEY).getAndRemove();
     if (callback != null)
     {
       LOG.debug("{}: active channel closed", ctx.channel().remoteAddress());
-      callback.onResponse(TransportResponseImpl.<RestResponse>error(new ClosedChannelException(),
-                                                                    Collections.<String, String>emptyMap()));
+      callback.onResponse(TransportResponseImpl.<StreamResponse>error(new ClosedChannelException(),
+          Collections.<String, String>emptyMap()));
+
     }
     else
     {
-      LOG.debug("{}: idle channel closed", ctx.channel().remoteAddress());
+      LOG.debug("{}: potentially idle channel closed", ctx.channel().remoteAddress());
     }
     ctx.fireChannelInactive();
   }
