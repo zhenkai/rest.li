@@ -75,13 +75,13 @@ import java.util.Map;
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(entity.asByteBuffer());
         nettyRequest.setContent(buf);
         nettyRequest.setHeader(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
-        ctx.getChannel().write(nettyRequest, ((MessageEvent) e).getRemoteAddress());
+        ctx.getChannel().write(nettyRequest);
 
       }
       else
       {
         nettyRequest.setChunked(true);
-        ChannelFuture future = ctx.getChannel().write(nettyRequest, ((MessageEvent) e).getRemoteAddress());
+        ChannelFuture future = ctx.getChannel().write(nettyRequest);
         final EntityStream entityStream = request.getEntityStream();
         future.addListener(new ChannelFutureListener()
         {
@@ -148,8 +148,7 @@ import java.util.Map;
 
     public void onDone()
     {
-      ChannelFuture writeFuture = _ctx.getChannel().write(HttpChunk.LAST_CHUNK);
-      writeFuture.addListener(ChannelFutureListener.CLOSE);
+      _ctx.getChannel().write(HttpChunk.LAST_CHUNK);
     }
 
     public void onError(Throwable e)

@@ -82,6 +82,7 @@ import org.slf4j.LoggerFactory;
 /* package private */ class HttpNettyClient implements TransportClient
 {
   static final Logger LOG = LoggerFactory.getLogger(HttpNettyClient.class);
+  /* package private */ static final Object CHANNEL_RELEASE_SIGNAL = new Object();
   private static final int HTTP_DEFAULT_PORT = 80;
   private static final int HTTPS_DEFAULT_PORT = 443;
 

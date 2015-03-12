@@ -68,9 +68,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           write(ctx, succeededFuture(ctx.getChannel()), CONTINUE.duplicate());
         }
 
-
+        final boolean isChunked = m.isChunked();
         EntityStream entityStream;
-        if (m.isChunked())
+        if (isChunked)
         {
           // A chunked message - remove 'Transfer-Encoding' header,
           // initialize the cumulative buffer, and wait for incoming chunks.
@@ -112,6 +112,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         Channels.fireMessageReceived(ctx,
             builder.build(entityStream),
             ((MessageEvent) e).getRemoteAddress());
+
+        if (!isChunked)
+        {
+          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
+        }
       }
       else if (msg instanceof HttpChunk)
       {
@@ -132,6 +137,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 //          }
           currentWriter.setLastChunkReceived();
           _chunkedMessageWriter = null;
+          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
         }
         else
         {
@@ -142,6 +148,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           catch (TooLongFrameException ex)
           {
             _chunkedMessageWriter = null;
+            throw ex;
           }
         }
       }
