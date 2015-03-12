@@ -48,27 +48,18 @@ class ChannelPoolHandler extends ChannelInboundHandlerAdapter
 {
   public static final AttributeKey<AsyncPool<Channel>> CHANNEL_POOL_ATTR_KEY
       = AttributeKey.valueOf("ChannelPool");
+  /* package private */ static final Object CHANNEL_RELEASE_SIGNAL = new Object();
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception
   {
-    AsyncPool<Channel> pool = ctx.channel().attr(CHANNEL_POOL_ATTR_KEY).getAndRemove();
-    if (pool != null)
+    if (msg == CHANNEL_RELEASE_SIGNAL)
     {
-      RestResponse restResponse = (RestResponse) msg;
-      List<String> connectionTokens = restResponse.getHeaderValues("connection");
-      if (connectionTokens != null)
+      AsyncPool<Channel> pool = ctx.channel().attr(CHANNEL_POOL_ATTR_KEY).getAndRemove();
+      if (pool != null)
       {
-        for (String token: connectionTokens)
-        {
-          if ("close".equalsIgnoreCase(token))
-          {
-            pool.dispose(ctx.channel());
-            return;
-          }
-        }
+        pool.put(ctx.channel());
       }
-      pool.put(ctx.channel());
     }
   }
 

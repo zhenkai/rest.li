@@ -16,7 +16,7 @@
 
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.StreamRequest;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -76,8 +76,8 @@ public class SslRequestHandler extends ChannelOutboundHandlerAdapter
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
   {
-    RestRequest restRequest = (RestRequest) msg;
-    URI uri = restRequest.getURI();
+    StreamRequest streamRequest = (StreamRequest) msg;
+    URI uri = streamRequest.getURI();
     String scheme = uri.getScheme();
     if (_firstTimeScheme == null)
     {
