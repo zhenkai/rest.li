@@ -176,7 +176,6 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     private WriteHandle _wh;
     private Timeout<Runnable> _timeout;
     private volatile boolean _lastChunkReceived = false;
-    private boolean _isDone = false;
     private int _totalBytesWritten = 0;
     private volatile Throwable _failedWith = null;
     private final byte[] _bytes;
@@ -273,12 +272,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     // this method does not block
     private void doWrite()
     {
-      while (!_isDone && _wh.remainingCapacity() > 0)
+      while (_wh.remainingCapacity() > 0)
       {
         if (_failedWith != null)
         {
           _wh.error(_failedWith);
-          _isDone = true;
           break;
         }
         int dataLen = Math.min(_wh.remainingCapacity(), Math.min(_bytes.length, _buffer.readableBytes()));
@@ -287,7 +285,6 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           if (_lastChunkReceived)
           {
             _wh.done();
-            _isDone = true;
           }
           break;
         }
