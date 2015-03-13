@@ -53,8 +53,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   private final int _requestTimeout;
   private final ScheduledExecutorService _scheduler;
 
-  private BufferedWriter _chunkedMessageWriter;
-  private Timeout<Runnable> _timeout;
+  private TimeoutBufferedWriter _chunkedMessageWriter;
 
   RAPResponseDecoder(ScheduledExecutorService scheduler, int requestTimeout, int maxContentLength)
   {
@@ -93,23 +92,10 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
             m.removeHeader(HttpHeaders.Names.TRANSFER_ENCODING);
           }
           ChannelBuffer buf = ChannelBuffers.dynamicBuffer(e.getChannel().getConfig().getBufferFactory());
-          final BufferedWriter writer = new BufferedWriter(buf, ctx, _maxContentLength, BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK);
+          final TimeoutBufferedWriter writer = new TimeoutBufferedWriter(buf, ctx, _maxContentLength,
+              BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK, _scheduler, _requestTimeout);
           entityStream = EntityStreams.newEntityStream(writer);
           _chunkedMessageWriter = writer;
-
-          // schedule a timeout to close the channel and inform use
-          Runnable timeoutTask = new Runnable()
-          {
-            @Override
-            public void run()
-            {
-              Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + _requestTimeout + "ms");
-              Channels.fireExceptionCaught(ctx, ex);
-              writer.timeout(ex);
-            }
-          };
-          _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
-          _timeout.addTimeoutTask(timeoutTask);
         }
         else
         {
@@ -146,47 +132,24 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
       }
       else if (msg instanceof HttpChunk)
       {
-        BufferedWriter currentWriter = _chunkedMessageWriter;
-        Timeout<Runnable> timeout = _timeout;
+        TimeoutBufferedWriter currentWriter = _chunkedMessageWriter;
         // Sanity check
-        if (currentWriter == null || timeout == null)
+        if (currentWriter == null)
         {
           throw new IllegalStateException(
               "received " + HttpChunk.class.getSimpleName() +
                   " without " + HttpMessage.class.getSimpleName());
         }
 
-        // stop the timeout task
-        Runnable timeoutTask = timeout.getItem();
-
         HttpChunk chunk = (HttpChunk) msg;
         if (chunk.isLast())
         {
           // TODO [ZZ]: what to do with HttpChunkTrailer? We don't support it as we've already fired up StreamResponse
-//          if (chunk instanceof HttpChunkTrailer)
-//          {
-//          }
-          currentWriter.setLastChunkReceived();
           _chunkedMessageWriter = null;
-          _timeout = null;
           Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
         }
-        else
-        {
-          try
-          {
-            currentWriter.processHttpChunk(chunk);
-          }
-          catch (TooLongFrameException ex)
-          {
-            _chunkedMessageWriter = null;
-            _timeout = null;
-            throw ex;
-          }
-          // reschedule timeout task
-          _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
-          _timeout.addTimeoutTask(timeoutTask);
-        }
+
+        currentWriter.processHttpChunk(chunk);
       }
       else
       {
@@ -202,7 +165,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
    * A buffered writer that stops reading from socket if buffered bytes is larger than high water mark
    * and resumes reading from socket if buffered bytes is smaller than low water mark.
    */
-  private static class BufferedWriter implements Writer
+  private static class TimeoutBufferedWriter implements Writer
   {
     private final ChannelBuffer _buffer;
     private final ChannelHandlerContext _ctx;
@@ -211,13 +174,18 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     private final int _lowWaterMark;
     private final Object _lock;
     private WriteHandle _wh;
+    private Timeout<Runnable> _timeout;
     private volatile boolean _lastChunkReceived = false;
     private boolean _isDone = false;
     private int _totalBytesWritten = 0;
     private volatile Throwable _failedWith = null;
     private final byte[] _bytes;
+    private final ScheduledExecutorService _scheduler;
+    private final int _requestTimeout;
 
-    BufferedWriter(ChannelBuffer buffer, ChannelHandlerContext ctx, int maxContentLength, int highWaterMark, int lowWaterMark)
+    TimeoutBufferedWriter(ChannelBuffer buffer, final ChannelHandlerContext ctx, int maxContentLength,
+                          int highWaterMark, int lowWaterMark, ScheduledExecutorService scheduler,
+                          final int requestTimeout)
     {
       _buffer = buffer;
       _ctx = ctx;
@@ -226,6 +194,22 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
       _lowWaterMark = lowWaterMark;
       _lock = new Object();
       _bytes = new byte[4096];
+
+      // schedule a timeout to close the channel and inform use
+      Runnable timeoutTask = new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
+          Channels.fireExceptionCaught(ctx, ex);
+          _failedWith = ex;
+        }
+      };
+      _timeout = new Timeout<Runnable>(scheduler, requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+      _timeout.addTimeoutTask(timeoutTask);
+      _scheduler = scheduler;
+      _requestTimeout = requestTimeout;
     }
 
     @Override
@@ -245,23 +229,10 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
       }
     }
 
-    public void setLastChunkReceived()
-    {
-      _lastChunkReceived = true;
-    }
-
-    public void timeout(Throwable e)
-    {
-      _failedWith = e;
-    }
-
-    public int getTotalBytesWritten()
-    {
-      return _totalBytesWritten;
-    }
-
     public void processHttpChunk(HttpChunk httpChunk) throws TooLongFrameException
     {
+      Runnable timeoutTask = _timeout.getItem();
+
       // we need synchronized because doWrite may be invoked by EntityStream's event thread or
       // netty thread
       synchronized (_lock)
@@ -270,11 +241,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 
         if (_buffer.readableBytes() + _totalBytesWritten > _maxContentLength)
         {
-           TooLongFrameException ex = new TooLongFrameException(
-                "HTTP content length exceeded " + _maxContentLength +
-                    " bytes.");
+          TooLongFrameException ex = new TooLongFrameException(
+              "HTTP content length exceeded " + _maxContentLength +
+                  " bytes.");
           _failedWith = ex;
-          throw  ex;
+          throw ex;
         }
 
         if (_buffer.readableBytes() > _highWaterMark && _ctx.getChannel().isReadable())
@@ -283,8 +254,20 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           _ctx.getChannel().setReadable(false);
         }
 
+        if (httpChunk.isLast())
+        {
+          _lastChunkReceived = true;
+        }
+
         doWrite();
       }
+
+      if (!httpChunk.isLast())
+      {
+        _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+        _timeout.addTimeoutTask(timeoutTask);
+      }
+
     }
 
     // this method does not block

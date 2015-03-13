@@ -103,6 +103,10 @@ class RAPResponseHandler extends UpstreamHandlerWithAttachment<TransportCallback
       callback.onResponse(TransportResponseImpl.<StreamResponse>error(
               HttpNettyClient.toException(e.getCause()), Collections.<String,String>emptyMap()));
     }
+    else
+    {
+      LOG.debug(e.getChannel().getRemoteAddress() + ": exception on potentially active channel", e.getCause());
+    }
     super.exceptionCaught(ctx, e);
   }
 
