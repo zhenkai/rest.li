@@ -14,6 +14,7 @@ import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
@@ -153,7 +154,7 @@ import java.util.Map;
 
     public void onError(Throwable e)
     {
-      _ctx.getChannel().close();
+      Channels.fireExceptionCaught(_ctx, e);
     }
 
   }
