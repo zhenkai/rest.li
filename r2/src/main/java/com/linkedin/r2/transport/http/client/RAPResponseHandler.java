@@ -61,30 +61,36 @@ class RAPResponseHandler extends UpstreamHandlerWithAttachment<TransportCallback
   @Override
   public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
   {
-    StreamResponse response = (StreamResponse)e.getMessage();
-
-    // In general there should always be a callback to handle a received message,
-    // but it could have been removed due to a previous exception or closure on the
-    // channel
-    TransportCallback<StreamResponse> callback = removeAttachment(ctx);
-    if (callback != null)
+    if (HttpNettyClient.CHANNEL_RELEASE_SIGNAL == e.getMessage())
     {
-      LOG.debug("{}: handling a response", e.getChannel().getRemoteAddress());
-      final Map<String, String> headers = new HashMap<String, String>(response.getHeaders());
-      final Map<String, String> wireAttrs =
-            new HashMap<String, String>(WireAttributeHelper.removeWireAttributes(headers));
-
-      final StreamResponse newResponse = new StreamResponseBuilder(response)
-              .unsafeSetHeaders(headers)
-              .build(response.getEntityStream());
-
-      callback.onResponse(TransportResponseImpl.success(newResponse, wireAttrs));
+      super.messageReceived(ctx, e);
     }
     else
     {
-      LOG.debug("{}: dropped a response", e.getChannel().getRemoteAddress());
+      StreamResponse response = (StreamResponse) e.getMessage();
+
+      // In general there should always be a callback to handle a received message,
+      // but it could have been removed due to a previous exception or closure on the
+      // channel
+      TransportCallback<StreamResponse> callback = removeAttachment(ctx);
+      if (callback != null)
+      {
+        LOG.debug("{}: handling a response", e.getChannel().getRemoteAddress());
+        final Map<String, String> headers = new HashMap<String, String>(response.getHeaders());
+        final Map<String, String> wireAttrs =
+            new HashMap<String, String>(WireAttributeHelper.removeWireAttributes(headers));
+
+        final StreamResponse newResponse = new StreamResponseBuilder(response)
+            .unsafeSetHeaders(headers)
+            .build(response.getEntityStream());
+
+        callback.onResponse(TransportResponseImpl.success(newResponse, wireAttrs));
+      }
+      else
+      {
+        LOG.debug("{}: dropped a response", e.getChannel().getRemoteAddress());
+      }
     }
-    super.messageReceived(ctx, e);
   }
 
   @Override
@@ -96,10 +102,6 @@ class RAPResponseHandler extends UpstreamHandlerWithAttachment<TransportCallback
       LOG.debug(e.getChannel().getRemoteAddress() + ": exception on active channel", e.getCause());
       callback.onResponse(TransportResponseImpl.<StreamResponse>error(
               HttpNettyClient.toException(e.getCause()), Collections.<String,String>emptyMap()));
-    }
-    else
-    {
-      LOG.error(e.getChannel().getRemoteAddress() + ": exception on idle channel or during handling of response", e.getCause());
     }
     super.exceptionCaught(ctx, e);
   }

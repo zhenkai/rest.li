@@ -1,6 +1,9 @@
 package com.linkedin.r2.transport.http.client;
 
+import com.linkedin.common.callback.Callback;
+import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.ByteStringWriter;
 import com.linkedin.r2.message.streaming.EntityStream;
@@ -8,6 +11,7 @@ import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.util.Timeout;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelEvent;
@@ -26,6 +30,9 @@ import org.jboss.netty.util.CharsetUtil;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.jboss.netty.channel.Channels.succeededFuture;
 import static org.jboss.netty.channel.Channels.write;
@@ -43,16 +50,21 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   private static final int BUFFER_LOW_WATER_MARK = 1024 * 32;
 
   private final int _maxContentLength;
+  private final int _requestTimeout;
+  private final ScheduledExecutorService _scheduler;
 
   private BufferedWriter _chunkedMessageWriter;
+  private Timeout<Runnable> _timeout;
 
-  RAPResponseDecoder(int maxContentLength)
+  RAPResponseDecoder(ScheduledExecutorService scheduler, int requestTimeout, int maxContentLength)
   {
+    _scheduler = scheduler;
+    _requestTimeout = requestTimeout;
     _maxContentLength = maxContentLength;
   }
 
   @Override
-  public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception
+  public void handleUpstream(final ChannelHandlerContext ctx, ChannelEvent e) throws Exception
   {
 
     if (e instanceof MessageEvent)
@@ -81,9 +93,23 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
             m.removeHeader(HttpHeaders.Names.TRANSFER_ENCODING);
           }
           ChannelBuffer buf = ChannelBuffers.dynamicBuffer(e.getChannel().getConfig().getBufferFactory());
-          BufferedWriter writer = new BufferedWriter(buf, ctx, _maxContentLength, BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK);
+          final BufferedWriter writer = new BufferedWriter(buf, ctx, _maxContentLength, BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK);
           entityStream = EntityStreams.newEntityStream(writer);
           _chunkedMessageWriter = writer;
+
+          // schedule a timeout to close the channel and inform use
+          Runnable timeoutTask = new Runnable()
+          {
+            @Override
+            public void run()
+            {
+              Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + _requestTimeout + "ms");
+              Channels.fireExceptionCaught(ctx, ex);
+              writer.timeout(ex);
+            }
+          };
+          _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+          _timeout.addTimeoutTask(timeoutTask);
         }
         else
         {
@@ -121,13 +147,18 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
       else if (msg instanceof HttpChunk)
       {
         BufferedWriter currentWriter = _chunkedMessageWriter;
+        Timeout<Runnable> timeout = _timeout;
         // Sanity check
-        if (currentWriter == null)
+        if (currentWriter == null || timeout == null)
         {
           throw new IllegalStateException(
               "received " + HttpChunk.class.getSimpleName() +
                   " without " + HttpMessage.class.getSimpleName());
         }
+
+        // stop the timeout task
+        Runnable timeoutTask = timeout.getItem();
+
         HttpChunk chunk = (HttpChunk) msg;
         if (chunk.isLast())
         {
@@ -137,6 +168,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 //          }
           currentWriter.setLastChunkReceived();
           _chunkedMessageWriter = null;
+          _timeout = null;
           Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
         }
         else
@@ -148,8 +180,12 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           catch (TooLongFrameException ex)
           {
             _chunkedMessageWriter = null;
+            _timeout = null;
             throw ex;
           }
+          // reschedule timeout task
+          _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+          _timeout.addTimeoutTask(timeoutTask);
         }
       }
       else
@@ -178,7 +214,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     private volatile boolean _lastChunkReceived = false;
     private boolean _isDone = false;
     private int _totalBytesWritten = 0;
-    private Throwable _failedWith = null;
+    private volatile Throwable _failedWith = null;
     private final byte[] _bytes;
 
     BufferedWriter(ChannelBuffer buffer, ChannelHandlerContext ctx, int maxContentLength, int highWaterMark, int lowWaterMark)
@@ -212,6 +248,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     public void setLastChunkReceived()
     {
       _lastChunkReceived = true;
+    }
+
+    public void timeout(Throwable e)
+    {
+      _failedWith = e;
     }
 
     public int getTotalBytesWritten()

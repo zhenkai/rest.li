@@ -26,6 +26,8 @@ import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelUpstreamHandler;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import static org.jboss.netty.channel.Channels.write;
 
 
@@ -38,9 +40,9 @@ class RAPClientCodec implements ChannelUpstreamHandler, ChannelDownstreamHandler
   private final RAPRequestEncoder _encoder = new RAPRequestEncoder();
   private final RAPResponseDecoder _decoder;
 
-  RAPClientCodec(int maxContentLength)
+  RAPClientCodec(ScheduledExecutorService scheduler, int requestTimeout, int maxContentLength)
   {
-    _decoder = new RAPResponseDecoder(maxContentLength);
+    _decoder = new RAPResponseDecoder(scheduler, requestTimeout, maxContentLength);
   }
 
   @Override

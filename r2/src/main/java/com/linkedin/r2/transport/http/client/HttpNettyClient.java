@@ -634,7 +634,7 @@ import org.slf4j.LoggerFactory;
 
       pipeline.addLast("codec", new HttpClientCodec());
       //pipeline.addLast("dechunker", new HttpChunkAggregator(_maxResponseSize));
-      pipeline.addLast("rapiCodec", new RAPClientCodec(_maxResponseSize));
+      pipeline.addLast("rapiCodec", new RAPClientCodec(_scheduler, _requestTimeout, _maxResponseSize));
       // Could introduce an ExecutionHandler here (before RAPResponseHandler)
       // to execute the response handling on a different thread.
       pipeline.addLast("responseHandler", _responseHandler);

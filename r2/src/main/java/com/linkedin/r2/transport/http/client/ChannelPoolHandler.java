@@ -51,13 +51,11 @@ class ChannelPoolHandler extends UpstreamHandlerWithAttachment<AsyncPool<Channel
   @Override
   public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
   {
-    if (HttpNettyClient.CHANNEL_RELEASE_SIGNAL == e.getMessage())
+
+    AsyncPool<Channel> pool = removeAttachment(ctx);
+    if (pool != null)
     {
-      AsyncPool<Channel> pool = removeAttachment(ctx);
-      if (pool != null)
-      {
-        pool.put(e.getChannel());
-      }
+      pool.put(e.getChannel());
     }
   }
 
