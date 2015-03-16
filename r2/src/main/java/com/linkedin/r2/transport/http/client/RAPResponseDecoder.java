@@ -16,9 +16,12 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ChannelUpstreamHandler;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpChunkTrailer;
@@ -41,7 +44,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 /**
 * @author Zhenkai Zhu
 */
-/* package private */ class RAPResponseDecoder implements ChannelUpstreamHandler
+/* package private */ class RAPResponseDecoder extends SimpleChannelUpstreamHandler
 {
   private static final ChannelBuffer CONTINUE = ChannelBuffers.copiedBuffer(
       "HTTP/1.1 100 Continue\r\n\r\n", CharsetUtil.US_ASCII);
@@ -62,12 +65,10 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     _maxContentLength = maxContentLength;
   }
 
-  @Override
-  public void handleUpstream(final ChannelHandlerContext ctx, ChannelEvent e) throws Exception
+  public void messageReceived(
+      ChannelHandlerContext ctx, MessageEvent e) throws Exception
   {
 
-    if (e instanceof MessageEvent)
-    {
       Object msg = ((MessageEvent) e).getMessage();
 
       if (msg instanceof HttpResponse)
@@ -155,10 +156,27 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
       {
         ctx.sendUpstream(e);
       }
-    } else
+  }
+
+  @Override
+  public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
+  {
+    if (_chunkedMessageWriter != null)
     {
-      ctx.sendUpstream(e);
+      _chunkedMessageWriter.fail(new IllegalStateException("Channel closed while receiving the entity."));
     }
+    super.channelClosed(ctx, e);
+  }
+
+  @Override
+  public void exceptionCaught(
+      ChannelHandlerContext ctx, ExceptionEvent e) throws Exception
+  {
+    if (_chunkedMessageWriter != null)
+    {
+      _chunkedMessageWriter.fail(new IllegalStateException("Exception caught while receiving the entity.", e.getCause()));
+    }
+    super.exceptionCaught(ctx, e);
   }
 
   /**
@@ -267,6 +285,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         _timeout.addTimeoutTask(timeoutTask);
       }
 
+    }
+
+    public void fail(Throwable ex)
+    {
+      _failedWith = ex;
     }
 
     // this method does not block

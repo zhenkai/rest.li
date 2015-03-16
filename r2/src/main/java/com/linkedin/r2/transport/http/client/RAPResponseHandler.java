@@ -126,7 +126,7 @@ class RAPResponseHandler extends UpstreamHandlerWithAttachment<TransportCallback
     }
     else
     {
-      LOG.debug("{}: idle channel closed", e.getChannel().getRemoteAddress());
+      LOG.debug("{}: potentially idle channel closed", e.getChannel().getRemoteAddress());
     }
     super.channelClosed(ctx, e);
   }
