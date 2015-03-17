@@ -20,6 +20,7 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.transport.FilterChainDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 /**
@@ -75,7 +76,7 @@ public class HttpServerFactory
                                  boolean useAsyncServletApi,
                                  int asyncTimeOut)
   {
-    final TransportDispatcher filterDispatcher =
+    final StreamDispatcher filterDispatcher =
         new FilterChainDispatcher(transportDispatcher, _filters);
     final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
     return new HttpJettyServer(port,
