@@ -20,7 +20,7 @@
 
 package com.linkedin.r2.transport.http.server;
 
-import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 
 /**
  * @author Steven Ihde
@@ -30,43 +30,30 @@ import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 public class RAPServlet extends AbstractR2Servlet
 {
   private static final long serialVersionUID = 0L;
+  private static final int DEFAULT_TIMEOUT = 30000;
 
   private final HttpDispatcher _dispatcher;
 
-  public RAPServlet(HttpDispatcher dispatcher)
+  public RAPServlet(HttpDispatcher dispatcher, int timeout)
   {
+    super(timeout);
     _dispatcher = dispatcher;
   }
 
-  public RAPServlet(TransportDispatcher dispatcher)
+  public RAPServlet(StreamDispatcher dispatcher, int timeout)
+  {
+    this(new HttpDispatcher(dispatcher), timeout);
+  }
+
+  public RAPServlet(HttpDispatcher dispatcher)
+  {
+    this(dispatcher, DEFAULT_TIMEOUT);
+  }
+
+  public RAPServlet(StreamDispatcher dispatcher)
   {
     this(new HttpDispatcher(dispatcher));
   }
-
-  /**
-   * Initialize the RAPServlet.
-   * @see AbstractR2Servlet#AbstractR2Servlet(boolean, int, int)
-   */
-  public RAPServlet(HttpDispatcher dispatcher,
-                    boolean useContinuations,
-                    int timeOut,
-                    int timeOutDelta)
-  {
-    _dispatcher = dispatcher;
-  }
-
-  /**
-   * Initialize the RAPServlet.
-   * @see AbstractR2Servlet#AbstractR2Servlet(boolean, int, int)
-   */
-  public RAPServlet(TransportDispatcher dispatcher,
-                    boolean useContinuations,
-                    int timeOut,
-                    int timeOutDelta)
-  {
-    this(new HttpDispatcher(dispatcher), useContinuations, timeOut, timeOutDelta);
-  }
-
 
   @Override
   protected HttpDispatcher getDispatcher()
