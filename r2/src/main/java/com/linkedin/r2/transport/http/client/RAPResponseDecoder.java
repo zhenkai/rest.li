@@ -195,7 +195,6 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     private Timeout<Runnable> _timeout;
     private volatile boolean _lastChunkReceived = false;
     private int _totalBytesWritten = 0;
-    private volatile Throwable _failedWith = null;
     private final byte[] _bytes;
     private final ScheduledExecutorService _scheduler;
     private final int _requestTimeout;
@@ -220,7 +219,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         {
           Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
           Channels.fireExceptionCaught(ctx, ex);
-          _failedWith = ex;
+          _wh.error(ex);
         }
       };
       _timeout = new Timeout<Runnable>(scheduler, requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
@@ -261,7 +260,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           TooLongFrameException ex = new TooLongFrameException(
               "HTTP content length exceeded " + _maxContentLength +
                   " bytes.");
-          _failedWith = ex;
+          _wh.error(ex);
           throw ex;
         }
 
@@ -289,7 +288,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 
     public void fail(Throwable ex)
     {
-      _failedWith = ex;
+      _wh.error(ex);
     }
 
     // this method does not block
@@ -297,11 +296,6 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     {
       while (_wh.remainingCapacity() > 0)
       {
-        if (_failedWith != null)
-        {
-          _wh.error(_failedWith);
-          break;
-        }
         int dataLen = Math.min(_wh.remainingCapacity(), Math.min(_bytes.length, _buffer.readableBytes()));
         if (dataLen == 0)
         {
