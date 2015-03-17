@@ -17,7 +17,7 @@
 package com.linkedin.r2.transport.http.server;
 
 
-import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 
 
 /**
@@ -25,7 +25,10 @@ import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
  * containers supporting Servlet API 3.0 or greater.
  * @author Goksel Genc
  * @version $Revision: $
+ *
+ * @deprecated Use {@link com.linkedin.r2.transport.http.server.RAPServlet}
  */
+@Deprecated
 public class AsyncR2Servlet extends AbstractAsyncR2Servlet
 {
   private static final long serialVersionUID = 0L;
@@ -44,7 +47,7 @@ public class AsyncR2Servlet extends AbstractAsyncR2Servlet
   /**
    * Creates the AsyncR2Servlet.
    */
-  public AsyncR2Servlet(TransportDispatcher dispatcher,
+  public AsyncR2Servlet(StreamDispatcher dispatcher,
                         long timeout)
   {
     this(new HttpDispatcher(dispatcher), timeout);
