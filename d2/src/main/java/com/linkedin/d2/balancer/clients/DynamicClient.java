@@ -29,6 +29,8 @@ import com.linkedin.d2.discovery.event.PropertyEventThread.PropertyEventShutdown
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.AbstractClient;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
@@ -36,6 +38,7 @@ import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,15 +65,15 @@ public class DynamicClient extends AbstractClient implements D2Client
   }
 
   @Override
-  public void restRequest(RestRequest request,
+  public void streamRequest(StreamRequest request,
                           RequestContext requestContext,
-                          final Callback<RestResponse> callback)
+                          final Callback<StreamResponse> callback)
   {
-    Callback<RestResponse> transportCallback;
+    Callback<StreamResponse> transportCallback;
     if (_log.isTraceEnabled())
     {
-      trace(_log, "rest request: ", request);
-      transportCallback = new Callback<RestResponse>()
+      trace(_log, "stream request: ", request);
+      transportCallback = new Callback<StreamResponse>()
       {
         @Override
         public void onError(Throwable e)
@@ -80,7 +83,7 @@ public class DynamicClient extends AbstractClient implements D2Client
         }
 
         @Override
-        public void onSuccess(RestResponse result)
+        public void onSuccess(StreamResponse result)
         {
           callback.onSuccess(result);
           trace(_log, "rest response success: ", result);
@@ -98,7 +101,7 @@ public class DynamicClient extends AbstractClient implements D2Client
 
       if (client != null)
       {
-        new TransportClientAdapter(client).restRequest(request, requestContext, transportCallback);
+        new TransportClientAdapter(client).streamRequest(request, requestContext, transportCallback);
       }
       else
       {
@@ -166,9 +169,9 @@ public class DynamicClient extends AbstractClient implements D2Client
     return Collections.emptyMap();
   }
 
-  private static String extractLogInfo(RestRequest request)
+  private static String extractLogInfo(StreamRequest request)
   {
-    return "Rest Request: [" +
+    return "Stream Request: [" +
         "Service: " + LoadBalancerUtil.getServiceNameFromUri(request.getURI()) + ", " +
         "Method: " + request.getMethod() +
         "]";

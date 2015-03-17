@@ -42,8 +42,11 @@ import java.io.IOException;
  * containers supporting Servlet API 3.0 or greater.
  * @author Goksel Genc
  * @version $Revision$
+ *
+ * @deprecated Use {@link com.linkedin.r2.transport.http.server.AbstractR2Servlet}
  */
 @SuppressWarnings("serial")
+@Deprecated
 public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 {
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
