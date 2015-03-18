@@ -79,7 +79,7 @@ public class RewriteClient implements LoadBalancerClient
 
   private StreamRequest rewriteRequest(StreamRequest req)
   {
-    return new StreamRequestBuilder(req).setURI(rewriteUri(req.getURI())).build(req.getEntityStream());
+    return req.transformBuilder().setURI(rewriteUri(req.getURI())).build(req.getEntityStream());
   }
 
   private URI rewriteUri(URI uri)

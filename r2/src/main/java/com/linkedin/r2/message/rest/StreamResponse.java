@@ -31,8 +31,8 @@ import com.linkedin.r2.message.streaming.EntityStreams;
  * @author Zhenkai Zhu
  * @version $Revision$
  */
-public interface StreamResponse extends RestMessage, Response, ResponseHeaders
+public interface StreamResponse extends RestMessage, Response, ResponseHead
 {
-  StreamResponse NO_RESPONSE = new StreamResponseImpl(
-      EntityStreams.emptyStream(), Collections.<String, String>emptyMap(), Collections.<String>emptyList(), 0);
+  @Override
+  StreamResponseBuilder transformBuilder();
 }

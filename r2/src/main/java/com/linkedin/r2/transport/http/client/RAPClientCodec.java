@@ -37,7 +37,7 @@ class RAPClientCodec extends ChannelDuplexHandler
   private final RAPRequestEncoder _encoder;
   private final RAPResponseDecoder _decoder;
 
-  RAPClientCodec(ScheduledExecutorService scheduler, long requestTimeout, int maxContentLength)
+  RAPClientCodec(ScheduledExecutorService scheduler, long requestTimeout, long maxContentLength)
   {
     _encoder = new RAPRequestEncoder();
     _decoder = new RAPResponseDecoder(scheduler, requestTimeout, maxContentLength);

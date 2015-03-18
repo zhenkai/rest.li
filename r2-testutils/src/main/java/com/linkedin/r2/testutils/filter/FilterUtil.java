@@ -45,22 +45,22 @@ public class FilterUtil
 
   public static void fireSimpleRestResponse(FilterChain fc)
   {
-    fc.onRestResponse(simpleRestResponse(), emptyRequestContext(), emptyWireAttrs());
+    fc.onResponse(simpleRestResponse(), emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireSimpleRestError(FilterChain fc)
   {
-    fc.onRestError(simpleError(), emptyRequestContext(), emptyWireAttrs());
+    fc.onError(simpleError(), emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireRestRequest(FilterChain fc, RestRequest req)
   {
-    fc.onRestRequest(req, emptyRequestContext(), emptyWireAttrs());
+    fc.onRequest(req, emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireRestRequest(FilterChain fc, RestRequest req, Map<String, String> wireAttrs)
   {
-    fc.onRestRequest(req, emptyRequestContext(), wireAttrs);
+    fc.onRequest(req, emptyRequestContext(), wireAttrs);
   }
 
   public static void fireUntypedRequest(FilterChain fc, Request req)
@@ -80,8 +80,8 @@ public class FilterUtil
   public static void fireRestRequestResponse(FilterChain fc, RestRequest req, RestResponse res)
   {
     final RequestContext context = new RequestContext();
-    fc.onRestRequest(req, context, emptyWireAttrs());
-    fc.onRestResponse(res, context, emptyWireAttrs());
+    fc.onRequest(req, context, emptyWireAttrs());
+    fc.onResponse(res, context, emptyWireAttrs());
   }
 
   // Determines the type of the request at runtime.
@@ -100,8 +100,8 @@ public class FilterUtil
   public static void fireRestRequestError(FilterChain fc, RestRequest req, Exception ex)
   {
     final RequestContext context = new RequestContext();
-    fc.onRestRequest(req, context, emptyWireAttrs());
-    fc.onRestError(ex, context, emptyWireAttrs());
+    fc.onRequest(req, context, emptyWireAttrs());
+    fc.onError(ex, context, emptyWireAttrs());
   }
 
   public static void fireUntypedRequestError(FilterChain fc, Request req, Exception ex)

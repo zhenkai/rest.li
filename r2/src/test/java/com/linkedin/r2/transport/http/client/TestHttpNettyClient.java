@@ -40,6 +40,13 @@ import java.util.concurrent.CountDownLatch;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 
+<<<<<<< HEAD
+=======
+import com.linkedin.r2.message.rest.StreamResponse;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+>>>>>>> use Servlet 3.1 on server side
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -94,9 +101,15 @@ public class TestHttpNettyClient
     HttpNettyClient client = new HttpNettyClient(new NoCreations(_scheduler), _scheduler, 500, 500, 1024 * 1024 * 2);
 
     RestRequest r = new RestRequestBuilder(URI.create("http://localhost/")).build();
+<<<<<<< HEAD
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
     TransportCallback<RestResponse> callback = new TransportCallbackAdapter<RestResponse>(cb);
     client.restRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+=======
+    FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
+    TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
+    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+>>>>>>> use Servlet 3.1 on server side
     try
     {
       // This timeout needs to be significantly larger than the getTimeout of the netty client;
@@ -127,9 +140,9 @@ public class TestHttpNettyClient
         .setShutdownTimeout(500).build();
 
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
-    FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
-    TransportCallback<RestResponse> callback = new TransportCallbackAdapter<RestResponse>(cb);
-    client.restRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+    FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
+    TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
+    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
 
     try
     {
@@ -162,9 +175,15 @@ public class TestHttpNettyClient
                                   .build();
 
     RestRequest r = new RestRequestBuilder(URI.create("http://this.host.does.not.exist.linkedin.com")).build();
+<<<<<<< HEAD
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
     TransportCallback<RestResponse> callback = new TransportCallbackAdapter<RestResponse>(cb);
     client.restRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+=======
+    FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
+    TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
+    client.streamRequest(r, new RequestContext(), new HashMap<String,String>(), callback);
+>>>>>>> use Servlet 3.1 on server side
     try
     {
       cb.get(30, TimeUnit.SECONDS);
@@ -197,9 +216,9 @@ public class TestHttpNettyClient
             .setShutdownTimeout(500).setMaxResponseSize(TEST_MAX_RESPONSE_SIZE).build();
 
     RestRequest r = new RestRequestBuilder(testServer.getResponseOfSizeURI(responseSize)).build();
-    FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
-    TransportCallback<RestResponse> callback = new TransportCallbackAdapter<RestResponse>(cb);
-    client.restRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+    FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
+    TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
+    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
 
     try
     {
@@ -308,8 +327,13 @@ public class TestHttpNettyClient
 
     // Now verify a new request will also fail
     RestRequest r = new RestRequestBuilder(URI.create("http://no.such.host.linkedin.com")).build();
+<<<<<<< HEAD
     FutureCallback<RestResponse> callback = new FutureCallback<RestResponse>();
     client.restRequest(r, new RequestContext(), new HashMap<String, String>(), new TransportCallbackAdapter<RestResponse>(callback));
+=======
+    FutureCallback<StreamResponse> callback = new FutureCallback<StreamResponse>();
+    client.streamRequest(r, new RequestContext(), new HashMap<String,String>(), new TransportCallbackAdapter<StreamResponse>(callback));
+>>>>>>> use Servlet 3.1 on server side
     try
     {
       callback.get(30, TimeUnit.SECONDS);
@@ -329,8 +353,8 @@ public class TestHttpNettyClient
     HttpNettyClient client = new HttpNettyClient(new NoCreations(_scheduler), _scheduler, 60000, 1, 1024 * 1024 * 2);
 
     RestRequest r = new RestRequestBuilder(URI.create("http://some.host/")).build();
-    FutureCallback<RestResponse> futureCallback = new FutureCallback<RestResponse>();
-    client.restRequest(r, new RequestContext(), new HashMap<String, String>(), new TransportCallbackAdapter<RestResponse>(futureCallback));
+    FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
+    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), new TransportCallbackAdapter<StreamResponse>(futureCallback));
 
     FutureCallback<None> shutdownCallback = new FutureCallback<None>();
     client.shutdown(shutdownCallback);
@@ -376,9 +400,15 @@ public class TestHttpNettyClient
         .setShutdownTimeout(shutdownTimeout).build();
 
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
+<<<<<<< HEAD
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
     TransportCallback<RestResponse> callback = new TransportCallbackAdapter<RestResponse>(cb);
     client.restRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+=======
+    FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
+    TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
+    client.streamRequest(r, new RequestContext(), new HashMap<String,String>(), callback);
+>>>>>>> use Servlet 3.1 on server side
 
     FutureCallback<None> shutdownCallback = new FutureCallback<None>();
     client.shutdown(shutdownCallback);

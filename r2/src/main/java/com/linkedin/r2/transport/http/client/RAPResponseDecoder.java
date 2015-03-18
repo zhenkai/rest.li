@@ -44,16 +44,16 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   private static final FullHttpResponse CONTINUE =
       new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER);
 
-  private static final int BUFFER_HIGH_WATER_MARK = 1024 * 128;
-  private static final int BUFFER_LOW_WATER_MARK = 1024 * 32;
+  private static final int BUFFER_HIGH_WATER_MARK = 16 * 1024;
+  private static final int BUFFER_LOW_WATER_MARK = 8 * 1024;
 
-  private final int _maxContentLength;
+  private final long _maxContentLength;
   private final long _requestTimeout;
   private final ScheduledExecutorService _scheduler;
 
   private TimeoutBufferedWriter _chunkedMessageWriter;
 
-  RAPResponseDecoder(ScheduledExecutorService scheduler, long requestTimeout, int maxContentLength)
+  RAPResponseDecoder(ScheduledExecutorService scheduler, long requestTimeout, long maxContentLength)
   {
     _scheduler = scheduler;
     _requestTimeout = requestTimeout;
@@ -95,8 +95,6 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
           BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK, _scheduler, _requestTimeout);
       EntityStream entityStream = EntityStreams.newEntityStream(writer);
       _chunkedMessageWriter = writer;
-
-
       StreamResponseBuilder builder = new StreamResponseBuilder();
       builder.setStatus(m.getStatus().code());
 
@@ -157,6 +155,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     if (_chunkedMessageWriter != null)
     {
       _chunkedMessageWriter.fail(new ClosedChannelException());
+      _chunkedMessageWriter = null;
     }
     ctx.fireChannelInactive();
   }
@@ -167,6 +166,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     if (_chunkedMessageWriter != null)
     {
       _chunkedMessageWriter.fail(cause);
+      _chunkedMessageWriter = null;
     }
     ctx.fireExceptionCaught(cause);
   }
@@ -175,11 +175,11 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
    * A buffered writer that stops reading from socket if buffered bytes is larger than high water mark
    * and resumes reading from socket if buffered bytes is smaller than low water mark.
    */
-  private static class TimeoutBufferedWriter implements Writer
+  private class TimeoutBufferedWriter implements Writer
   {
     private final CompositeByteBuf _buffer = Unpooled.compositeBuffer(1024);
     private final ChannelHandlerContext _ctx;
-    private final int _maxContentLength;
+    private final long _maxContentLength;
     private final int _highWaterMark;
     private final int _lowWaterMark;
     private final Object _lock;
@@ -191,7 +191,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     private final ScheduledExecutorService _scheduler;
     private final long _requestTimeout;
 
-    TimeoutBufferedWriter(final ChannelHandlerContext ctx, int maxContentLength,
+    TimeoutBufferedWriter(final ChannelHandlerContext ctx, long maxContentLength,
                           int highWaterMark, int lowWaterMark, ScheduledExecutorService scheduler,
                           final long requestTimeout)
     {
@@ -211,6 +211,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
           Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
           ctx.fireExceptionCaught(ex);
           _wh.error(ex);
+          _chunkedMessageWriter = null;
         }
       };
       _timeout = new Timeout<Runnable>(scheduler, requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
@@ -249,12 +250,14 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
           _wh.error(chunk.getDecoderResult().cause());
           // free
           _buffer.release();
+          _chunkedMessageWriter = null;
         }
         else if (chunk.content().readableBytes() + _totalBytesWritten > _maxContentLength)
         {
           TooLongFrameException ex = new TooLongFrameException("HTTP content length exceeded " + _maxContentLength +
               " bytes.");
           _wh.error(ex);
+          _chunkedMessageWriter = null;
           throw ex;
         }
         else
@@ -286,6 +289,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
     public void fail(Throwable ex)
     {
+      _timeout.getItem();
       _wh.error(ex);
       _buffer.release();
     }
@@ -337,6 +341,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         // free
         _buffer.release();
       }
+      _buffer.discardReadBytes();
     }
   }
 }

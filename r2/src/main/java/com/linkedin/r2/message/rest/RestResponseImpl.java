@@ -8,6 +8,7 @@ import com.linkedin.util.ArgumentUtil;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Zhenkai Zhu
@@ -18,8 +19,7 @@ import java.util.Map;
 
   /* package private */ RestResponseImpl(ByteString entity, Map<String, String> headers, List<String> cookies, int status)
   {
-    super(EntityStreams.emptyStream(), headers, cookies, status);
-    ArgumentUtil.notNull(entity, "entity");
+    super(createEntityStream(entity), headers, cookies, status);
     _entity = entity;
   }
 
@@ -27,12 +27,6 @@ import java.util.Map;
   public ByteString getEntity()
   {
     return _entity;
-  }
-
-  @Override
-  public EntityStream getEntityStream()
-  {
-    return EntityStreams.newEntityStream(new ByteStringWriter(_entity));
   }
 
   @Override
@@ -83,5 +77,11 @@ import java.util.Map;
         .append(_entity.length())
         .append("]");
     return builder.toString();
+  }
+
+  private static EntityStream createEntityStream(ByteString entity)
+  {
+    ArgumentUtil.notNull(entity, "entity");
+    return EntityStreams.newEntityStream(new ByteStringWriter(entity));
   }
 }
