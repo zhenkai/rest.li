@@ -63,19 +63,26 @@ public abstract class AbstractEchoServiceTest
 
   private CaptureWireAttributesFilter _serverCaptureFilter;
   private CaptureWireAttributesFilter _clientCaptureFilter;
+  private LogEntityLengthFilter _serverLengthFilter;
+  private LogEntityLengthFilter _clientLengthFilter;
 
-  @BeforeClass
+  @BeforeMethod
   protected void setUp() throws Exception
   {
     _serverCaptureFilter = new CaptureWireAttributesFilter();
     _clientCaptureFilter = new CaptureWireAttributesFilter();
 
+    _serverLengthFilter = new LogEntityLengthFilter();
+    _clientLengthFilter = new LogEntityLengthFilter();
+
     final FilterChain serverFilters = FilterChains.empty()
             .addFirst(_serverCaptureFilter)
+            .addLast(_serverLengthFilter)
             .addLast(new SendWireAttributeFilter(_toClientKey, _toClientValue, false));
 
     final FilterChain clientFilters = FilterChains.empty()
             .addFirst(_clientCaptureFilter)
+            .addLast(_clientLengthFilter)
             .addLast(new SendWireAttributeFilter(_toServerKey, _toServerValue, true));
 
     _client = createClient(clientFilters);
@@ -114,6 +121,11 @@ public abstract class AbstractEchoServiceTest
     client.echo(msg, callback);
 
     Assert.assertEquals(callback.get(), msg);
+    Assert.assertEquals(_clientLengthFilter.getRequestEntityLength(), msg.length());
+    Assert.assertEquals(_clientLengthFilter.getResponseEntityLength(), msg.length());
+    Assert.assertEquals(_serverLengthFilter.getRequestEntityLength(), msg.length());
+    Assert.assertEquals(_serverLengthFilter.getResponseEntityLength(), msg.length());
+
   }
 
   @Test

@@ -101,7 +101,7 @@ public class HttpBridge
 
   public static StreamRequest toStreamRequest(StreamRequest request, Map<String, String> headers)
   {
-    return new StreamRequestBuilder(request)
+    return request.transformBuilder()
         .unsafeSetHeaders(headers)
         .build(request.getEntityStream());
   }

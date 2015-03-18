@@ -20,6 +20,7 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.transport.FilterChainDispatcher;
+import com.linkedin.r2.message.streaming.StreamDecider;
 import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
@@ -35,15 +36,27 @@ public class HttpServerFactory
   public static final boolean DEFAULT_USE_ASYNC_SERVLET_API = false;
 
   private final FilterChain _filters;
+  private final boolean _asyncIO;
 
   public HttpServerFactory()
   {
-    this(FilterChains.empty());
+    this(false);
+  }
+
+  public HttpServerFactory(boolean asyncIO)
+  {
+    this(FilterChains.empty(), asyncIO);
   }
 
   public HttpServerFactory(FilterChain filters)
   {
+    this(filters, false);
+  }
+
+  public HttpServerFactory(FilterChain filters, boolean asyncIO)
+  {
     _filters = filters;
+    _asyncIO = asyncIO;
   }
 
   public HttpServer createServer(int port, TransportDispatcher transportDispatcher)
@@ -54,6 +67,29 @@ public class HttpServerFactory
                         transportDispatcher,
                         DEFAULT_USE_ASYNC_SERVLET_API,
                         DEFAULT_ASYNC_TIMEOUT);
+  }
+
+  public HttpServer createStreamServer(int port, StreamDispatcher streamDispatcher)
+  {
+    return createStreamServer(port,
+        DEFAULT_CONTEXT_PATH,
+        DEFAULT_THREAD_POOL_SIZE,
+        streamDispatcher,
+        DEFAULT_USE_ASYNC_SERVLET_API,
+        DEFAULT_ASYNC_TIMEOUT);
+  }
+
+  public HttpServer createMixedServer(int port, StreamDispatcher streamDispatcher, TransportDispatcher transportDispatcher,
+                                      StreamDecider decider)
+  {
+    return createMixedServer(port,
+        DEFAULT_CONTEXT_PATH,
+        DEFAULT_THREAD_POOL_SIZE,
+        streamDispatcher,
+        transportDispatcher,
+        decider,
+        DEFAULT_USE_ASYNC_SERVLET_API,
+        DEFAULT_ASYNC_TIMEOUT);
   }
 
   public HttpServer createServer(int port,
@@ -77,13 +113,14 @@ public class HttpServerFactory
                                  int asyncTimeOut)
   {
     final StreamDispatcher filterDispatcher =
-        new FilterChainDispatcher(transportDispatcher, _filters);
+        new FilterChainDispatcher(transportDispatcher,  _filters);
     final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
     return new HttpJettyServer(port,
                                contextPath,
                                threadPoolSize,
                                dispatcher,
                                useAsyncServletApi,
+                               _asyncIO,
                                asyncTimeOut);
   }
 
@@ -93,15 +130,8 @@ public class HttpServerFactory
       String keyStorePassword,
       TransportDispatcher transportDispatcher)
   {
-    return createHttpsServer(port,
-                             sslPort,
-                             keyStore,
-                             keyStorePassword,
-                             DEFAULT_CONTEXT_PATH,
-                             DEFAULT_THREAD_POOL_SIZE,
-                             transportDispatcher,
-                             DEFAULT_USE_ASYNC_SERVLET_API,
-                             DEFAULT_ASYNC_TIMEOUT);
+    return createHttpsServer(port, sslPort, keyStore, keyStorePassword, DEFAULT_CONTEXT_PATH, DEFAULT_THREAD_POOL_SIZE,
+        transportDispatcher, DEFAULT_USE_ASYNC_SERVLET_API, DEFAULT_ASYNC_TIMEOUT);
   }
 
   public HttpServer createServer(int port,
@@ -112,15 +142,8 @@ public class HttpServerFactory
                                  int threadPoolSize,
                                  TransportDispatcher transportDispatcher)
   {
-    return createHttpsServer(port,
-                             sslPort,
-                             keyStore,
-                             keyStorePassword,
-                             contextPath,
-                             threadPoolSize,
-                             transportDispatcher,
-                             DEFAULT_USE_ASYNC_SERVLET_API,
-                             DEFAULT_ASYNC_TIMEOUT);
+    return createHttpsServer(port, sslPort, keyStore, keyStorePassword, contextPath, threadPoolSize,
+        transportDispatcher, DEFAULT_USE_ASYNC_SERVLET_API, DEFAULT_ASYNC_TIMEOUT);
   }
 
   public HttpServer createHttpsServer(int port,
@@ -133,7 +156,7 @@ public class HttpServerFactory
                                       boolean useAsyncServletApi,
                                       int asyncTimeOut)
   {
-    final TransportDispatcher filterDispatcher =
+    final StreamDispatcher filterDispatcher =
       new FilterChainDispatcher(transportDispatcher, _filters);
     final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
     return new HttpsJettyServer(port,
@@ -147,4 +170,43 @@ public class HttpServerFactory
                                 asyncTimeOut);
   }
 
+  public HttpServer createStreamServer(int port,
+                                 String contextPath,
+                                 int threadPoolSize,
+                                 StreamDispatcher streamDispatcher,
+                                 boolean useAsyncServletApi,
+                                 int asyncTimeOut)
+  {
+    final StreamDispatcher filterDispatcher =
+        new FilterChainDispatcher(streamDispatcher,  _filters);
+    final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
+    return new HttpJettyServer(port,
+        contextPath,
+        threadPoolSize,
+        dispatcher,
+        useAsyncServletApi,
+        _asyncIO,
+        asyncTimeOut);
+  }
+
+  public HttpServer createMixedServer(int port,
+                                       String contextPath,
+                                       int threadPoolSize,
+                                       StreamDispatcher streamDispatcher,
+                                       TransportDispatcher transportDispatcher,
+                                       StreamDecider decider,
+                                       boolean useAsyncServletApi,
+                                       int asyncTimeOut)
+  {
+    final StreamDispatcher filterDispatcher =
+        new FilterChainDispatcher(transportDispatcher, streamDispatcher,  decider, _filters);
+    final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
+    return new HttpJettyServer(port,
+        contextPath,
+        threadPoolSize,
+        dispatcher,
+        useAsyncServletApi,
+        _asyncIO,
+        asyncTimeOut);
+  }
 }

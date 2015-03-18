@@ -54,11 +54,10 @@ public class HttpJettyServer implements HttpServer
                          int threadPoolSize,
                          HttpDispatcher dispatcher,
                          boolean useAsync,
+                         boolean asyncIO,
                          int asyncTimeOut)
   {
-    this(port, contextPath, threadPoolSize,
-         useAsync ? new AsyncR2Servlet(dispatcher, asyncTimeOut) :
-                    new RAPServlet(dispatcher));
+    this(port, contextPath, threadPoolSize, createServlet(dispatcher, asyncIO, useAsync, asyncTimeOut));
   }
 
   public HttpJettyServer(int port, HttpServlet servlet)
@@ -125,6 +124,25 @@ public class HttpJettyServer implements HttpServer
   {
     ServerConnector http = new ServerConnector(server);
     http.setPort(_port);
-    return new Connector[] { http };
+    return new Connector[]{http};
+  }
+
+  private static HttpServlet createServlet(HttpDispatcher dispatcher, boolean asyncIO, boolean useAsync, int asyncTimeOut)
+  {
+    HttpServlet httpServlet;
+    if (asyncIO)
+    {
+      httpServlet = new AsyncIORAPServlet(dispatcher, asyncTimeOut);
+    }
+    else if (useAsync)
+    {
+      httpServlet = new AsyncR2Servlet(dispatcher, asyncTimeOut);
+    }
+    else
+    {
+      httpServlet = new RAPServlet(dispatcher);
+    }
+
+    return httpServlet;
   }
 }

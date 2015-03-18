@@ -45,7 +45,7 @@ public class TestRestReplayFilter extends AbstractReplayFilterTest
     final FilterChain fc = getFilterChain().addFirst(captureFilter);
 
     // Record a response for the request we will fire
-    getDb().record(req, res);
+//    getDb().record(req, res);
 
     // We should be able to fire just the request - the response should be replayed from the
     // capture we set up above. The response should be a RestException since the status code is 404.

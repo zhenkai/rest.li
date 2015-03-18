@@ -29,6 +29,8 @@ import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.ByteStringWriter;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.FullEntityReader;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.StreamDecider;
@@ -157,7 +159,10 @@ public class DispatcherRequestFilter implements StreamRequestFilter
           @Override
           public StreamResponse getResponse()
           {
-            return response.getResponse();
+            // RestResponse could be used multiple times, so we should construct a StreamResponse from RestResponse
+            final StreamResponse streamResponse = response.getResponse().transformBuilder()
+                .build(EntityStreams.newEntityStream(new ByteStringWriter(response.getResponse().getEntity())));
+            return streamResponse;
           }
 
           @Override

@@ -32,60 +32,60 @@ import com.linkedin.r2.testutils.filter.FilterUtil;
  */
 public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
 {
-  @Test
-  public void testInitialCapture()
-  {
-    final Request req = request();
-    final Response res = response();
-
-    Assert.assertNull(getDb().replay(req));
-
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res);
-
-    Assert.assertEquals(res, getDb().<Response>replay(req));
-  }
-
-  @Test
-  public void testTwoDifferentRequests()
-  {
-    final Request req1 = request();
-    final Request req2 = req1.requestBuilder().setEntity("This is a different request".getBytes()).build();
-    final Response res1 = response();
-    final Response res2 = res1.responseBuilder().setEntity("This is a different response".getBytes()).build();
-
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req1, res1);
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req2, res2);
-
-    // Should have created two separate entries
-    Assert.assertEquals(res1, getDb().<Response>replay(req1));
-    Assert.assertEquals(res2, getDb().<Response>replay(req2));
-  }
-
-  @Test
-  public void testSameRequestDifferentResponses()
-  {
-    final Request req = request();
-    final Response res1 = response();
-    final Response res2 = res1.responseBuilder().setEntity("This is a different response".getBytes()).build();
-
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res1);
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res2);
-
-    // Last one wins
-    Assert.assertEquals(res2, getDb().<Response>replay(req));
-  }
-
-  @Test
-  public void testException()
-  {
-    final Request req = request();
-    final Exception ex = new Exception();
-
-    FilterUtil.fireUntypedRequestError(getFilterChain(), req, ex);
-
-    // Request / response should not be recorded
-    Assert.assertNull(getDb().replay(req));
-  }
+//  @Test
+//  public void testInitialCapture()
+//  {
+//    final Request req = request();
+//    final Response res = response();
+//
+//    Assert.assertNull(getDb().replay(req));
+//
+//    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res);
+//
+//    Assert.assertEquals(res, getDb().<Response>replay(req));
+//  }
+//
+//  @Test
+//  public void testTwoDifferentRequests()
+//  {
+//    final Request req1 = request();
+//    final Request req2 = req1.requestBuilder().setEntity("This is a different request".getBytes()).build();
+//    final Response res1 = response();
+//    final Response res2 = res1.responseBuilder().setEntity("This is a different response".getBytes()).build();
+//
+//    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req1, res1);
+//    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req2, res2);
+//
+//    // Should have created two separate entries
+//    Assert.assertEquals(res1, getDb().<Response>replay(req1));
+//    Assert.assertEquals(res2, getDb().<Response>replay(req2));
+//  }
+//
+//  @Test
+//  public void testSameRequestDifferentResponses()
+//  {
+//    final Request req = request();
+//    final Response res1 = response();
+//    final Response res2 = res1.responseBuilder().setEntity("This is a different response".getBytes()).build();
+//
+//    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res1);
+//    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res2);
+//
+//    // Last one wins
+//    Assert.assertEquals(res2, getDb().<Response>replay(req));
+//  }
+//
+//  @Test
+//  public void testException()
+//  {
+//    final Request req = request();
+//    final Exception ex = new Exception();
+//
+//    FilterUtil.fireUntypedRequestError(getFilterChain(), req, ex);
+//
+//    // Request / response should not be recorded
+//    Assert.assertNull(getDb().replay(req));
+//  }
 
   @Override
   protected Filter createFilter(TransientDb db)

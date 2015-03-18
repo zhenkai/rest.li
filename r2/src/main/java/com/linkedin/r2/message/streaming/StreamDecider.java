@@ -1,14 +1,14 @@
 package com.linkedin.r2.message.streaming;
 
 
-import com.linkedin.r2.message.rest.RequestHeaders;
+import com.linkedin.r2.message.rest.RequestHead;
 
 /**
  * @author Zhenkai Zhu
  */
 public interface StreamDecider
 {
-  StreamDecision decide(RequestHeaders headers);
+  StreamDecision decide(RequestHead requestHead);
 
   public enum StreamDecision
   {
