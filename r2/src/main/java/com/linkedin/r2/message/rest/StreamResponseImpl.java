@@ -46,6 +46,12 @@ import java.util.Map;
   @Override
   public StreamResponseBuilder responseBuilder()
   {
+    return transformBuilder();
+  }
+
+  @Override
+  public StreamResponseBuilder transformBuilder()
+  {
     return new StreamResponseBuilder(this);
   }
 

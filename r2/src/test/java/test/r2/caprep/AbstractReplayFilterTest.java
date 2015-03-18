@@ -57,7 +57,7 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
     final FilterChain fc = getFilterChain().addFirst(captureFilter);
 
     // Record a response for the request we will fire
-    getDb().record(req, res);
+//    getDb().record(req, res);
 
     // We should be able to fire just the request - the response should be replayed from the
     // capture we set up above.

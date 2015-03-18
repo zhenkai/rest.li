@@ -26,6 +26,8 @@ import com.linkedin.r2.message.Request;
  * @author Zhenkai Zhu
  * @version $Revision$
  */
-public interface StreamRequest extends RestMessage, Request, RequestHeaders
+public interface StreamRequest extends RestMessage, Request, RequestHead
 {
+  @Override
+  StreamRequestBuilder transformBuilder();
 }

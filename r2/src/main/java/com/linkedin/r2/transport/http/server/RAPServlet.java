@@ -30,30 +30,41 @@ import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 public class RAPServlet extends AbstractR2Servlet
 {
   private static final long serialVersionUID = 0L;
-  private static final int DEFAULT_TIMEOUT = 30000;
 
   private final HttpDispatcher _dispatcher;
 
-  public RAPServlet(HttpDispatcher dispatcher, int timeout)
-  {
-    super(timeout);
-    _dispatcher = dispatcher;
-  }
-
-  public RAPServlet(StreamDispatcher dispatcher, int timeout)
-  {
-    this(new HttpDispatcher(dispatcher), timeout);
-  }
-
   public RAPServlet(HttpDispatcher dispatcher)
   {
-    this(dispatcher, DEFAULT_TIMEOUT);
+    _dispatcher = dispatcher;
   }
 
   public RAPServlet(StreamDispatcher dispatcher)
   {
     this(new HttpDispatcher(dispatcher));
   }
+
+  /**
+   * Initialize the RAPServlet.
+   */
+  public RAPServlet(HttpDispatcher dispatcher,
+                    boolean useContinuations,
+                    int timeOut,
+                    int timeOutDelta)
+  {
+    _dispatcher = dispatcher;
+  }
+
+  /**
+   * Initialize the RAPServlet.
+   */
+  public RAPServlet(StreamDispatcher dispatcher,
+                    boolean useContinuations,
+                    int timeOut,
+                    int timeOutDelta)
+  {
+    this(new HttpDispatcher(dispatcher), useContinuations, timeOut, timeOutDelta);
+  }
+
 
   @Override
   protected HttpDispatcher getDispatcher()

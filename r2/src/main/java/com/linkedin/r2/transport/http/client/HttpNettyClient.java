@@ -24,9 +24,6 @@ package com.linkedin.r2.transport.http.client;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
-import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.MessageType;
@@ -48,7 +45,6 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.util.concurrent.ExecutorService;
@@ -96,9 +92,10 @@ import org.slf4j.LoggerFactory;
 
   private final long _requestTimeout;
   private final long _shutdownTimeout;
-  private final int _maxResponseSize;
+  private final long _maxResponseSize;
   private final int _maxHeaderSize;
   private final int _maxChunkSize;
+
 
   private final String _requestTimeoutMessage;
   private final AbstractJmxManager _jmxManager;
@@ -176,7 +173,7 @@ import org.slf4j.LoggerFactory;
                   ScheduledExecutorService executor,
                   int requestTimeout,
                   int shutdownTimeout,
-                  int maxResponseSize)
+                  long maxResponseSize)
   {
     _maxResponseSize = maxResponseSize;
     _channelPoolManager = new ChannelPoolManager(factory);
@@ -324,7 +321,9 @@ import org.slf4j.LoggerFactory;
       port = "http".equalsIgnoreCase(scheme) ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
 
-    final StreamRequest newRequest = request;
+    final StreamRequest newRequest = request.transformBuilder()
+                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+                                             .build(request.getEntityStream());
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
     // request without body, it seems not working with streaming
 //    try

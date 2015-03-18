@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * @author Zhenkai Zhu
  */
-public interface RestHeaders
+public interface RestHead
 {
   /**
    * Gets the value of the header with the given name. If there is no header with the given name

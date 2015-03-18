@@ -15,4 +15,6 @@ public interface StreamMessage
    * @return the EntityStream of this message.
    */
   EntityStream getEntityStream();
+
+  StreamMessageBuilder<? extends StreamMessageBuilder<?>> transformBuilder();
 }

@@ -42,10 +42,11 @@ import java.io.IOException;
  * @author Goksel Genc
  * @version $Revision$
  *
- * @deprecated Use {@link com.linkedin.r2.transport.http.server.AbstractR2Servlet}
+ * TODO [ZZ]: figure out how to support this; if we behavor differently then it's trivia; i.e.
+ * run loop() for request, and then run loop for response; that means streaming of request and response
+ *  cannot be going on at the same time, which may be reasonable for most use cases.
  */
 @SuppressWarnings("serial")
-@Deprecated
 public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 {
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
@@ -61,97 +62,91 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
   {
     _timeout = timeout;
   }
-
-  @Override
-  public void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException,
-                                                                                                 IOException
-  {
-    RequestContext requestContext = readRequestContext(req);
-
-    RestRequest restRequest;
-
-    try
-    {
-      restRequest = readFromServletRequest(req);
-    }
-    catch (URISyntaxException e)
-    {
-      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
-      return;
-    }
-
-    final AsyncContext ctx = req.startAsync(req, resp);
-
-    ctx.setTimeout(_timeout);
-    ctx.addListener(new AsyncListener()
-    {
-      @Override
-      public void onTimeout(AsyncEvent event) throws IOException
-      {
-        AsyncContext ctx = event.getAsyncContext();
-        writeToServletError((HttpServletResponse) ctx.getResponse(),
-                            RestStatus.INTERNAL_SERVER_ERROR,
-                            "Server Timeout");
-        ctx.complete();
-      }
-
-      @Override
-      public void onStartAsync(AsyncEvent event) throws IOException
-      {
-        // Nothing to do here
-      }
-
-      @Override
-      public void onError(AsyncEvent event) throws IOException
-      {
-        writeToServletError((HttpServletResponse) event.getSuppliedResponse(),
-                            RestStatus.INTERNAL_SERVER_ERROR,
-                            "Server Error");
-        ctx.complete();
-      }
-
-      @Override
-      public void onComplete(AsyncEvent event) throws IOException
-      {
-        Object exception = req.getAttribute(TRANSPORT_CALLBACK_IOEXCEPTION);
-        if (exception != null)
-          throw new IOException((IOException) exception);
-      }
-    });
-
-    TransportCallback<RestResponse> callback = new TransportCallback<RestResponse>()
-    {
-      @Override
-      public void onResponse(final TransportResponse<RestResponse> response)
-      {
-        // TransportCallback is usually invoked by non-servlet threads; hence we cannot assume that it's ok to
-        // do blocking IO there. As a result, we should use AsyncContext.start() to do blocking IO using the
-        // container/servlet threads. This still maintains the advantage of Async, meaning servlet thread is not
-        // blocking-wait when the response is not ready.
-        ctx.start(new Runnable()
-        {
-          @Override
-          public void run()
-          {
-            try
-            {
-              writeToServletResponse(response, (HttpServletResponse) ctx.getResponse());
-            }
-            catch (IOException e)
-            {
-              req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
-            }
-            finally
-            {
-              ctx.complete();
-            }
-          }
-        });
-      }
-    };
-
-    getDispatcher().handleRequest(restRequest, requestContext, callback);
-  }
+//
+//  @Override
+//  public void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException,
+//                                                                                                 IOException
+//  {
+//    RequestContext requestContext = readRequestContext(req);
+//
+//    RestRequest restRequest;
+//
+//    try
+//    {
+//      restRequest = readFromServletRequest(req, requestContext);
+//    }
+//    catch (URISyntaxException e)
+//    {
+//      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+//      return;
+//    }
+//    catch (MessagingException e)
+//    {
+//      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+//      return;
+//    }
+//
+//    final AsyncContext ctx = req.startAsync(req, resp);
+//
+//    ctx.setTimeout(_timeout);
+//    ctx.addListener(new AsyncListener()
+//    {
+//      @Override
+//      public void onTimeout(AsyncEvent event) throws IOException
+//      {
+//        AsyncContext ctx = event.getAsyncContext();
+//        writeToServletError((HttpServletResponse) ctx.getResponse(),
+//                            RestStatus.INTERNAL_SERVER_ERROR,
+//                            "Server Timeout");
+//        ctx.complete();
+//      }
+//
+//      @Override
+//      public void onStartAsync(AsyncEvent event) throws IOException
+//      {
+//        // Nothing to do here
+//      }
+//
+//      @Override
+//      public void onError(AsyncEvent event) throws IOException
+//      {
+//        writeToServletError((HttpServletResponse) event.getSuppliedResponse(),
+//                            RestStatus.INTERNAL_SERVER_ERROR,
+//                            "Server Error");
+//        ctx.complete();
+//      }
+//
+//      @Override
+//      public void onComplete(AsyncEvent event) throws IOException
+//      {
+//        Object exception = req.getAttribute(TRANSPORT_CALLBACK_IOEXCEPTION);
+//        if (exception != null)
+//          throw new IOException((IOException) exception);
+//      }
+//    });
+//
+//    TransportCallback<RestResponse> callback = new TransportCallback<RestResponse>()
+//    {
+//      @Override
+//      public void onResponse(TransportResponse<RestResponse> response)
+//      {
+//        try
+//        {
+//          writeToServletResponse(response, (HttpServletResponse) ctx.getResponse());
+//        }
+//        catch (IOException e)
+//        {
+//          req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+//        }
+//        finally
+//        {
+//          ctx.complete();
+//        }
+//      }
+//    };
+//
+//    getDispatcher().handleRequest(restRequest, requestContext, callback);
+//  }
 
   public long getTimeout()
   {

@@ -1,6 +1,6 @@
 package com.linkedin.r2.message.streaming;
 
-import com.linkedin.r2.message.rest.RequestHeaders;
+import com.linkedin.r2.message.rest.RequestHead;
 
 /**
  * @author Zhenkai Zhu
@@ -21,7 +21,7 @@ public final class StreamDeciders
   private static final StreamDecider ALWAYS_STREAM = new StreamDecider()
   {
     @Override
-    public StreamDecision decide(RequestHeaders headers)
+    public StreamDecision decide(RequestHead head)
     {
       return StreamDecision.STREAM_ENTITY;
     }
@@ -30,7 +30,7 @@ public final class StreamDeciders
   private static final StreamDecider NO_STREAM = new StreamDecider()
   {
     @Override
-    public StreamDecision decide(RequestHeaders headers)
+    public StreamDecision decide(RequestHead head)
     {
       return StreamDecision.FULL_ENTITY;
     }

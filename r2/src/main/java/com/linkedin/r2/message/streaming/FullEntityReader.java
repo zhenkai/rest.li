@@ -34,6 +34,7 @@ public final class FullEntityReader implements Reader
     try
     {
       data.write(_outputStream);
+      _rh.read(data.length());
     } catch (Exception ex)
     {
       _callback.onError(ex);

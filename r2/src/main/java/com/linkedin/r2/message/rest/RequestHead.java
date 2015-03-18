@@ -1,9 +1,11 @@
 package com.linkedin.r2.message.rest;
 
+import java.net.URI;
+
 /**
  * @author Zhenkai Zhu
  */
-public interface RequestHeaders extends RestHeaders
+public interface RequestHead extends RestHead
 {
   /**
    * Returns the REST method for this request.
@@ -12,4 +14,11 @@ public interface RequestHeaders extends RestHeaders
    * @see com.linkedin.r2.message.rest.RestMethod
    */
   String getMethod();
+
+  /**
+   * Returns the URI for this request.
+   *
+   * @return the URI for this request
+   */
+  URI getURI();
 }

@@ -27,7 +27,7 @@ import com.linkedin.data.ByteString;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface Message extends StreamMessage
+public interface Message
 {
   /**
    * Returns the whole entity for this message.
@@ -35,4 +35,6 @@ public interface Message extends StreamMessage
    * @return the entity for this message
    */
   ByteString getEntity();
+
+  MessageBuilder<? extends MessageBuilder<?>> builder();
 }

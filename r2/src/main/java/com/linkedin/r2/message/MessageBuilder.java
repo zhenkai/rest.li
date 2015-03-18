@@ -46,7 +46,7 @@ import com.linkedin.util.ArgumentUtil;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface MessageBuilder<B extends MessageBuilder<B>> extends StreamMessageBuilder<B>
+public interface MessageBuilder<B extends MessageBuilder<B>>
 {
   B setEntity(ByteString entity);
 

@@ -104,7 +104,7 @@ public class HttpClientFactory implements TransportClientFactory
   public static final int DEFAULT_REQUEST_TIMEOUT = 10000;
   public static final int DEFAULT_IDLE_TIMEOUT = 25000;
   public static final int DEFAULT_SHUTDOWN_TIMEOUT = 5000;
-  public static final int DEFAULT_MAX_RESPONSE_SIZE = 1024 * 1024 * 2;
+  public static final long DEFAULT_MAX_RESPONSE_SIZE = 1024 * 1024 * 2;
   public static final String DEFAULT_CLIENT_NAME = "noNameSpecifiedClient";
   public static final AsyncPoolImpl.Strategy DEFAULT_POOL_STRATEGY = AsyncPoolImpl.Strategy.MRU;
   public static final int DEFAULT_POOL_MIN_SIZE = 0;
@@ -482,6 +482,31 @@ public class HttpClientFactory implements TransportClientFactory
     }
   }
 
+  /**
+   * helper method to get value from properties as well as to print log warning if the key is old
+   * @param properties
+   * @param propertyKey
+   * @return null if property key can't be found, integer otherwise
+   */
+  private Long getLongValue(Map<String, ? extends Object> properties, String propertyKey)
+  {
+    if (properties == null)
+    {
+      LOG.warn("passed a null raw client properties");
+      return null;
+    }
+    if (properties.containsKey(propertyKey))
+    {
+      // These properties can be safely cast to String before converting them to Integers as we expect Integer values
+      // for all these properties.
+      return Long.parseLong((String)properties.get(propertyKey));
+    }
+    else
+    {
+      return null;
+    }
+  }
+
   private AsyncPoolImpl.Strategy getStrategy(Map<String, ? extends Object> properties)
   {
     if (properties == null)
@@ -515,7 +540,8 @@ public class HttpClientFactory implements TransportClientFactory
     Integer poolSize = chooseNewOverDefault(getIntValue(properties, HTTP_POOL_SIZE), DEFAULT_POOL_SIZE);
     Integer idleTimeout = chooseNewOverDefault(getIntValue(properties, HTTP_IDLE_TIMEOUT), DEFAULT_IDLE_TIMEOUT);
     Integer shutdownTimeout = chooseNewOverDefault(getIntValue(properties, HTTP_SHUTDOWN_TIMEOUT), DEFAULT_SHUTDOWN_TIMEOUT);
-    Integer maxResponseSize = chooseNewOverDefault(getIntValue(properties, HTTP_MAX_RESPONSE_SIZE), DEFAULT_MAX_RESPONSE_SIZE);
+    long maxResponseSize = chooseNewOverDefault(getLongValue(properties, HTTP_MAX_RESPONSE_SIZE), DEFAULT_MAX_RESPONSE_SIZE);
+    Integer queryPostThreshold = chooseNewOverDefault(getIntValue(properties, HTTP_QUERY_POST_THRESHOLD), Integer.MAX_VALUE);
     Integer requestTimeout = chooseNewOverDefault(getIntValue(properties, HTTP_REQUEST_TIMEOUT), DEFAULT_REQUEST_TIMEOUT);
     Integer poolWaiterSize = chooseNewOverDefault(getIntValue(properties, HTTP_POOL_WAITER_SIZE), DEFAULT_POOL_WAITER_SIZE);
     String clientName = null;

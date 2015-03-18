@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.linkedin.r2.message.rest.StreamResponse;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -56,11 +57,11 @@ public class TestHttpBridge
 
     RestRequest r = new RestRequestBuilder(uri).build();
 
-    FutureCallback<RestResponse> futureCallback = new FutureCallback<RestResponse>();
-    TransportCallback<RestResponse> callback = new TransportCallbackAdapter<RestResponse>(futureCallback);
-    TransportCallback<RestResponse> bridgeCallback = HttpBridge.restToHttpCallback(callback, r);
+    FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
+    TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(futureCallback);
+    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.restToHttpCallback(callback, r);
 
-    bridgeCallback.onResponse(TransportResponseImpl.<RestResponse>error(new Exception()));
+    bridgeCallback.onResponse(TransportResponseImpl.<StreamResponse>error(new Exception()));
 
     try
     {
@@ -77,19 +78,19 @@ public class TestHttpBridge
   @Test
   public void testHttpToRestErrorMessage() throws TimeoutException, InterruptedException, ExecutionException
   {
-    FutureCallback<RestResponse> futureCallback = new FutureCallback<RestResponse>();
-    TransportCallback<RestResponse> callback =
-        new TransportCallbackAdapter<RestResponse>(futureCallback);
-    TransportCallback<RestResponse> bridgeCallback = HttpBridge.httpToRestCallback(callback);
+    FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
+    TransportCallback<StreamResponse> callback =
+        new TransportCallbackAdapter<StreamResponse>(futureCallback);
+    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.httpToRestCallback(callback);
 
     RestResponse restResponse = new RestResponseBuilder().build();
 
     // Note: FutureCallback will fail if called twice. An exception would be raised on the current
     // thread because we begin the callback sequence here in onResponse.
     // (test originally added due to bug with double callback invocation)
-    bridgeCallback.onResponse(TransportResponseImpl.<RestResponse> error(new RestException(restResponse)));
+    bridgeCallback.onResponse(TransportResponseImpl.<StreamResponse> error(new RestException(restResponse)));
 
-    RestResponse resp = futureCallback.get(30, TimeUnit.SECONDS);
+    StreamResponse resp = futureCallback.get(30, TimeUnit.SECONDS);
     // should have unpacked restResponse from the RestException that we passed in without
     // propagating the actual exception
     Assert.assertSame(resp, restResponse);

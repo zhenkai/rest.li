@@ -25,6 +25,7 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -127,10 +128,10 @@ import org.slf4j.LoggerFactory;
     protected void channelRead0(ChannelHandlerContext ctx, RestRequest request) throws Exception
     {
       final Channel ch = ctx.channel();
-      TransportCallback<RestResponse> writeResponseCallback = new TransportCallback<RestResponse>()
+      TransportCallback<StreamResponse> writeResponseCallback = new TransportCallback<StreamResponse>()
       {
         @Override
-        public void onResponse(TransportResponse<RestResponse> response)
+        public void onResponse(TransportResponse<StreamResponse> response)
         {
           final RestResponseBuilder responseBuilder;
           if (response.hasError())
@@ -146,7 +147,7 @@ import org.slf4j.LoggerFactory;
           }
           else
           {
-            responseBuilder = new RestResponseBuilder(response.getResponse());
+            responseBuilder = new RestResponseBuilder((RestResponse)response.getResponse());
           }
 
           responseBuilder
@@ -162,7 +163,8 @@ import org.slf4j.LoggerFactory;
       }
       catch (Exception ex)
       {
-        writeResponseCallback.onResponse(TransportResponseImpl.<RestResponse> error(ex, Collections.<String, String> emptyMap()));
+        writeResponseCallback.onResponse(TransportResponseImpl.<StreamResponse> error(ex,
+                                                                                    Collections.<String, String> emptyMap()));
       }
     }
 

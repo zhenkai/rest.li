@@ -31,7 +31,7 @@ public class UriRewriteProxy implements StreamRequestHandler
   public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
   {
     URI newUri = _uriRewriter.rewrite(request.getURI());
-    StreamRequestBuilder builder = request.builder();
+    StreamRequestBuilder builder = new StreamRequestBuilder(request);
     builder.setURI(newUri);
     StreamRequest newRequest = builder.build(request.getEntityStream());
 
