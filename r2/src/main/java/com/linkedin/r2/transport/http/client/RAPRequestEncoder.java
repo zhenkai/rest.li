@@ -17,6 +17,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
+import org.jboss.netty.handler.codec.http.DefaultHttpChunkTrailer;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
@@ -33,7 +34,7 @@ import java.util.Map;
 /** package private */class RAPRequestEncoder implements ChannelDownstreamHandler
 {
 
-  private static final int MAX_BUFFER_SIZE = 1024 * 128;
+  private static final int MAX_BUFFER_SIZE = 16 * 1024;
 
   @Override
   public void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e)
@@ -68,7 +69,13 @@ import java.util.Map;
 
       nettyRequest.setHeader(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
 
-      if (request instanceof RestRequest)
+      // TODO [ZZ]: for stream request with no or small entity, shall we try to not send in HttpChunk form?
+      // This reduce the wire transfer overhead a little bit, but is it worth it? If we want to wait and cache for the small
+      // entity before sending, how long to wait?
+
+      // code in if block works; for now always use streaming during dev
+      //if (request instanceof RestRequest)
+      if (false)
       {
         // this is small optimization for RestRequest so that we don't chunk over the wire because we
         // don't really gain anything for chunking in such case, but slightly increase the transmitting overhead
@@ -76,22 +83,29 @@ import java.util.Map;
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(entity.asByteBuffer());
         nettyRequest.setContent(buf);
         nettyRequest.setHeader(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
-        ctx.getChannel().write(nettyRequest);
+        Channels.write(ctx, Channels.future(ctx.getChannel()), nettyRequest);
 
       }
       else
       {
         nettyRequest.setChunked(true);
-        ChannelFuture future = ctx.getChannel().write(nettyRequest);
+        nettyRequest.setHeader(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
+        ChannelFuture future = Channels.future(ctx.getChannel());
         final EntityStream entityStream = request.getEntityStream();
         future.addListener(new ChannelFutureListener()
         {
           @Override
           public void operationComplete(ChannelFuture future) throws Exception
           {
-            entityStream.setReader(new BufferedReader(ctx, MAX_BUFFER_SIZE));
+            if (future.isSuccess())
+            {
+              entityStream.setReader(new BufferedReader(ctx, MAX_BUFFER_SIZE));
+            }
           }
         });
+
+        Channels.write(ctx, future, nettyRequest);
+
       }
     }
     else
@@ -134,22 +148,26 @@ import java.util.Map;
       // won't not be affected by the chunk size here.
       ChannelBuffer channelBuffer = ChannelBuffers.wrappedBuffer(data.asByteBuffer());
       HttpChunk chunk = new DefaultHttpChunk(channelBuffer);
-      ChannelFuture writeFuture = _ctx.getChannel().write(chunk);
+      ChannelFuture writeFuture = Channels.future(_ctx.getChannel());
       final int dataLen = data.length();
       writeFuture.addListener(new ChannelFutureListener()
       {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception
         {
-          // data have been written out, we can tell the writer that we can accept more bytes
-          _readHandle.read(dataLen);
+          if (future.isSuccess())
+          {
+            // data have been written out, we can tell the writer that we can accept more bytes
+            _readHandle.read(dataLen);
+          }
         }
       });
+      Channels.write(_ctx, writeFuture, chunk);
     }
 
     public void onDone()
     {
-      _ctx.getChannel().write(HttpChunk.LAST_CHUNK);
+      Channels.write(_ctx, Channels.future(_ctx.getChannel()), HttpChunk.LAST_CHUNK);
     }
 
     public void onError(Throwable e)

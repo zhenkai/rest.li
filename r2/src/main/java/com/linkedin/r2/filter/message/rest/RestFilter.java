@@ -23,11 +23,8 @@ package com.linkedin.r2.filter.message.rest;
  *
  * @author Chris Pettitt
  *
- * @deprecated use {@link com.linkedin.r2.filter.message.rest.StreamFilter} instead
- *
  * TODO [ZZ]: update compression filters & caprep filters and remove this interface
  */
-@Deprecated
 public interface RestFilter extends RestRequestFilter, RestResponseFilter
 {
 

@@ -76,11 +76,11 @@ public class NettyClientRequestHandler implements ChannelDownstreamHandler
       nettyRequest.setChunked(true);
 
       // hook up the reader with the EntityStream of the request
-      // the maximum pipelining or buffering is 256 KB
+      // the maximum pipelining or buffering is 16 KB
       // probably cannot use Encoder pattern because this may cause race condition:
       // the data chunk may be written before the headers are sent
       EntityStream entityStream = request.getEntityStream();
-      entityStream.setReader(new BufferedReader(ctx, 256 * 1024));
+      entityStream.setReader(new BufferedReader(ctx, 16 * 1024));
 
       // set out the headers first
       return nettyRequest;

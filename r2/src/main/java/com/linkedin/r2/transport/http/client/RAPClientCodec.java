@@ -38,7 +38,7 @@ class RAPClientCodec implements ChannelUpstreamHandler, ChannelDownstreamHandler
   private final RAPRequestEncoder _encoder = new RAPRequestEncoder();
   private final RAPResponseDecoder _decoder;
 
-  RAPClientCodec(ScheduledExecutorService scheduler, int requestTimeout, int maxContentLength)
+  RAPClientCodec(ScheduledExecutorService scheduler, int requestTimeout, long maxContentLength)
   {
     _decoder = new RAPResponseDecoder(scheduler, requestTimeout, maxContentLength);
   }

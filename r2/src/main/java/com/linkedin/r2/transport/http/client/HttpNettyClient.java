@@ -28,6 +28,7 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
@@ -96,7 +97,7 @@ import org.slf4j.LoggerFactory;
 
   private final int _requestTimeout;
   private final int _shutdownTimeout;
-  private final int _maxResponseSize;
+  private final long _maxResponseSize;
 
   private final String _requestTimeoutMessage;
   private final AbstractJmxManager _jmxManager;
@@ -151,7 +152,7 @@ import org.slf4j.LoggerFactory;
                          int requestTimeout,
                          int idleTimeout,
                          int shutdownTimeout,
-                         int maxResponseSize,
+                         long maxResponseSize,
                          SSLContext sslContext,
                          SSLParameters sslParameters,
                          ExecutorService callbackExecutor,
@@ -181,7 +182,7 @@ import org.slf4j.LoggerFactory;
                          int requestTimeout,
                          int idleTimeout,
                          int shutdownTimeout,
-                         int maxResponseSize,
+                         long maxResponseSize,
                          SSLContext sslContext,
                          SSLParameters sslParameters,
                          ExecutorService callbackExecutor,
@@ -235,7 +236,7 @@ import org.slf4j.LoggerFactory;
                          int requestTimeout,
                          int idleTimeout,
                          int shutdownTimeout,
-                         int maxResponseSize,
+                         long maxResponseSize,
                          SSLContext sslContext,
                          SSLParameters sslParameters,
                          ExecutorService callbackExecutor,
@@ -270,7 +271,7 @@ import org.slf4j.LoggerFactory;
                   ScheduledExecutorService executor,
                   int requestTimeout,
                   int shutdownTimeout,
-                  int maxResponseSize)
+                  long maxResponseSize)
   {
     _maxResponseSize = maxResponseSize;
     _channelPoolManager = new ChannelPoolManager(factory);
@@ -415,7 +416,9 @@ import org.slf4j.LoggerFactory;
       port = scheme.equalsIgnoreCase("http") ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
 
-    final StreamRequest newRequest = request;
+    final StreamRequest newRequest = request.transformBuilder()
+                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+                                             .build(request.getEntityStream());
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
     // request without body, it seems not working with streaming
 //    try
@@ -709,7 +712,7 @@ import org.slf4j.LoggerFactory;
     return _shutdownTimeout;
   }
 
-  public int getMaxResponseSize()
+  public long getMaxResponseSize()
   {
     return _maxResponseSize;
   }

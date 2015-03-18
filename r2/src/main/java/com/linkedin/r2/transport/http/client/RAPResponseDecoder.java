@@ -1,9 +1,6 @@
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.common.callback.Callback;
-import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.ByteStringWriter;
 import com.linkedin.r2.message.streaming.EntityStream;
@@ -14,17 +11,14 @@ import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.util.Timeout;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.ChannelUpstreamHandler;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 import org.jboss.netty.handler.codec.http.HttpChunk;
-import org.jboss.netty.handler.codec.http.HttpChunkTrailer;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -49,16 +43,16 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   private static final ChannelBuffer CONTINUE = ChannelBuffers.copiedBuffer(
       "HTTP/1.1 100 Continue\r\n\r\n", CharsetUtil.US_ASCII);
 
-  private static final int BUFFER_HIGH_WATER_MARK = 1024 * 128;
-  private static final int BUFFER_LOW_WATER_MARK = 1024 * 32;
+  private static final int BUFFER_HIGH_WATER_MARK = 16 * 1024;
+  private static final int BUFFER_LOW_WATER_MARK = 8 * 1024;
 
-  private final int _maxContentLength;
+  private final long _maxContentLength;
   private final int _requestTimeout;
   private final ScheduledExecutorService _scheduler;
 
   private TimeoutBufferedWriter _chunkedMessageWriter;
 
-  RAPResponseDecoder(ScheduledExecutorService scheduler, int requestTimeout, int maxContentLength)
+  RAPResponseDecoder(ScheduledExecutorService scheduler, int requestTimeout, long maxContentLength)
   {
     _scheduler = scheduler;
     _requestTimeout = requestTimeout;
@@ -69,7 +63,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
       ChannelHandlerContext ctx, MessageEvent e) throws Exception
   {
 
-      Object msg = ((MessageEvent) e).getMessage();
+      Object msg = e.getMessage();
 
       if (msg instanceof HttpResponse)
       {
@@ -103,6 +97,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           // this is not chunked and full entity is already available and in memory
           ChannelBuffer buf = m.getContent();
           byte[] array = new byte[buf.readableBytes()];
+          buf.readBytes(array);
           ByteStringWriter writer = new ByteStringWriter(ByteString.copy(array));
           entityStream = EntityStreams.newEntityStream(writer);
         }
@@ -124,11 +119,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 
         Channels.fireMessageReceived(ctx,
             builder.build(entityStream),
-            ((MessageEvent) e).getRemoteAddress());
+             e.getRemoteAddress());
 
         if (!isChunked)
         {
-          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
+          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, e.getRemoteAddress());
         }
       }
       else if (msg instanceof HttpChunk)
@@ -147,7 +142,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         {
           // TODO [ZZ]: what to do with HttpChunkTrailer? We don't support it as we've already fired up StreamResponse
           _chunkedMessageWriter = null;
-          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
+          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, e.getRemoteAddress());
         }
 
         currentWriter.processHttpChunk(chunk);
@@ -163,7 +158,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   {
     if (_chunkedMessageWriter != null)
     {
-      _chunkedMessageWriter.fail(new IllegalStateException("Channel closed while receiving the entity."));
+      TimeoutBufferedWriter writer = _chunkedMessageWriter;
+      _chunkedMessageWriter = null;
+      writer.fail(new IllegalStateException("Channel closed while receiving the entity."));
     }
     super.channelClosed(ctx, e);
   }
@@ -174,7 +171,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   {
     if (_chunkedMessageWriter != null)
     {
-      _chunkedMessageWriter.fail(new IllegalStateException("Exception caught while receiving the entity.", e.getCause()));
+      TimeoutBufferedWriter writer = _chunkedMessageWriter;
+      _chunkedMessageWriter = null;
+      writer.fail(new IllegalStateException("Exception caught while receiving the entity.", e.getCause()));
     }
     super.exceptionCaught(ctx, e);
   }
@@ -183,11 +182,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
    * A buffered writer that stops reading from socket if buffered bytes is larger than high water mark
    * and resumes reading from socket if buffered bytes is smaller than low water mark.
    */
-  private static class TimeoutBufferedWriter implements Writer
+  private class TimeoutBufferedWriter implements Writer
   {
     private final ChannelBuffer _buffer;
     private final ChannelHandlerContext _ctx;
-    private final int _maxContentLength;
+    private final long _maxContentLength;
     private final int _highWaterMark;
     private final int _lowWaterMark;
     private final Object _lock;
@@ -199,7 +198,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     private final ScheduledExecutorService _scheduler;
     private final int _requestTimeout;
 
-    TimeoutBufferedWriter(ChannelBuffer buffer, final ChannelHandlerContext ctx, int maxContentLength,
+    TimeoutBufferedWriter(ChannelBuffer buffer, final ChannelHandlerContext ctx, long maxContentLength,
                           int highWaterMark, int lowWaterMark, ScheduledExecutorService scheduler,
                           final int requestTimeout)
     {
@@ -218,8 +217,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         public void run()
         {
           Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
-          Channels.fireExceptionCaught(ctx, ex);
           _wh.error(ex);
+          _chunkedMessageWriter = null;
+          Channels.fireExceptionCaught(ctx, ex);
         }
       };
       _timeout = new Timeout<Runnable>(scheduler, requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
@@ -260,8 +260,10 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           TooLongFrameException ex = new TooLongFrameException(
               "HTTP content length exceeded " + _maxContentLength +
                   " bytes.");
+
           _wh.error(ex);
-          throw ex;
+          _chunkedMessageWriter = null;
+          Channels.fireExceptionCaught(_ctx, ex);
         }
 
         if (_buffer.readableBytes() > _highWaterMark && _ctx.getChannel().isReadable())
@@ -288,6 +290,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 
     public void fail(Throwable ex)
     {
+      _timeout.getItem();
       _wh.error(ex);
     }
 
@@ -317,6 +320,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           }
         }
       }
+      _buffer.discardReadBytes();
     }
   }
 }

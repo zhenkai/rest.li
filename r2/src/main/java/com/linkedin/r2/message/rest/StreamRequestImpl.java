@@ -55,6 +55,12 @@ import java.util.Map;
   @Override
   public StreamRequestBuilder requestBuilder()
   {
+    return transformBuilder();
+  }
+
+  @Override
+  public StreamRequestBuilder transformBuilder()
+  {
     return new StreamRequestBuilder(this);
   }
 

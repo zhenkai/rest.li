@@ -26,9 +26,7 @@ import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
  * @author Goksel Genc
  * @version $Revision: $
  *
- * @deprecated Use {@link com.linkedin.r2.transport.http.server.RAPServlet}
  */
-@Deprecated
 public class AsyncR2Servlet extends AbstractAsyncR2Servlet
 {
   private static final long serialVersionUID = 0L;

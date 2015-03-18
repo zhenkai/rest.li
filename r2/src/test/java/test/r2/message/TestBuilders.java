@@ -65,12 +65,12 @@ public class TestBuilders
   @Test
   public void testChainBuildRestRequestFromRequestBuilder()
   {
-    final Request req = new RestRequestBuilder(URI.create("test"))
+    final RestRequest req = new RestRequestBuilder(URI.create("test"))
             .setEntity(new byte[] {1,2,3,4})
             .setHeader("k1", "v1")
             .setMethod(RestMethod.PUT)
             .build()
-            .requestBuilder()
+            .builder()
               .setEntity(new byte[] {5,6,7,8})
               .setURI(URI.create("anotherURI"))
               .build();
@@ -78,8 +78,7 @@ public class TestBuilders
     Assert.assertEquals(new byte[] {5,6,7,8}, req.getEntity().copyBytes());
     Assert.assertEquals(URI.create("anotherURI"), req.getURI());
 
-    Assert.assertTrue(req instanceof RestRequest);
-    final RestRequest restReq = (RestRequest)req;
+    final RestRequest restReq = req;
     Assert.assertEquals("v1", restReq.getHeader("k1"));
     Assert.assertEquals(RestMethod.PUT, restReq.getMethod());
   }
@@ -87,12 +86,12 @@ public class TestBuilders
   @Test
   public void testChainBuildRestRequestFromRestBuilder()
   {
-    final RestMessage req = new RestRequestBuilder(URI.create("test"))
+    final RestRequest req = new RestRequestBuilder(URI.create("test"))
             .setEntity(new byte[] {1,2,3,4})
             .setHeader("k1", "v1")
             .setMethod(RestMethod.PUT)
             .build()
-            .restBuilder()
+            .builder()
               .setEntity(new byte[] {5,6,7,8})
               .setHeader("k2", "v2")
               .build();
@@ -101,8 +100,7 @@ public class TestBuilders
     Assert.assertEquals("v1", req.getHeader("k1"));
     Assert.assertEquals("v2", req.getHeader("k2"));
 
-    Assert.assertTrue(req instanceof RestRequest);
-    final RestRequest restReq = (RestRequest)req;
+    final RestRequest restReq = req;
     Assert.assertEquals(RestMethod.PUT, restReq.getMethod());
     Assert.assertEquals(URI.create("test"), restReq.getURI());
   }
@@ -110,7 +108,7 @@ public class TestBuilders
   @Test
   public void testChainBuildRestRequestFromMessageBuilder()
   {
-    final MessageBuilder<?> builder = new RestRequestBuilder(URI.create("test"))
+    final RestRequestBuilder builder = new RestRequestBuilder(URI.create("test"))
             .setEntity(new byte[] {1,2,3,4})
             .setHeader("k1", "v1")
             .setMethod(RestMethod.PUT)
@@ -123,7 +121,6 @@ public class TestBuilders
 
     Assert.assertEquals(new byte[] {5,6,7,8}, req.getEntity().copyBytes());
 
-    Assert.assertTrue(req instanceof RestRequest);
     final RestRequest restReq = (RestRequest)req;
     Assert.assertEquals(RestMethod.PUT, restReq.getMethod());
     Assert.assertEquals(URI.create("test"), restReq.getURI());
@@ -153,19 +150,18 @@ public class TestBuilders
   @Test
   public void testChainBuildRestResponseFromResponseBuilder()
   {
-    final Response res = new RestResponseBuilder()
+    final RestResponse res = new RestResponseBuilder()
             .setEntity(new byte[] {1,2,3,4})
             .setHeader("k1", "v1")
             .setStatus(300)
             .build()
-            .responseBuilder()
+            .builder()
               .setEntity(new byte[] {5,6,7,8})
               .build();
 
     Assert.assertEquals(new byte[] {5,6,7,8}, res.getEntity().copyBytes());
 
-    Assert.assertTrue(res instanceof RestResponse);
-    final RestResponse restRes = (RestResponse)res;
+    final RestResponse restRes = res;
     Assert.assertEquals("v1", restRes.getHeader("k1"));
     Assert.assertEquals(300, restRes.getStatus());
   }
@@ -173,12 +169,12 @@ public class TestBuilders
   @Test
   public void testChainBuildRestResponseFromRestBuilder()
   {
-    final RestMessage res = new RestResponseBuilder()
+    final RestResponse res = new RestResponseBuilder()
             .setEntity(new byte[] {1,2,3,4})
             .setHeader("k1", "v1")
             .setStatus(300)
             .build()
-            .restBuilder()
+            .builder()
               .setEntity(new byte[] {5,6,7,8})
               .setHeader("k2", "v2")
               .build();
@@ -187,15 +183,14 @@ public class TestBuilders
     Assert.assertEquals("v1", res.getHeader("k1"));
     Assert.assertEquals("v2", res.getHeader("k2"));
 
-    Assert.assertTrue(res instanceof RestResponse);
-    final RestResponse restRes = (RestResponse)res;
+    final RestResponse restRes = res;
     Assert.assertEquals(300, restRes.getStatus());
   }
 
   @Test
   public void testChainBuildRestResponseFromMessageBuilder()
   {
-    final MessageBuilder<?> builder = new RestResponseBuilder()
+    final RestResponseBuilder builder = new RestResponseBuilder()
             .setEntity(new byte[] {1,2,3,4})
             .setHeader("k1", "v1")
             .setStatus(300)
@@ -208,7 +203,6 @@ public class TestBuilders
 
     Assert.assertEquals(new byte[] {5,6,7,8}, res.getEntity().copyBytes());
 
-    Assert.assertTrue(res instanceof RestResponse);
     final RestResponse restRes = (RestResponse)res;
     Assert.assertEquals("v1", restRes.getHeader("k1"));
     Assert.assertEquals(300, restRes.getStatus());
