@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 
+import com.linkedin.r2.message.rest.StreamResponse;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
@@ -136,10 +137,10 @@ import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception
     {
       final Channel ch = e.getChannel();
-      TransportCallback<RestResponse> writeResponseCallback = new TransportCallback<RestResponse>()
+      TransportCallback<StreamResponse> writeResponseCallback = new TransportCallback<StreamResponse>()
       {
         @Override
-        public void onResponse(TransportResponse<RestResponse> response)
+        public void onResponse(TransportResponse<StreamResponse> response)
         {
           final RestResponseBuilder responseBuilder;
           if (response.hasError())
@@ -155,7 +156,7 @@ import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
           }
           else
           {
-            responseBuilder = new RestResponseBuilder(response.getResponse());
+            responseBuilder = new RestResponseBuilder((RestResponse)response.getResponse());
           }
 
           responseBuilder
@@ -172,7 +173,7 @@ import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
       }
       catch (Exception ex)
       {
-        writeResponseCallback.onResponse(TransportResponseImpl.<RestResponse> error(ex,
+        writeResponseCallback.onResponse(TransportResponseImpl.<StreamResponse> error(ex,
                                                                                     Collections.<String, String> emptyMap()));
       }
     }

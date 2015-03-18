@@ -1,9 +1,6 @@
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.common.callback.Callback;
-import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.ByteStringWriter;
 import com.linkedin.r2.message.streaming.EntityStream;
@@ -14,17 +11,14 @@ import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.util.Timeout;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.ChannelUpstreamHandler;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 import org.jboss.netty.handler.codec.http.HttpChunk;
-import org.jboss.netty.handler.codec.http.HttpChunkTrailer;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -69,7 +63,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
       ChannelHandlerContext ctx, MessageEvent e) throws Exception
   {
 
-      Object msg = ((MessageEvent) e).getMessage();
+      Object msg = e.getMessage();
 
       if (msg instanceof HttpResponse)
       {
@@ -124,11 +118,11 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 
         Channels.fireMessageReceived(ctx,
             builder.build(entityStream),
-            ((MessageEvent) e).getRemoteAddress());
+             e.getRemoteAddress());
 
         if (!isChunked)
         {
-          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
+          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, e.getRemoteAddress());
         }
       }
       else if (msg instanceof HttpChunk)
@@ -147,7 +141,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         {
           // TODO [ZZ]: what to do with HttpChunkTrailer? We don't support it as we've already fired up StreamResponse
           _chunkedMessageWriter = null;
-          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, ((MessageEvent) e).getRemoteAddress());
+          Channels.fireMessageReceived(ctx, HttpNettyClient.CHANNEL_RELEASE_SIGNAL, e.getRemoteAddress());
         }
 
         currentWriter.processHttpChunk(chunk);

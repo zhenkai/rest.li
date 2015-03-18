@@ -6,6 +6,8 @@ import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.Observer;
 import org.slf4j.Logger;
@@ -25,10 +27,10 @@ public class LoggingFilter implements StreamResponseFilter
   private static final Logger _log = LoggerFactory.getLogger(LoggingFilter.class);
 
   @Override
-  public void onRestResponse(RestResponse res,
+  public void onResponse(StreamResponse res,
                              RequestContext requestContext,
                              Map<String, String> wireAttrs,
-                             NextFilter<RestRequest, RestResponse> nextFilter)
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     EntityStream entityStream = res.getEntityStream();
     entityStream.addObserver(new Observer()
@@ -66,10 +68,10 @@ public class LoggingFilter implements StreamResponseFilter
   }
 
   @Override
-  public void onRestError(Throwable ex,
+  public void onError(Throwable ex,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          NextFilter<RestRequest, RestResponse> nextFilter)
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     _log.error("Encountered failure before anything has been streamed", ex);
   }

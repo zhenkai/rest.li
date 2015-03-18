@@ -57,7 +57,7 @@ public class HttpJettyServer implements HttpServer
                          int asyncTimeOut)
   {
     this(port, contextPath, threadPoolSize,
-         useAsync ? new AsyncR2Servlet(dispatcher, asyncTimeOut) :
+         useAsync ? new RAPServlet(dispatcher, asyncTimeOut) :
                     new RAPServlet(dispatcher));
   }
 

@@ -64,11 +64,11 @@ public abstract class AbstractR2Servlet extends HttpServlet
   private static final long   serialVersionUID = 0L;
   private static final int MAX_BUFFER_SIZE = 1024 * 128;
 
-  private final int _timeout;
+  private final long _timeout;
 
   protected abstract HttpDispatcher getDispatcher();
 
-  public AbstractR2Servlet(int timeout)
+  public AbstractR2Servlet(long timeout)
   {
     _timeout = timeout;
   }

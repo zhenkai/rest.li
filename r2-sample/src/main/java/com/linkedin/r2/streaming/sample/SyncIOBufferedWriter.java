@@ -5,9 +5,6 @@ import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 
 import javax.servlet.ServletInputStream;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 
 /**
  * This example writer deals with Synchronous IO, which is the case for Servlet API 3.0 & Jetty 8
