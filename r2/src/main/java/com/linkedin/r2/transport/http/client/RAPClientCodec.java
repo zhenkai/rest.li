@@ -28,8 +28,6 @@ import org.jboss.netty.channel.ChannelUpstreamHandler;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-import static org.jboss.netty.channel.Channels.write;
-
 
 /**
 * @author Steven Ihde
