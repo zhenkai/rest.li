@@ -21,9 +21,11 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.streaming.FullEntityReader;
@@ -100,21 +102,31 @@ public abstract class AbstractClient implements Client
       @Override
       public void onError(Throwable e)
       {
-        callback.onError(e);
+        if (e instanceof StreamException)
+        {
+          RestResponseBuilder builder = new RestResponseBuilder(((StreamException) e).getResponse());
+          Callback<ByteString> exceptionCallback = getExceptionAssemblyFinishCallback(callback, builder, (StreamException) e);
+          Reader reader = new FullEntityReader(exceptionCallback);
+          ((StreamException) e).getResponse().getEntityStream().setReader(reader);
+        }
+        else
+        {
+          callback.onError(e);
+        }
       }
 
       @Override
       public void onSuccess(StreamResponse result)
       {
         RestResponseBuilder builder = new RestResponseBuilder(result);
-        Callback<ByteString> assemblyFinishCallback = getAssemblyFinishCallback(callback, builder);
-        Reader reader = new FullEntityReader(assemblyFinishCallback);
+        Callback<ByteString> responseCallback = getResponseAssemblyFinishCallback(callback, builder);
+        Reader reader = new FullEntityReader(responseCallback);
         result.getEntityStream().setReader(reader);
       }
     };
   }
 
-  private static Callback<ByteString> getAssemblyFinishCallback(final Callback<RestResponse> callback,
+  private static Callback<ByteString> getResponseAssemblyFinishCallback(final Callback<RestResponse> callback,
                                                                 final RestResponseBuilder builder)
   {
     return new Callback<ByteString>()
@@ -130,6 +142,28 @@ public abstract class AbstractClient implements Client
       {
         RestResponse restResponse = builder.setEntity(result).build();
         callback.onSuccess(restResponse);
+      }
+    };
+  }
+
+  private static Callback<ByteString> getExceptionAssemblyFinishCallback(final Callback<RestResponse> callback,
+                                                                final RestResponseBuilder builder,
+                                                                final StreamException streamException)
+  {
+    return new Callback<ByteString>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        // is it better to present user an Exception with original message & cause?
+        callback.onError(e);
+      }
+
+      @Override
+      public void onSuccess(ByteString result)
+      {
+        RestResponse restResponse = builder.setEntity(result).build();
+        callback.onError(new RestException(restResponse, streamException.getMessage(), streamException.getCause()));
       }
     };
   }

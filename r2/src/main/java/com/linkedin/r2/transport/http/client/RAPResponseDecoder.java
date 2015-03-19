@@ -97,6 +97,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           // this is not chunked and full entity is already available and in memory
           ChannelBuffer buf = m.getContent();
           byte[] array = new byte[buf.readableBytes()];
+          buf.readBytes(array);
           ByteStringWriter writer = new ByteStringWriter(ByteString.copy(array));
           entityStream = EntityStreams.newEntityStream(writer);
         }

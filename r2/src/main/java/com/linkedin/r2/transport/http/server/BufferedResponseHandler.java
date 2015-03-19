@@ -5,10 +5,12 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Zhenkai Zhu
@@ -21,6 +23,7 @@ import java.nio.ByteBuffer;
   private final AsyncContext _ctx;
   private ReadHandle _rh;
   private volatile boolean _allDataRead = false;
+  private final AtomicBoolean _completed = new AtomicBoolean(false);
 
   BufferedResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx)
   {
@@ -97,7 +100,10 @@ import java.nio.ByteBuffer;
     }
     if (_allDataRead && _os.isReady() && !_buffer.hasRemaining())
     {
-      _ctx.complete();
+      if (_completed.compareAndSet(false, true))
+      {
+        _ctx.complete();
+      }
     }
     _buffer.compact();
   }

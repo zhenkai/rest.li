@@ -76,13 +76,13 @@ import java.util.Map;
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(entity.asByteBuffer());
         nettyRequest.setContent(buf);
         nettyRequest.setHeader(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
-        ctx.getChannel().write(nettyRequest);
+        Channels.write(ctx, Channels.future(ctx.getChannel()), nettyRequest);
 
       }
       else
       {
         nettyRequest.setChunked(true);
-        ChannelFuture future = ctx.getChannel().write(nettyRequest);
+        ChannelFuture future = Channels.future(ctx.getChannel());
         final EntityStream entityStream = request.getEntityStream();
         future.addListener(new ChannelFutureListener()
         {
@@ -92,6 +92,9 @@ import java.util.Map;
             entityStream.setReader(new BufferedReader(ctx, MAX_BUFFER_SIZE));
           }
         });
+
+        Channels.write(ctx, future, nettyRequest);
+
       }
     }
     else
