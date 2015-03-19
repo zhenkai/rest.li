@@ -18,17 +18,20 @@ import java.nio.ByteBuffer;
   private final ByteBuffer _buffer;
   private final Object _lock = new Object();
   private final ServletOutputStream _os;
-  private final AbstractR2Servlet.WrappedAsyncContext _ctx;
+  private final AsyncContext _ctx;
   private ReadHandle _rh;
   private volatile boolean _allDataRead = false;
 
-  BufferedResponseHandler(int bufferSize, ServletOutputStream os, AbstractR2Servlet.WrappedAsyncContext ctx)
+  BufferedResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx)
   {
     _buffer = ByteBuffer.allocate(bufferSize);
     _os = os;
     _ctx = ctx;
   }
 
+  // for some reason onWritePossible would be invoked for the first time after doWrite had finished
+  // that is isReady returned true and we did writing and finished; isReady never returned false;
+  // and then onWritePossible got invoked
   public void onWritePossible() throws IOException
   {
     synchronized (_lock)
@@ -94,11 +97,7 @@ import java.nio.ByteBuffer;
     }
     if (_allDataRead && _os.isReady() && !_buffer.hasRemaining())
     {
-      if (!_ctx.getCompleted().compareAndSet(false, true))
-      {
-        // request side has completed, so we can complete ctx
-        _ctx.getCtx().complete();
-      }
+      _ctx.complete();
     }
     _buffer.compact();
   }

@@ -17,16 +17,14 @@ import java.nio.ByteBuffer;
   private final ByteBuffer _buffer;
   private final byte[] _tmpBuf;
   private final ServletInputStream _is;
-  private final AbstractR2Servlet.WrappedAsyncContext _ctx;
   private final Object _lock = new Object();
   private WriteHandle _wh;
 
-  BufferedRequestHandler(int bufferSize, ServletInputStream is, AbstractR2Servlet.WrappedAsyncContext ctx)
+  BufferedRequestHandler(int bufferSize, ServletInputStream is)
   {
     _tmpBuf = new byte[4096];
     _buffer = ByteBuffer.allocate(bufferSize);
     _is = is;
-    _ctx = ctx;
   }
 
   public void onDataAvailable() throws IOException
@@ -43,11 +41,6 @@ import java.nio.ByteBuffer;
 
   public void onAllDataRead() throws IOException
   {
-    if (!_ctx.getCompleted().compareAndSet(false, true))
-    {
-      // the response side has completed, so we can complete ctx
-      _ctx.getCtx().complete();
-    }
     synchronized (_lock)
     {
       writeIfPossible();

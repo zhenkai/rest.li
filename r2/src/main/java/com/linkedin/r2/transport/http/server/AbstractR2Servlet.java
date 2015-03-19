@@ -82,7 +82,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
     final AsyncContext ctx = req.startAsync();
     ctx.setTimeout(_timeout);
 
-    final WrappedAsyncContext wrappedCtx = new WrappedAsyncContext(ctx, new AtomicBoolean(false), new AtomicBoolean(false));
+    final WrappedAsyncContext wrappedCtx = new WrappedAsyncContext(ctx, new AtomicBoolean(false));
 //    ctx.addListener(new AsyncListener()
 //    {
 //      @Override
@@ -192,7 +192,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
       }
 
       ServletOutputStream os = resp.getOutputStream();
-      BufferedResponseHandler handler = new BufferedResponseHandler(MAX_BUFFER_SIZE, os, ctx);
+      BufferedResponseHandler handler = new BufferedResponseHandler(MAX_BUFFER_SIZE, os, ctx.getCtx());
       EntityStream responseStream = streamResponse.getEntityStream();
       responseStream.setReader(handler);
       os.setWriteListener(handler);
@@ -243,7 +243,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
     }
 
     ServletInputStream is = req.getInputStream();
-    BufferedRequestHandler handler = new BufferedRequestHandler(MAX_BUFFER_SIZE, is, ctx);
+    BufferedRequestHandler handler = new BufferedRequestHandler(MAX_BUFFER_SIZE, is);
     is.setReadListener(handler);
     return builder.build(EntityStreams.newEntityStream(handler));
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil
@@ -341,13 +341,11 @@ public abstract class AbstractR2Servlet extends HttpServlet
   {
     private final AsyncContext _ctx;
     private final AtomicBoolean _writeStarted;
-    private final AtomicBoolean _completed;
 
-    WrappedAsyncContext(AsyncContext ctx, AtomicBoolean writeStarted, AtomicBoolean completed)
+    WrappedAsyncContext(AsyncContext ctx, AtomicBoolean writeStarted)
     {
       _ctx = ctx;
       _writeStarted = writeStarted;
-      _completed = completed;
     }
 
     AsyncContext getCtx()
@@ -358,11 +356,6 @@ public abstract class AbstractR2Servlet extends HttpServlet
     AtomicBoolean getWriteStarted()
     {
       return _writeStarted;
-    }
-
-    AtomicBoolean getCompleted()
-    {
-      return _completed;
     }
   }
 }
