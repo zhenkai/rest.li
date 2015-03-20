@@ -29,6 +29,7 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
@@ -430,7 +431,9 @@ import org.slf4j.LoggerFactory;
       port = scheme.equalsIgnoreCase("http") ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
 
-    final StreamRequest newRequest = request;
+    final StreamRequest newRequest = new StreamRequestBuilder(request)
+                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+                                             .build(request.getEntityStream());
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
     // request without body, it seems not working with streaming
 //    try

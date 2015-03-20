@@ -1,6 +1,7 @@
 package com.linkedin.r2.message.streaming;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.util.ArgumentUtil;
 
 /**
  * A  writer that produce content based on the ByteString body
@@ -13,6 +14,7 @@ public class ByteStringWriter implements Writer
 
   public ByteStringWriter(ByteString content)
   {
+    ArgumentUtil.notNull(content, "content");
     _content = content;
     _offset = 0;
   }
