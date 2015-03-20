@@ -24,15 +24,16 @@ public class ByteStringWriter implements Writer
 
   public void onWritePossible()
   {
-    while(_wh.remainingCapacity() > 0 && _offset < _content.length())
+    while(_wh.remainingCapacity() > 0 && _offset <= _content.length())
     {
-      int bytesToWrite = Math.min(_wh.remainingCapacity(), _content.length() - _offset);
-      _wh.write(_content.slice(_offset, bytesToWrite));
-      _offset += bytesToWrite;
       if (_offset == _content.length())
       {
         _wh.done();
+        break;
       }
+      int bytesToWrite = Math.min(_wh.remainingCapacity(), _content.length() - _offset);
+      _wh.write(_content.slice(_offset, bytesToWrite));
+      _offset += bytesToWrite;
     }
   }
 }

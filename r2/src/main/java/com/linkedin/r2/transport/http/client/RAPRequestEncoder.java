@@ -17,6 +17,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
+import org.jboss.netty.handler.codec.http.DefaultHttpChunkTrailer;
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
@@ -68,7 +69,9 @@ import java.util.Map;
 
       nettyRequest.setHeader(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
 
-      if (request instanceof RestRequest)
+      // code in if block works; for now always use streaming during dev
+      //if (request instanceof RestRequest)
+      if (false)
       {
         // this is small optimization for RestRequest so that we don't chunk over the wire because we
         // don't really gain anything for chunking in such case, but slightly increase the transmitting overhead
@@ -137,7 +140,7 @@ import java.util.Map;
       // won't not be affected by the chunk size here.
       ChannelBuffer channelBuffer = ChannelBuffers.wrappedBuffer(data.asByteBuffer());
       HttpChunk chunk = new DefaultHttpChunk(channelBuffer);
-      ChannelFuture writeFuture = _ctx.getChannel().write(chunk);
+      ChannelFuture writeFuture = Channels.future(_ctx.getChannel());
       final int dataLen = data.length();
       writeFuture.addListener(new ChannelFutureListener()
       {
@@ -148,11 +151,12 @@ import java.util.Map;
           _readHandle.read(dataLen);
         }
       });
+      Channels.write(_ctx, writeFuture, chunk);
     }
 
     public void onDone()
     {
-      _ctx.getChannel().write(HttpChunk.LAST_CHUNK);
+      Channels.write(_ctx, Channels.future(_ctx.getChannel()), HttpChunk.LAST_CHUNK);
     }
 
     public void onError(Throwable e)
