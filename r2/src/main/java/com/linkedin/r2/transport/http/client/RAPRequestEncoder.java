@@ -85,6 +85,7 @@ import java.util.Map;
       else
       {
         nettyRequest.setChunked(true);
+        nettyRequest.setHeader(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
         ChannelFuture future = Channels.future(ctx.getChannel());
         final EntityStream entityStream = request.getEntityStream();
         future.addListener(new ChannelFutureListener()
