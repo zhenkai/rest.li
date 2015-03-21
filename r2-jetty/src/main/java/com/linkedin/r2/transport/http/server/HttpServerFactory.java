@@ -56,6 +56,16 @@ public class HttpServerFactory
                         DEFAULT_ASYNC_TIMEOUT);
   }
 
+  public HttpServer createServer(int port, StreamDispatcher streamDispatcher)
+  {
+    return createServer(port,
+        DEFAULT_CONTEXT_PATH,
+        DEFAULT_THREAD_POOL_SIZE,
+        streamDispatcher,
+        DEFAULT_USE_ASYNC_SERVLET_API,
+        DEFAULT_ASYNC_TIMEOUT);
+  }
+
   public HttpServer createServer(int port,
                                  String contextPath,
                                  int threadPoolSize,
@@ -77,7 +87,7 @@ public class HttpServerFactory
                                  int asyncTimeOut)
   {
     final StreamDispatcher filterDispatcher =
-        new FilterChainDispatcher(transportDispatcher, _filters);
+        new FilterChainDispatcher(transportDispatcher,  _filters);
     final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
     return new HttpJettyServer(port,
                                contextPath,
@@ -85,5 +95,23 @@ public class HttpServerFactory
                                dispatcher,
                                useAsyncServletApi,
                                asyncTimeOut);
+  }
+
+  public HttpServer createServer(int port,
+                                 String contextPath,
+                                 int threadPoolSize,
+                                 StreamDispatcher streamDispatcher,
+                                 boolean useAsyncServletApi,
+                                 int asyncTimeOut)
+  {
+    final StreamDispatcher filterDispatcher =
+        new FilterChainDispatcher(streamDispatcher,  _filters);
+    final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
+    return new HttpJettyServer(port,
+        contextPath,
+        threadPoolSize,
+        dispatcher,
+        useAsyncServletApi,
+        asyncTimeOut);
   }
 }
