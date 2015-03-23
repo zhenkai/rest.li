@@ -14,16 +14,12 @@ import java.nio.ByteBuffer;
  */
 /* package private */ class BufferedRequestHandler implements ReadListener, Writer
 {
-  private final ByteBuffer _buffer;
-  private final byte[] _tmpBuf;
   private final ServletInputStream _is;
   private final Object _lock = new Object();
   private WriteHandle _wh;
 
-  BufferedRequestHandler(int bufferSize, ServletInputStream is)
+  BufferedRequestHandler(ServletInputStream is)
   {
-    _tmpBuf = new byte[4096];
-    _buffer = ByteBuffer.allocate(bufferSize);
     _is = is;
   }
 
@@ -31,11 +27,7 @@ import java.nio.ByteBuffer;
   {
     synchronized (_lock)
     {
-      while (!_is.isFinished() && _is.isReady() && _buffer.hasRemaining())
-      {
-        readIfPossible();
-        writeIfPossible();
-      }
+      writeIfPossible();
     }
   }
 
@@ -62,55 +54,33 @@ import java.nio.ByteBuffer;
   {
     synchronized (_lock)
     {
-      while (true)
-      {
-        writeIfPossible();
-        try
-        {
-          boolean newDataRead = readIfPossible();
-          if (_wh.remainingCapacity() == 0 || !newDataRead)
-          {
-            break;
-          }
-        }
-        catch (Exception ex)
-        {
-          _wh.error(ex);
-        }
+      writeIfPossible();
+    }
+  }
 
+  private void writeIfPossible()
+  {
+    byte[] buf = new byte[4096];
+    try
+    {
+      while (_is.isReady() && _wh.remainingCapacity() > 0)
+      {
+        int maxLen = Math.min(buf.length, _wh.remainingCapacity());
+        int bytesRead = _is.read(buf, 0, maxLen);
+        if (bytesRead < 0)
+        {
+          _wh.done();
+          break;
+        }
+        else
+        {
+          _wh.write(ByteString.copy(buf, 0, bytesRead));
+        }
       }
     }
-  }
-
-  private boolean readIfPossible() throws IOException
-  {
-    boolean read = false;
-    while (!_is.isFinished() && _is.isReady() && _buffer.hasRemaining())
+    catch (IOException ex)
     {
-      int maxLen = Math.min(_buffer.remaining(), _tmpBuf.length);
-      int actualLen = _is.read(_tmpBuf, 0, maxLen);
-      _buffer.put(_tmpBuf, 0, actualLen);
-      read = true;
+      _wh.error(ex);
     }
-    return read;
-  }
-
-  private boolean writeIfPossible()
-  {
-    boolean written = false;
-    _buffer.flip();
-    if (_is.isFinished() && !_buffer.hasRemaining())
-    {
-      _wh.done();
-    }
-    while (_wh.remainingCapacity() > 0 && _buffer.hasRemaining())
-    {
-      int maxLen = Math.min(_tmpBuf.length, Math.min(_wh.remainingCapacity(), _buffer.remaining()));
-      _buffer.get(_tmpBuf, 0, maxLen);
-      _wh.write(ByteString.copy(_tmpBuf, 0, maxLen));
-      written = true;
-    }
-    _buffer.compact();
-    return written;
   }
 }

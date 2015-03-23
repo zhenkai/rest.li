@@ -242,7 +242,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
     }
 
     ServletInputStream is = req.getInputStream();
-    BufferedRequestHandler handler = new BufferedRequestHandler(MAX_BUFFER_SIZE, is);
+    BufferedRequestHandler handler = new BufferedRequestHandler(is);
     return builder.build(EntityStreams.newEntityStream(handler));
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil
     // return QueryTunnelUtil.decode(rb.build(), requestContext);
