@@ -34,7 +34,7 @@ import java.util.Map;
 /** package private */class RAPRequestEncoder implements ChannelDownstreamHandler
 {
 
-  private static final int MAX_BUFFER_SIZE = 1024 * 128;
+  private static final int MAX_BUFFER_SIZE = 16 * 1024;
 
   @Override
   public void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e)

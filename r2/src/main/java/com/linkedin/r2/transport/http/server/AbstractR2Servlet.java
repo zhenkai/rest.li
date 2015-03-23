@@ -62,7 +62,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
   private static final Logger _log = LoggerFactory.getLogger(AbstractR2Servlet.class);
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
   private static final long   serialVersionUID = 0L;
-  private static final int MAX_BUFFER_SIZE = 1024 * 128;
+  private static final int MAX_BUFFER_SIZE = 16 * 1024;
 
   private final long _timeout;
 

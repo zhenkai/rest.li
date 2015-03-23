@@ -43,8 +43,8 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   private static final ChannelBuffer CONTINUE = ChannelBuffers.copiedBuffer(
       "HTTP/1.1 100 Continue\r\n\r\n", CharsetUtil.US_ASCII);
 
-  private static final int BUFFER_HIGH_WATER_MARK = 1024 * 128;
-  private static final int BUFFER_LOW_WATER_MARK = 1024 * 32;
+  private static final int BUFFER_HIGH_WATER_MARK = 16 * 1024;
+  private static final int BUFFER_LOW_WATER_MARK = 8 * 1024;
 
   private final int _maxContentLength;
   private final int _requestTimeout;
