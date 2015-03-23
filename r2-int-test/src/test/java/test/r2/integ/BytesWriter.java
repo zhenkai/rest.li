@@ -44,7 +44,13 @@ import java.util.Arrays;
     if (_written == _total)
     {
       _wh.done();
+      onFinish();
     }
+  }
+
+  protected void onFinish()
+  {
+    // nothing
   }
 
   private ByteString generate(int size)

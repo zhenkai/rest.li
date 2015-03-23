@@ -28,7 +28,9 @@ import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterSuite;
 import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -37,6 +39,8 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,17 +54,25 @@ public class TestStreamRequest
   private HttpClientFactory _clientFactory;
   private static final int PORT = 8088;
   private static final URI LARGE_URI = URI.create("/large");
+  private static final URI RATE_LIMITED_URI = URI.create("/rated-limited");
   private static final int STATUS_CREATED = 202;
   private static final byte BYTE = 100;
+  private static final long INTERVAL = 20;
   private HttpServer _server;
+  private ScheduledExecutorService _scheduler;
   private CheckRequestHandler _checkRequestHandler;
+  private RateLimitedRequestHandler _rateLimitedRequestHandler;
 
-  @BeforeTest
+  @BeforeSuite
   public void setup() throws IOException
   {
+    _scheduler = Executors.newSingleThreadScheduledExecutor();
     _checkRequestHandler = new CheckRequestHandler(BYTE);
+    _rateLimitedRequestHandler = new RateLimitedRequestHandler(_scheduler, INTERVAL, BYTE);
     _clientFactory = new HttpClientFactory();
-    final StreamDispatcher dispatcher = new StreamDispatcherBuilder().addStreamHandler(LARGE_URI, _checkRequestHandler)
+    final StreamDispatcher dispatcher = new StreamDispatcherBuilder()
+        .addStreamHandler(LARGE_URI, _checkRequestHandler)
+        .addStreamHandler(RATE_LIMITED_URI, _rateLimitedRequestHandler)
         .build();
     _server = new HttpServerFactory().createServer(PORT, dispatcher);
     _server.start();
@@ -136,10 +148,46 @@ public class TestStreamRequest
     Assert.assertEquals(status.get(), 404);
   }
 
-  @AfterTest
+  @Test
+  public void testBackPressure() throws Exception
+  {
+    Client client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
+    final int totalBytes = 1024 * 1024;
+    TimedBytesWriter writer = new TimedBytesWriter(totalBytes, BYTE);
+    EntityStream entityStream = EntityStreams.newEntityStream(writer);
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, RATE_LIMITED_URI));
+    StreamRequest request = builder.setMethod("POST").build(entityStream);
+    final AtomicInteger status = new AtomicInteger(-1);
+    final CountDownLatch latch = new CountDownLatch(1);
+    Callback<StreamResponse> callback = new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        latch.countDown();
+        throw new RuntimeException(e);
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        status.set(result.getStatus());
+        latch.countDown();
+      }
+    };
+    client.streamRequest(request, callback);
+    latch.await(60000, TimeUnit.MILLISECONDS);
+    Assert.assertEquals(status.get(), STATUS_CREATED);
+    Assert.assertEquals(totalBytes, _rateLimitedRequestHandler.getTotalBytes());
+    Assert.assertTrue(_rateLimitedRequestHandler.allBytesCorrect());
+    long clientSendTimeSpan = writer.getStopTime() - writer.getStartTime();
+    Assert.assertTrue(clientSendTimeSpan > 200);
+  }
+
+  @AfterSuite
   public void tearDown() throws Exception
   {
-
+    _scheduler.shutdown();
     if (_server != null) {
       _server.stop();
       _server.waitForStop();
@@ -153,8 +201,7 @@ public class TestStreamRequest
   private static class CheckRequestHandler implements StreamRequestHandler
   {
     private final byte _b;
-    private int _length;
-    private boolean _bytesCorrect;
+    private BytesReader _reader;
 
     CheckRequestHandler(byte b)
     {
@@ -164,59 +211,82 @@ public class TestStreamRequest
     @Override
     public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
-      _length = 0;
-      _bytesCorrect = true;
-
-      request.getEntityStream().setReader(new Reader()
-      {
-        private ReadHandle _rh;
-
-        @Override
-        public void onInit(ReadHandle rh)
-        {
-          _rh = rh;
-          _rh.read(16 * 1024);
-        }
-
-        @Override
-        public void onDataAvailable(ByteString data)
-        {
-          _length += data.length();
-          byte [] bytes = data.copyBytes();
-          for (byte b : bytes)
-          {
-            if (b != _b)
-            {
-              _bytesCorrect = false;
-            }
-          }
-          _rh.read(data.length());
-        }
-
-        @Override
-        public void onDone()
-        {
-          RestResponse response = RestStatus.responseForStatus(STATUS_CREATED, "");
-          callback.onSuccess(response);
-        }
-
-        @Override
-        public void onError(Throwable e)
-        {
-          RestException restException = new RestException(RestStatus.responseForError(500, e));
-          callback.onError(restException);
-        }
-      });
+      _reader = new BytesReader(_b, callback, STATUS_CREATED);
+      request.getEntityStream().setReader(_reader);
     }
 
     public int getTotalBytes()
     {
-      return _length;
+      assert _reader != null;
+      return _reader.getTotalBytes();
     }
 
     public boolean allBytesCorrect()
     {
-      return _bytesCorrect;
+      assert _reader != null;
+      return _reader.allBytesCorrect();
+    }
+  }
+
+  private static class RateLimitedRequestHandler implements StreamRequestHandler
+  {
+    private final ScheduledExecutorService _scheduler;
+    private final long _interval;
+    private TimedBytesReader _reader;
+    private final byte _b;
+
+
+    RateLimitedRequestHandler(ScheduledExecutorService scheduler, long interval, byte b)
+    {
+      _scheduler = scheduler;
+      _interval = interval;
+      _b = b;
+    }
+
+    @Override
+    public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
+    {
+      _reader = new TimedBytesReader(_b, callback, STATUS_CREATED)
+      {
+        @Override
+        protected void requestMore(final ReadHandle rh, final int processedDataLen)
+        {
+          _scheduler.schedule(new Runnable()
+          {
+            @Override
+            public void run()
+            {
+              rh.read(processedDataLen);
+            }
+          }, _interval, TimeUnit.MILLISECONDS);
+        }
+      };
+
+      request.getEntityStream().setReader(_reader);
+    }
+
+    public int getTotalBytes()
+    {
+      assert _reader != null;
+      return _reader.getTotalBytes();
+    }
+
+    public boolean allBytesCorrect()
+    {
+      assert _reader != null;
+      return _reader.allBytesCorrect();
+    }
+
+    public long getStartTime()
+    {
+      assert _reader != null;
+      return _reader.getStartTime();
+    }
+
+    public long getStopTime()
+    {
+      assert _reader != null;
+      return _reader.getStopTime();
     }
   }
 }
