@@ -195,7 +195,6 @@ public abstract class AbstractR2Servlet extends HttpServlet
       BufferedResponseHandler handler = new BufferedResponseHandler(MAX_BUFFER_SIZE, os, ctx.getCtx());
       EntityStream responseStream = streamResponse.getEntityStream();
       responseStream.setReader(handler);
-      os.setWriteListener(handler);
     }
   }
 
@@ -244,7 +243,6 @@ public abstract class AbstractR2Servlet extends HttpServlet
 
     ServletInputStream is = req.getInputStream();
     BufferedRequestHandler handler = new BufferedRequestHandler(MAX_BUFFER_SIZE, is);
-    is.setReadListener(handler);
     return builder.build(EntityStreams.newEntityStream(handler));
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil
     // return QueryTunnelUtil.decode(rb.build(), requestContext);

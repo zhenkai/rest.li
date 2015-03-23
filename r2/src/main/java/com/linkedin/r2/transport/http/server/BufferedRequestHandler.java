@@ -55,6 +55,7 @@ import java.nio.ByteBuffer;
   public void onInit(final WriteHandle wh)
   {
     _wh = wh;
+    _is.setReadListener(this);
   }
 
   public void onWritePossible()

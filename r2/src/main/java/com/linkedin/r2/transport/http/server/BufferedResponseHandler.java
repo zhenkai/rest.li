@@ -85,6 +85,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
   {
     _rh = rh;
     _rh.read(_buffer.capacity());
+    _os.setWriteListener(this);
   }
 
   private void doWrite() throws IOException

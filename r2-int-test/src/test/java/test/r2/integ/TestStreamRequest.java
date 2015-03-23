@@ -8,6 +8,7 @@ import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
@@ -15,6 +16,8 @@ import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
 
 import com.linkedin.r2.message.streaming.FullEntityReader;
+import com.linkedin.r2.message.streaming.ReadHandle;
+import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
@@ -46,29 +49,30 @@ public class TestStreamRequest
 {
   private HttpClientFactory _clientFactory;
   private static final int PORT = 8088;
-  private static final URI SERVICE_URI = URI.create("/upload");
+  private static final URI LARGE_URI = URI.create("/large");
   private static final int STATUS_CREATED = 202;
+  private static final byte BYTE = 100;
   private HttpServer _server;
-  private ReceiveRequestHandler _requestHandler;
+  private CheckRequestHandler _checkRequestHandler;
 
   @BeforeTest
   public void setup() throws IOException
   {
-    _requestHandler = new ReceiveRequestHandler();
+    _checkRequestHandler = new CheckRequestHandler(BYTE);
     _clientFactory = new HttpClientFactory();
-    final StreamDispatcher dispatcher = new StreamDispatcherBuilder().addStreamHandler(SERVICE_URI, _requestHandler)
+    final StreamDispatcher dispatcher = new StreamDispatcherBuilder().addStreamHandler(LARGE_URI, _checkRequestHandler)
         .build();
     _server = new HttpServerFactory().createServer(PORT, dispatcher);
     _server.start();
   }
 
   @Test
-  public void testRequest() throws Exception
+  public void testRequestLarge() throws Exception
   {
     Client client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
-    final int totalBytes = 1024 * 1024 * 10;
-    EntityStream entityStream = EntityStreams.newEntityStream(new BytesWriter(totalBytes, (byte) 100));
-    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, SERVICE_URI));
+    final int totalBytes = 1024 * 1024 * 1024;
+    EntityStream entityStream = EntityStreams.newEntityStream(new BytesWriter(totalBytes, BYTE));
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, LARGE_URI));
     StreamRequest request = builder.setMethod("POST").build(entityStream);
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
@@ -91,11 +95,45 @@ public class TestStreamRequest
     client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), STATUS_CREATED);
-    ByteString requestEntity = _requestHandler.getRequestEntity();
-    Assert.assertEquals(requestEntity.length(), totalBytes);
-    byte[] expected = new byte[totalBytes];
-    Arrays.fill(expected, (byte) 100);
-    Assert.assertEquals(expected, requestEntity.copyBytes());
+    Assert.assertEquals(totalBytes, _checkRequestHandler.getTotalBytes());
+    Assert.assertTrue(_checkRequestHandler.allBytesCorrect());
+  }
+
+  // TODO [ZZ]: is it R2's responsibility to stop the writer from writing more data when server side error happens?
+  // or should the user do it in their callback?
+  @Test
+  public void test404() throws Exception
+  {
+    Client client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
+    final int totalBytes = 1024 * 1024;
+    EntityStream entityStream = EntityStreams.newEntityStream(new BytesWriter(totalBytes, BYTE));
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, URI.create("/boo")));
+    StreamRequest request = builder.setMethod("POST").build(entityStream);
+    final AtomicInteger status = new AtomicInteger(-1);
+    final CountDownLatch latch = new CountDownLatch(1);
+    Callback<StreamResponse> callback = new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        if (e instanceof StreamException)
+        {
+          StreamResponse errorResponse = ((StreamException) e).getResponse();
+          status.set(errorResponse.getStatus());
+        }
+        latch.countDown();
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        latch.countDown();
+        throw new RuntimeException("Should have failed with 404");
+      }
+    };
+    client.streamRequest(request, callback);
+    latch.await(60000, TimeUnit.MILLISECONDS);
+    Assert.assertEquals(status.get(), 404);
   }
 
   @AfterTest
@@ -112,35 +150,73 @@ public class TestStreamRequest
     callback.get();
   }
 
-  private static class ReceiveRequestHandler implements StreamRequestHandler
+  private static class CheckRequestHandler implements StreamRequestHandler
   {
-    private ByteString _requestEntity;
+    private final byte _b;
+    private int _length;
+    private boolean _bytesCorrect;
 
+    CheckRequestHandler(byte b)
+    {
+      _b = b;
+    }
+
+    @Override
     public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
-      Callback<ByteString> entityCallback = new Callback<ByteString>()
+      _length = 0;
+      _bytesCorrect = true;
+
+      request.getEntityStream().setReader(new Reader()
       {
+        private ReadHandle _rh;
+
+        @Override
+        public void onInit(ReadHandle rh)
+        {
+          _rh = rh;
+          _rh.read(16 * 1024);
+        }
+
+        @Override
+        public void onDataAvailable(ByteString data)
+        {
+          _length += data.length();
+          byte [] bytes = data.copyBytes();
+          for (byte b : bytes)
+          {
+            if (b != _b)
+            {
+              _bytesCorrect = false;
+            }
+          }
+          _rh.read(data.length());
+        }
+
+        @Override
+        public void onDone()
+        {
+          RestResponse response = RestStatus.responseForStatus(STATUS_CREATED, "");
+          callback.onSuccess(response);
+        }
+
         @Override
         public void onError(Throwable e)
         {
           RestException restException = new RestException(RestStatus.responseForError(500, e));
           callback.onError(restException);
         }
-
-        @Override
-        public void onSuccess(ByteString result)
-        {
-          _requestEntity = result;
-          RestResponse response = RestStatus.responseForStatus(STATUS_CREATED, "");
-          callback.onSuccess(response);
-        }
-      };
-      request.getEntityStream().setReader(new FullEntityReader(entityCallback));
+      });
     }
 
-    public ByteString getRequestEntity()
+    public int getTotalBytes()
     {
-      return _requestEntity;
+      return _length;
+    }
+
+    public boolean allBytesCorrect()
+    {
+      return _bytesCorrect;
     }
   }
 }
