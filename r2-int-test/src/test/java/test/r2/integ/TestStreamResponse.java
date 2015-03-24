@@ -27,6 +27,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -49,6 +50,7 @@ public class TestStreamResponse
   private static final URI SERVER_ERROR_URI = URI.create("/error");
   private static final long LARGE_BYTES_NUM = 1024 * 1024 * 1024;
   private static final long SMALL_BYTES_NUM = 1024 * 1024 * 16;
+  private static final long TINY_BYTES_NUM = 1024 * 64;
   private static final int STATUS_OK = 202;
   private static final byte BYTE = 100;
   private static final long INTERVAL = 20;
@@ -57,7 +59,6 @@ public class TestStreamResponse
   private ErrorRequestHandler _errorHandler;
   private HttpServer _server;
   private ScheduledExecutorService _scheduler;
-  private Map<String, String> _clientProperties;
 
   @BeforeSuite
   public void setup() throws IOException
@@ -66,9 +67,8 @@ public class TestStreamResponse
     _clientFactory = new HttpClientFactory();
     _largeHandler = new BytesWriterRequestHandler(BYTE, LARGE_BYTES_NUM);
     _smallHandler = new BytesWriterRequestHandler(BYTE, SMALL_BYTES_NUM);
-    _errorHandler = new ErrorRequestHandler(SMALL_BYTES_NUM, BYTE);
-    _clientProperties = new HashMap<String, String>();
-    _clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
+    _errorHandler = new ErrorRequestHandler(TINY_BYTES_NUM, BYTE);
+
     final StreamDispatcher dispatcher = new StreamDispatcherBuilder()
         .addStreamHandler(LARGE_URI, _largeHandler)
         .addStreamHandler(SMALL_URI, _smallHandler)
@@ -81,7 +81,9 @@ public class TestStreamResponse
   @Test
   public void testRequestLarge() throws Exception
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(_clientProperties));
+    Map<String, String> clientProperties = new HashMap<String, String>();
+    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
+    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, LARGE_URI));
     StreamRequest request = builder.build();
     final AtomicInteger status = new AtomicInteger(-1);
@@ -133,7 +135,7 @@ public class TestStreamResponse
   @Test
   public void testErrorWhileStreaming() throws Exception
   {
-    Map<String, String> clientProperties = new HashMap<String, String>(_clientProperties);
+    Map<String, String> clientProperties = new HashMap<String, String>();
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "500");
     Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
@@ -179,16 +181,18 @@ public class TestStreamResponse
     client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), STATUS_OK);
-    Assert.assertNotNull(error.get());
-    Throwable e = error.get();
-    Assert.assertTrue(e instanceof TimeoutException);
-    Assert.assertEquals(e.getMessage(), "Not receiving any chunk after timeout of 500ms");
+    Throwable throwable = error.get();
+    Assert.assertNotNull(throwable);
+    Assert.assertTrue(throwable instanceof TimeoutException);
+    Assert.assertEquals(throwable.getMessage(), "Not receiving any chunk after timeout of 500ms");
   }
 
   @Test
   public void testBackpressure() throws Exception
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(_clientProperties));
+    Map<String, String> clientProperties = new HashMap<String, String>();
+    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
+    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SMALL_URI));
     StreamRequest request = builder.build();
     final AtomicInteger status = new AtomicInteger(-1);
@@ -259,6 +263,7 @@ public class TestStreamResponse
     Assert.assertEquals(status.get(), STATUS_OK);
     long serverSendTimespan = _smallHandler.getWriter().getStopTime() - _smallHandler.getWriter().getStartTime();
     long clientReceiveTimespan = reader.getStopTime() - reader.getStartTime();
+    Assert.assertTrue(clientReceiveTimespan > 1000);
     double diff = Math.abs(clientReceiveTimespan - serverSendTimespan);
     double diffRatio = diff / serverSendTimespan;
     Assert.assertTrue(diffRatio < 0.05);

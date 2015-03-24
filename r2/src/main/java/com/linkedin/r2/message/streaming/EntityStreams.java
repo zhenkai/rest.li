@@ -5,6 +5,7 @@ import com.linkedin.data.ByteString;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A class consists exclusively of static methods to deal with EntityStream {@link com.linkedin.r2.message.streaming.EntityStream}
@@ -50,8 +51,8 @@ public final class EntityStreams
 
   private static class EntityStreamImpl implements EntityStream
   {
-    final private Writer _writer;
-    final private Object _lock;
+    private final Writer _writer;
+    private final Object _lock;
     private List<Observer> _observers;
     private Reader _reader;
     private boolean _initialized;
@@ -97,48 +98,69 @@ public final class EntityStreams
 
     private class WriteHandleImpl implements WriteHandle
     {
+      private final AtomicBoolean _finished = new AtomicBoolean(false);
+
       @Override
       public void write(final ByteString data)
       {
-
-        int dataLen = data.length();
-
-        // Writer tries to try when the reader didn't request more data
-        synchronized (_lock)
+        if (_finished.compareAndSet(false, false))
         {
-          if (_capacity < dataLen)
+          int dataLen = data.length();
+
+          // Writer tries to try when the reader didn't request more data
+          synchronized (_lock)
           {
-            throw new IllegalArgumentException("Data size " + dataLen + " is larger than remaining capacity.");
+            if (_capacity < dataLen)
+            {
+              throw new IllegalArgumentException("Data size " + dataLen + " is larger than remaining capacity.");
+            }
+            _capacity -= dataLen;
           }
-          _capacity -= dataLen;
-        }
 
-        for(Observer observer: _observers)
+          for (Observer observer : _observers)
+          {
+            observer.onDataAvailable(data);
+          }
+          _reader.onDataAvailable(data);
+        }
+        else
         {
-          observer.onDataAvailable(data);
+          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
         }
-        _reader.onDataAvailable(data);
-
       }
 
       @Override
       public void done()
       {
-        for(Observer observer: _observers)
+        if (_finished.compareAndSet(false, true))
         {
-          observer.onDone();
+          for (Observer observer : _observers)
+          {
+            observer.onDone();
+          }
+          _reader.onDone();
         }
-        _reader.onDone();
+        else
+        {
+          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
+        }
       }
 
       @Override
       public void error(final Throwable e)
       {
-        for(Observer observer: _observers)
+        if (_finished.compareAndSet(false, true))
         {
-          observer.onError(e);
+          for (Observer observer : _observers)
+          {
+            observer.onError(e);
+          }
+          _reader.onError(e);
         }
-        _reader.onError(e);
+        else
+        {
+          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
+        }
       }
 
       @Override

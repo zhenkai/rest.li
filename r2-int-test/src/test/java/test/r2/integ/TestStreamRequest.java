@@ -186,6 +186,7 @@ public class TestStreamRequest
     Assert.assertTrue(reader.allBytesCorrect());
     long clientSendTimespan = writer.getStopTime() - writer.getStartTime();
     long serverReceiveTimespan = reader.getStopTime() - reader.getStartTime();
+    Assert.assertTrue(serverReceiveTimespan > 1000);
     double diff = Math.abs(serverReceiveTimespan - clientSendTimespan);
     double diffRatio = diff / clientSendTimespan;
     Assert.assertTrue(diffRatio < 0.05);

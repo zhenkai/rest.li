@@ -132,9 +132,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         // Sanity check
         if (currentWriter == null)
         {
-          throw new IllegalStateException(
+          Channels.fireExceptionCaught(ctx, new IllegalStateException(
               "received " + HttpChunk.class.getSimpleName() +
-                  " without " + HttpMessage.class.getSimpleName());
+                  " without " + HttpMessage.class.getSimpleName()));
         }
 
         HttpChunk chunk = (HttpChunk) msg;
@@ -178,7 +178,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
    * A buffered writer that stops reading from socket if buffered bytes is larger than high water mark
    * and resumes reading from socket if buffered bytes is smaller than low water mark.
    */
-  private static class TimeoutBufferedWriter implements Writer
+  private class TimeoutBufferedWriter implements Writer
   {
     private final ChannelBuffer _buffer;
     private final ChannelHandlerContext _ctx;
@@ -213,8 +213,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         public void run()
         {
           Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
-          Channels.fireExceptionCaught(ctx, ex);
           _wh.error(ex);
+          _chunkedMessageWriter = null;
+          Channels.fireExceptionCaught(ctx, ex);
         }
       };
       _timeout = new Timeout<Runnable>(scheduler, requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
@@ -255,8 +256,10 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           TooLongFrameException ex = new TooLongFrameException(
               "HTTP content length exceeded " + _maxContentLength +
                   " bytes.");
+
           _wh.error(ex);
-          throw ex;
+          _chunkedMessageWriter = null;
+          Channels.fireExceptionCaught(_ctx, ex);
         }
 
         if (_buffer.readableBytes() > _highWaterMark && _ctx.getChannel().isReadable())
@@ -283,6 +286,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
 
     public void fail(Throwable ex)
     {
+      _timeout.getItem();
       _wh.error(ex);
     }
 
