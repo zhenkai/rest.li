@@ -20,6 +20,7 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.transport.FilterChainDispatcher;
+import com.linkedin.r2.message.streaming.StreamDecider;
 import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
@@ -66,6 +67,19 @@ public class HttpServerFactory
         DEFAULT_ASYNC_TIMEOUT);
   }
 
+  public HttpServer createMixedServer(int port, StreamDispatcher streamDispatcher, TransportDispatcher transportDispatcher,
+                                      StreamDecider decider)
+  {
+    return createMixedServer(port,
+        DEFAULT_CONTEXT_PATH,
+        DEFAULT_THREAD_POOL_SIZE,
+        streamDispatcher,
+        transportDispatcher,
+        decider,
+        DEFAULT_USE_ASYNC_SERVLET_API,
+        DEFAULT_ASYNC_TIMEOUT);
+  }
+
   public HttpServer createServer(int port,
                                  String contextPath,
                                  int threadPoolSize,
@@ -106,6 +120,26 @@ public class HttpServerFactory
   {
     final StreamDispatcher filterDispatcher =
         new FilterChainDispatcher(streamDispatcher,  _filters);
+    final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
+    return new HttpJettyServer(port,
+        contextPath,
+        threadPoolSize,
+        dispatcher,
+        useAsyncServletApi,
+        asyncTimeOut);
+  }
+
+  public HttpServer createMixedServer(int port,
+                                       String contextPath,
+                                       int threadPoolSize,
+                                       StreamDispatcher streamDispatcher,
+                                       TransportDispatcher transportDispatcher,
+                                       StreamDecider decider,
+                                       boolean useAsyncServletApi,
+                                       int asyncTimeOut)
+  {
+    final StreamDispatcher filterDispatcher =
+        new FilterChainDispatcher(transportDispatcher, streamDispatcher,  decider, _filters);
     final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
     return new HttpJettyServer(port,
         contextPath,

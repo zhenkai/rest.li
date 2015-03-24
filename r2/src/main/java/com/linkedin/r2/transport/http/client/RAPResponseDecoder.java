@@ -132,9 +132,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         // Sanity check
         if (currentWriter == null)
         {
-          Channels.fireExceptionCaught(ctx, new IllegalStateException(
+          throw new IllegalStateException(
               "received " + HttpChunk.class.getSimpleName() +
-                  " without " + HttpMessage.class.getSimpleName()));
+                  " without " + HttpMessage.class.getSimpleName());
         }
 
         HttpChunk chunk = (HttpChunk) msg;
