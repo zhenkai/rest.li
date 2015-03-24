@@ -56,9 +56,9 @@ public class HttpServerFactory
                         DEFAULT_ASYNC_TIMEOUT);
   }
 
-  public HttpServer createServer(int port, StreamDispatcher streamDispatcher)
+  public HttpServer createStreamServer(int port, StreamDispatcher streamDispatcher)
   {
-    return createServer(port,
+    return createStreamServer(port,
         DEFAULT_CONTEXT_PATH,
         DEFAULT_THREAD_POOL_SIZE,
         streamDispatcher,
@@ -97,7 +97,7 @@ public class HttpServerFactory
                                asyncTimeOut);
   }
 
-  public HttpServer createServer(int port,
+  public HttpServer createStreamServer(int port,
                                  String contextPath,
                                  int threadPoolSize,
                                  StreamDispatcher streamDispatcher,

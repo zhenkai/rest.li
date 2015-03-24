@@ -27,7 +27,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +57,7 @@ public class TestStreamResponse
   private BytesWriterRequestHandler _smallHandler;
   private ErrorRequestHandler _errorHandler;
   private HttpServer _server;
+  private Client _client;
   private ScheduledExecutorService _scheduler;
 
   @BeforeSuite
@@ -65,6 +65,10 @@ public class TestStreamResponse
   {
     _scheduler = Executors.newSingleThreadScheduledExecutor();
     _clientFactory = new HttpClientFactory();
+    Map<String, String> clientProperties = new HashMap<String, String>();
+    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
+    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "500");
+    _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     _largeHandler = new BytesWriterRequestHandler(BYTE, LARGE_BYTES_NUM);
     _smallHandler = new BytesWriterRequestHandler(BYTE, SMALL_BYTES_NUM);
     _errorHandler = new ErrorRequestHandler(TINY_BYTES_NUM, BYTE);
@@ -74,16 +78,13 @@ public class TestStreamResponse
         .addStreamHandler(SMALL_URI, _smallHandler)
         .addStreamHandler(SERVER_ERROR_URI, _errorHandler)
         .build();
-    _server = new HttpServerFactory().createServer(PORT, dispatcher);
+    _server = new HttpServerFactory().createStreamServer(PORT, dispatcher);
     _server.start();
   }
 
   @Test
   public void testRequestLarge() throws Exception
   {
-    Map<String, String> clientProperties = new HashMap<String, String>();
-    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
-    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, LARGE_URI));
     StreamRequest request = builder.build();
     final AtomicInteger status = new AtomicInteger(-1);
@@ -124,7 +125,7 @@ public class TestStreamResponse
       }
     };
 
-    client.streamRequest(request, callback);
+    _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertNull(error.get());
     Assert.assertEquals(status.get(), STATUS_OK);
@@ -135,9 +136,6 @@ public class TestStreamResponse
   @Test
   public void testErrorWhileStreaming() throws Exception
   {
-    Map<String, String> clientProperties = new HashMap<String, String>();
-    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "500");
-    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
     StreamRequest request = builder.build();
     final AtomicInteger status = new AtomicInteger(-1);
@@ -178,7 +176,7 @@ public class TestStreamResponse
       }
     };
 
-    client.streamRequest(request, callback);
+    _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), STATUS_OK);
     Throwable throwable = error.get();
@@ -190,9 +188,6 @@ public class TestStreamResponse
   @Test
   public void testBackpressure() throws Exception
   {
-    Map<String, String> clientProperties = new HashMap<String, String>();
-    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
-    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SMALL_URI));
     StreamRequest request = builder.build();
     final AtomicInteger status = new AtomicInteger(-1);
@@ -257,7 +252,7 @@ public class TestStreamResponse
       }
     };
 
-    client.streamRequest(request, callback);
+    _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertNull(error.get());
     Assert.assertEquals(status.get(), STATUS_OK);
@@ -277,10 +272,13 @@ public class TestStreamResponse
       _server.stop();
       _server.waitForStop();
     }
+    final FutureCallback<None> clientCallback = new FutureCallback<None>();
+    _client.shutdown(clientCallback);
+    clientCallback.get();
 
-    final FutureCallback<None> callback = new FutureCallback<None>();
-    _clientFactory.shutdown(callback);
-    callback.get();
+    final FutureCallback<None> factoryCallback = new FutureCallback<None>();
+    _clientFactory.shutdown(factoryCallback);
+    factoryCallback.get();
   }
 
   private static class BytesWriterRequestHandler implements StreamRequestHandler

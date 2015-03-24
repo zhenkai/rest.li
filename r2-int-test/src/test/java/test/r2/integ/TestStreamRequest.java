@@ -15,9 +15,7 @@ import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
 
-import com.linkedin.r2.message.streaming.FullEntityReader;
 import com.linkedin.r2.message.streaming.ReadHandle;
-import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
@@ -36,7 +34,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -59,6 +56,7 @@ public class TestStreamRequest
   private static final byte BYTE = 100;
   private static final long INTERVAL = 20;
   private HttpServer _server;
+  private Client _client;
   private ScheduledExecutorService _scheduler;
   private CheckRequestHandler _checkRequestHandler;
   private RateLimitedRequestHandler _rateLimitedRequestHandler;
@@ -66,22 +64,22 @@ public class TestStreamRequest
   @BeforeSuite
   public void setup() throws IOException
   {
+    _clientFactory = new HttpClientFactory();
+    _client  = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
     _scheduler = Executors.newSingleThreadScheduledExecutor();
     _checkRequestHandler = new CheckRequestHandler(BYTE);
     _rateLimitedRequestHandler = new RateLimitedRequestHandler(_scheduler, INTERVAL, BYTE);
-    _clientFactory = new HttpClientFactory();
     final StreamDispatcher dispatcher = new StreamDispatcherBuilder()
         .addStreamHandler(LARGE_URI, _checkRequestHandler)
         .addStreamHandler(RATE_LIMITED_URI, _rateLimitedRequestHandler)
         .build();
-    _server = new HttpServerFactory().createServer(PORT, dispatcher);
+    _server = new HttpServerFactory().createStreamServer(PORT, dispatcher);
     _server.start();
   }
 
   @Test
   public void testRequestLarge() throws Exception
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
     final int totalBytes = 1024 * 1024 * 1024;
     EntityStream entityStream = EntityStreams.newEntityStream(new BytesWriter(totalBytes, BYTE));
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, LARGE_URI));
@@ -104,7 +102,7 @@ public class TestStreamRequest
         latch.countDown();
       }
     };
-    client.streamRequest(request, callback);
+    _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), STATUS_CREATED);
     BytesReader reader = _checkRequestHandler.getReader();
@@ -118,7 +116,6 @@ public class TestStreamRequest
   @Test
   public void test404() throws Exception
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
     final int totalBytes = 1024 * 1024;
     EntityStream entityStream = EntityStreams.newEntityStream(new BytesWriter(totalBytes, BYTE));
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, URI.create("/boo")));
@@ -145,7 +142,7 @@ public class TestStreamRequest
         throw new RuntimeException("Should have failed with 404");
       }
     };
-    client.streamRequest(request, callback);
+    _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), 404);
   }
@@ -153,7 +150,6 @@ public class TestStreamRequest
   @Test
   public void testBackPressure() throws Exception
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
     final int totalBytes = 1024 * 1024 * 16;
     TimedBytesWriter writer = new TimedBytesWriter(totalBytes, BYTE);
     EntityStream entityStream = EntityStreams.newEntityStream(writer);
@@ -177,7 +173,7 @@ public class TestStreamRequest
         latch.countDown();
       }
     };
-    client.streamRequest(request, callback);
+    _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), STATUS_CREATED);
     TimedBytesReader reader = _rateLimitedRequestHandler.getReader();
@@ -195,15 +191,20 @@ public class TestStreamRequest
   @AfterSuite
   public void tearDown() throws Exception
   {
+
+    final FutureCallback<None> clientShutdownCallback = new FutureCallback<None>();
+    _client.shutdown(clientShutdownCallback);
+    clientShutdownCallback.get();
+
+    final FutureCallback<None> factoryShutdownCallback = new FutureCallback<None>();
+    _clientFactory.shutdown(factoryShutdownCallback);
+    factoryShutdownCallback.get();
+
     _scheduler.shutdown();
     if (_server != null) {
       _server.stop();
       _server.waitForStop();
     }
-
-    final FutureCallback<None> callback = new FutureCallback<None>();
-    _clientFactory.shutdown(callback);
-    callback.get();
   }
 
   private static class CheckRequestHandler implements StreamRequestHandler
