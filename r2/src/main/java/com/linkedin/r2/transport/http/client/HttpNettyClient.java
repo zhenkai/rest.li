@@ -101,7 +101,7 @@ import org.slf4j.LoggerFactory;
 
   private final int _requestTimeout;
   private final int _shutdownTimeout;
-  private final int _maxResponseSize;
+  private final long _maxResponseSize;
 
   private final String _requestTimeoutMessage;
   private final int _queryPostThreshold;
@@ -159,7 +159,7 @@ import org.slf4j.LoggerFactory;
                          int requestTimeout,
                          int idleTimeout,
                          int shutdownTimeout,
-                         int maxResponseSize,
+                         long maxResponseSize,
                          SSLContext sslContext,
                          SSLParameters sslParameters,
                          int queryPostThreshold,
@@ -191,7 +191,7 @@ import org.slf4j.LoggerFactory;
                          int requestTimeout,
                          int idleTimeout,
                          int shutdownTimeout,
-                         int maxResponseSize,
+                         long maxResponseSize,
                          SSLContext sslContext,
                          SSLParameters sslParameters,
                          int queryPostThreshold,
@@ -248,7 +248,7 @@ import org.slf4j.LoggerFactory;
                          int requestTimeout,
                          int idleTimeout,
                          int shutdownTimeout,
-                         int maxResponseSize,
+                         long maxResponseSize,
                          SSLContext sslContext,
                          SSLParameters sslParameters,
                          int queryPostThreshold,
@@ -285,7 +285,7 @@ import org.slf4j.LoggerFactory;
                   ScheduledExecutorService executor,
                   int requestTimeout,
                   int shutdownTimeout,
-                  int maxResponseSize)
+                  long maxResponseSize)
   {
     _maxResponseSize = maxResponseSize;
     _channelPoolManager = new ChannelPoolManager(factory);
@@ -727,7 +727,7 @@ import org.slf4j.LoggerFactory;
     return _shutdownTimeout;
   }
 
-  public int getMaxResponseSize()
+  public long getMaxResponseSize()
   {
     return _maxResponseSize;
   }

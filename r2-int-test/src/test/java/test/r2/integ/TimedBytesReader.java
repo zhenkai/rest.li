@@ -1,7 +1,7 @@
 package test.r2.integ;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.common.util.None;
 import com.linkedin.r2.message.streaming.ReadHandle;
 
 /**
@@ -12,9 +12,9 @@ public class TimedBytesReader extends BytesReader
   private long _startTime;
   private long _stopTime;
 
-  TimedBytesReader(byte b, Callback<StreamResponse> callback, int responseStatus)
+  TimedBytesReader(byte b, Callback<None> callback)
   {
-    super(b, callback, responseStatus);
+    super(b, callback);
   }
 
   @Override

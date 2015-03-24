@@ -107,8 +107,10 @@ public class TestStreamRequest
     client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), STATUS_CREATED);
-    Assert.assertEquals(totalBytes, _checkRequestHandler.getTotalBytes());
-    Assert.assertTrue(_checkRequestHandler.allBytesCorrect());
+    BytesReader reader = _checkRequestHandler.getReader();
+    Assert.assertNotNull(reader);
+    Assert.assertEquals(totalBytes, reader.getTotalBytes());
+    Assert.assertTrue(reader.allBytesCorrect());
   }
 
   // TODO [ZZ]: is it R2's responsibility to stop the writer from writing more data when server side error happens?
@@ -178,8 +180,10 @@ public class TestStreamRequest
     client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), STATUS_CREATED);
-    Assert.assertEquals(totalBytes, _rateLimitedRequestHandler.getTotalBytes());
-    Assert.assertTrue(_rateLimitedRequestHandler.allBytesCorrect());
+    TimedBytesReader reader = _rateLimitedRequestHandler.getReader();
+    Assert.assertNotNull(reader);
+    Assert.assertEquals(totalBytes, reader.getTotalBytes());
+    Assert.assertTrue(reader.allBytesCorrect());
     long clientSendTimeSpan = writer.getStopTime() - writer.getStartTime();
     Assert.assertTrue(clientSendTimeSpan > 200);
   }
@@ -211,20 +215,29 @@ public class TestStreamRequest
     @Override
     public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
-      _reader = new BytesReader(_b, callback, STATUS_CREATED);
+      Callback<None> readerCallback = new Callback<None>()
+      {
+        @Override
+        public void onError(Throwable e)
+        {
+          RestException restException = new RestException(RestStatus.responseForError(500, e));
+          callback.onError(restException);
+        }
+
+        @Override
+        public void onSuccess(None result)
+        {
+          RestResponse response = RestStatus.responseForStatus(STATUS_CREATED, "");
+          callback.onSuccess(response);
+        }
+      };
+      _reader = new BytesReader(_b, readerCallback);
       request.getEntityStream().setReader(_reader);
     }
 
-    public int getTotalBytes()
+    BytesReader getReader()
     {
-      assert _reader != null;
-      return _reader.getTotalBytes();
-    }
-
-    public boolean allBytesCorrect()
-    {
-      assert _reader != null;
-      return _reader.allBytesCorrect();
+      return _reader;
     }
   }
 
@@ -246,7 +259,23 @@ public class TestStreamRequest
     @Override
     public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
-      _reader = new TimedBytesReader(_b, callback, STATUS_CREATED)
+      Callback<None> readerCallback = new Callback<None>()
+      {
+        @Override
+        public void onError(Throwable e)
+        {
+          RestException restException = new RestException(RestStatus.responseForError(500, e));
+          callback.onError(restException);
+        }
+
+        @Override
+        public void onSuccess(None result)
+        {
+          RestResponse response = RestStatus.responseForStatus(STATUS_CREATED, "");
+          callback.onSuccess(response);
+        }
+      };
+      _reader = new TimedBytesReader(_b, readerCallback)
       {
         @Override
         protected void requestMore(final ReadHandle rh, final int processedDataLen)
@@ -265,28 +294,9 @@ public class TestStreamRequest
       request.getEntityStream().setReader(_reader);
     }
 
-    public int getTotalBytes()
+    TimedBytesReader getReader()
     {
-      assert _reader != null;
-      return _reader.getTotalBytes();
-    }
-
-    public boolean allBytesCorrect()
-    {
-      assert _reader != null;
-      return _reader.allBytesCorrect();
-    }
-
-    public long getStartTime()
-    {
-      assert _reader != null;
-      return _reader.getStartTime();
-    }
-
-    public long getStopTime()
-    {
-      assert _reader != null;
-      return _reader.getStopTime();
+      return _reader;
     }
   }
 }

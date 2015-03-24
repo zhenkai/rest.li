@@ -12,12 +12,12 @@ import java.util.Arrays;
 
 /** package private */ class BytesWriter implements Writer
 {
-  private final int _total;
+  private final long _total;
   private final byte _fill;
-  private int _written;
+  private long _written;
   private WriteHandle _wh;
 
-  BytesWriter(int total, byte fill)
+  BytesWriter(long total, byte fill)
   {
     _total = total;
     _fill = fill;
@@ -36,9 +36,10 @@ import java.util.Arrays;
 
     while(_wh.remainingCapacity() >  0 && _written < _total)
     {
-      int bytesNum = Math.min(_wh.remainingCapacity(), _total - _written);
+      int bytesNum = (int)Math.min(_wh.remainingCapacity(), _total - _written);
       _wh.write(generate(bytesNum));
       _written += bytesNum;
+      afterWrite(_wh, _written);
     }
 
     if (_written == _total)
@@ -49,6 +50,11 @@ import java.util.Arrays;
   }
 
   protected void onFinish()
+  {
+    // nothing
+  }
+
+  protected void afterWrite(WriteHandle wh, long written)
   {
     // nothing
   }

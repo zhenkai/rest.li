@@ -46,13 +46,13 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   private static final int BUFFER_HIGH_WATER_MARK = 16 * 1024;
   private static final int BUFFER_LOW_WATER_MARK = 8 * 1024;
 
-  private final int _maxContentLength;
+  private final long _maxContentLength;
   private final int _requestTimeout;
   private final ScheduledExecutorService _scheduler;
 
   private TimeoutBufferedWriter _chunkedMessageWriter;
 
-  RAPResponseDecoder(ScheduledExecutorService scheduler, int requestTimeout, int maxContentLength)
+  RAPResponseDecoder(ScheduledExecutorService scheduler, int requestTimeout, long maxContentLength)
   {
     _scheduler = scheduler;
     _requestTimeout = requestTimeout;
@@ -182,7 +182,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   {
     private final ChannelBuffer _buffer;
     private final ChannelHandlerContext _ctx;
-    private final int _maxContentLength;
+    private final long _maxContentLength;
     private final int _highWaterMark;
     private final int _lowWaterMark;
     private final Object _lock;
@@ -194,7 +194,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     private final ScheduledExecutorService _scheduler;
     private final int _requestTimeout;
 
-    TimeoutBufferedWriter(ChannelBuffer buffer, final ChannelHandlerContext ctx, int maxContentLength,
+    TimeoutBufferedWriter(ChannelBuffer buffer, final ChannelHandlerContext ctx, long maxContentLength,
                           int highWaterMark, int lowWaterMark, ScheduledExecutorService scheduler,
                           final int requestTimeout)
     {
