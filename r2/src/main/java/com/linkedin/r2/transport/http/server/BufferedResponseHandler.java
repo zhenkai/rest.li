@@ -8,7 +8,6 @@ import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,37 +17,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 /* package private */class BufferedResponseHandler implements WriteListener, Reader
 {
-  private NoCopyByteArrayOutputStream _bufferStream;
+  private final ByteBuffer _buffer;
   private final Object _lock = new Object();
   private final ServletOutputStream _os;
   private final AsyncContext _ctx;
-  private final int _bufferSize;
   private ReadHandle _rh;
-  private boolean _shouldComplete = false;
+  private volatile boolean _allDataRead = false;
+  private final AtomicBoolean _completed = new AtomicBoolean(false);
 
   BufferedResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx)
   {
-    _bufferSize = bufferSize;
-    _bufferStream = new NoCopyByteArrayOutputStream(bufferSize);
+    _buffer = ByteBuffer.allocate(bufferSize);
     _os = os;
     _ctx = ctx;
   }
 
+  // for some reason onWritePossible would be invoked for the first time after doWrite had finished
+  // that is isReady returned true and we did writing and finished; isReady never returned false;
+  // and then onWritePossible got invoked
   public void onWritePossible() throws IOException
   {
     synchronized (_lock)
     {
-      if (_bufferStream.getCount() > 0)
-      {
-        _os.write(_bufferStream.getBuffer(), 0, _bufferStream.getCount());
-        _bufferStream = new NoCopyByteArrayOutputStream(_bufferSize);
-        _rh.read(_bufferStream.getCount());
-      }
-
-      if (_shouldComplete && _os.isReady())
-      {
-        _ctx.complete();
-      }
+      doWrite();
     }
   }
 
@@ -61,19 +52,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
   {
     synchronized (_lock)
     {
+      byte[] tmpBuf = data.copyBytes();
+      _buffer.put(tmpBuf);
       try
       {
-        if (_os.isReady())
-        {
-          _os.write(data.copyBytes());
-          _rh.read(data.length());
-        }
-        else
-        {
-          _bufferStream.write(data.copyBytes());
-        }
+        doWrite();
       }
-      catch (IOException ex)
+      catch (Exception ex)
       {
         throw new RuntimeException(ex);
       }
@@ -84,13 +69,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
   {
     synchronized (_lock)
     {
-      if (_bufferStream.getCount() == 0 && _os.isReady())
+      _allDataRead = true;
+      try
       {
-        _ctx.complete();
+        doWrite();
       }
-      else
+      catch (Exception ex)
       {
-        _shouldComplete = true;
+        throw new RuntimeException(ex);
       }
     }
   }
@@ -98,26 +84,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
   public void onInit(final ReadHandle rh)
   {
     _rh = rh;
+    _rh.read(_buffer.capacity());
     _os.setWriteListener(this);
-    _rh.read(_bufferSize);
   }
 
-  private static class NoCopyByteArrayOutputStream extends ByteArrayOutputStream
+  private void doWrite() throws IOException
   {
-    NoCopyByteArrayOutputStream(int size)
+    _buffer.flip();
+    while(_os.isReady() && _buffer.hasRemaining())
     {
-      super(size);
+      int bytesNum = _buffer.remaining();
+      byte[] tmpBuf = new byte[bytesNum];
+      _buffer.get(tmpBuf);
+      _os.write(tmpBuf);
+      _rh.read(bytesNum);
     }
-
-    int getCount()
+    if (_allDataRead && _os.isReady() && !_buffer.hasRemaining())
     {
-      return super.count;
+      if (_completed.compareAndSet(false, true))
+      {
+        _ctx.complete();
+      }
     }
-
-    byte[] getBuffer()
-    {
-      return super.buf;
-    }
-
+    _buffer.compact();
   }
+
 }
