@@ -154,7 +154,7 @@ public class TestStreamRequest
   public void testBackPressure() throws Exception
   {
     Client client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, Object>emptyMap()));
-    final int totalBytes = 1024 * 1024;
+    final int totalBytes = 1024 * 1024 * 16;
     TimedBytesWriter writer = new TimedBytesWriter(totalBytes, BYTE);
     EntityStream entityStream = EntityStreams.newEntityStream(writer);
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, RATE_LIMITED_URI));
@@ -184,8 +184,11 @@ public class TestStreamRequest
     Assert.assertNotNull(reader);
     Assert.assertEquals(totalBytes, reader.getTotalBytes());
     Assert.assertTrue(reader.allBytesCorrect());
-    long clientSendTimeSpan = writer.getStopTime() - writer.getStartTime();
-    Assert.assertTrue(clientSendTimeSpan > 200);
+    long clientSendTimespan = writer.getStopTime() - writer.getStartTime();
+    long serverReceiveTimespan = reader.getStopTime() - reader.getStartTime();
+    double diff = Math.abs(serverReceiveTimespan - clientSendTimespan);
+    double diffRatio = diff / clientSendTimespan;
+    Assert.assertTrue(diffRatio < 0.05);
   }
 
   @AfterSuite
@@ -277,17 +280,27 @@ public class TestStreamRequest
       };
       _reader = new TimedBytesReader(_b, readerCallback)
       {
+        int count = 0;
+
         @Override
         protected void requestMore(final ReadHandle rh, final int processedDataLen)
         {
-          _scheduler.schedule(new Runnable()
+          count ++;
+          if (count % 16 == 0)
           {
-            @Override
-            public void run()
+            _scheduler.schedule(new Runnable()
             {
-              rh.read(processedDataLen);
-            }
-          }, _interval, TimeUnit.MILLISECONDS);
+              @Override
+              public void run()
+              {
+                rh.read(processedDataLen);
+              }
+            }, _interval, TimeUnit.MILLISECONDS);
+          }
+          else
+          {
+            rh.read(processedDataLen);
+          }
         }
       };
 

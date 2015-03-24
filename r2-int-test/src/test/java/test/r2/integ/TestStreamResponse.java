@@ -9,6 +9,7 @@ import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
@@ -47,7 +48,7 @@ public class TestStreamResponse
   private static final URI SMALL_URI = URI.create("/small");
   private static final URI SERVER_ERROR_URI = URI.create("/error");
   private static final long LARGE_BYTES_NUM = 1024 * 1024 * 1024;
-  private static final long SMALL_BYTES_NUM = 1024 * 1024;
+  private static final long SMALL_BYTES_NUM = 1024 * 1024 * 16;
   private static final int STATUS_OK = 202;
   private static final byte BYTE = 100;
   private static final long INTERVAL = 20;
@@ -184,6 +185,85 @@ public class TestStreamResponse
     Assert.assertEquals(e.getMessage(), "Not receiving any chunk after timeout of 500ms");
   }
 
+  @Test
+  public void testBackpressure() throws Exception
+  {
+    Client client = new TransportClientAdapter(_clientFactory.getClient(_clientProperties));
+    RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SMALL_URI));
+    StreamRequest request = builder.build();
+    final AtomicInteger status = new AtomicInteger(-1);
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+
+    final Callback<None> readerCallback = new Callback<None>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        error.set(e);
+        latch.countDown();
+      }
+
+      @Override
+      public void onSuccess(None result)
+      {
+        latch.countDown();
+      }
+    };
+
+    final TimedBytesReader reader = new TimedBytesReader(BYTE, readerCallback)
+    {
+      int count = 0;
+
+      @Override
+      protected void requestMore(final ReadHandle rh, final int processedDataLen)
+      {
+        count ++;
+        if (count % 16 == 0)
+        {
+          _scheduler.schedule(new Runnable()
+          {
+            @Override
+            public void run()
+            {
+              rh.read(processedDataLen);
+            }
+          }, INTERVAL, TimeUnit.MILLISECONDS);
+        }
+        else
+        {
+          rh.read(processedDataLen);
+        }
+      }
+    };
+
+    Callback<StreamResponse> callback = new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        readerCallback.onError(e);
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        status.set(result.getStatus());
+        result.getEntityStream().setReader(reader);
+      }
+    };
+
+    client.streamRequest(request, callback);
+    latch.await(60000, TimeUnit.MILLISECONDS);
+    Assert.assertNull(error.get());
+    Assert.assertEquals(status.get(), STATUS_OK);
+    long serverSendTimespan = _smallHandler.getWriter().getStopTime() - _smallHandler.getWriter().getStartTime();
+    long clientReceiveTimespan = reader.getStopTime() - reader.getStartTime();
+    double diff = Math.abs(clientReceiveTimespan - serverSendTimespan);
+    double diffRatio = diff / serverSendTimespan;
+    Assert.assertTrue(diffRatio < 0.05);
+  }
+
   @AfterSuite
   public void tearDown() throws Exception
   {
@@ -202,7 +282,7 @@ public class TestStreamResponse
   {
     private final byte _b;
     private final long _bytesNum;
-    private BytesWriter _writer;
+    private TimedBytesWriter _writer;
 
     BytesWriterRequestHandler(byte b, long bytesNUm)
     {
@@ -213,13 +293,13 @@ public class TestStreamResponse
     @Override
     public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
-      _writer = new BytesWriter(_bytesNum, _b);
+      _writer = new TimedBytesWriter(_bytesNum, _b);
       StreamResponse response = new StreamResponseBuilder()
           .setStatus(STATUS_OK).build(EntityStreams.newEntityStream(_writer));
       callback.onSuccess(response);
     }
 
-    BytesWriter getWriter()
+    TimedBytesWriter getWriter()
     {
       return _writer;
     }

@@ -10,7 +10,7 @@ class TimedBytesWriter extends BytesWriter
   private long _startTime;
   private long _stopTime;
 
-  TimedBytesWriter(int total, byte fill)
+  TimedBytesWriter(long total, byte fill)
   {
     super(total, fill);
   }
