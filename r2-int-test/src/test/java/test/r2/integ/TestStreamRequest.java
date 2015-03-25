@@ -150,7 +150,7 @@ public class TestStreamRequest
   @Test
   public void testBackPressure() throws Exception
   {
-    final int totalBytes = 1024 * 1024 * 16;
+    final int totalBytes = 1024 * 1024 * 32;
     TimedBytesWriter writer = new TimedBytesWriter(totalBytes, BYTE);
     EntityStream entityStream = EntityStreams.newEntityStream(writer);
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, RATE_LIMITED_URI));

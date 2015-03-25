@@ -25,6 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
   private volatile boolean _allDataRead = false;
   private final AtomicBoolean _completed = new AtomicBoolean(false);
 
+  // for debug
+  private int _count = 0;
+
   BufferedResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx)
   {
     _buffer = ByteBuffer.allocate(bufferSize);
@@ -45,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
   public void onError(final Throwable t)
   {
-    throw new RuntimeException(t);
+    throw new RuntimeException("Bytes written so far: " + (_count / 1024 / 1024) + " MB", t);
   }
 
   public void onDataAvailable(final ByteString data)
@@ -91,13 +94,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
   private void doWrite() throws IOException
   {
     _buffer.flip();
+    byte[] tmpBuf = new byte[4096];
+    int totalWritten = 0;
     while(_os.isReady() && _buffer.hasRemaining())
     {
-      int bytesNum = _buffer.remaining();
-      byte[] tmpBuf = new byte[bytesNum];
-      _buffer.get(tmpBuf);
-      _os.write(tmpBuf);
-      _rh.read(bytesNum);
+      int bytesNum = Math.min(tmpBuf.length, _buffer.remaining());
+      _buffer.get(tmpBuf, 0, bytesNum);
+      _os.write(tmpBuf, 0, bytesNum);
+      totalWritten += bytesNum;
     }
     if (_allDataRead && _os.isReady() && !_buffer.hasRemaining())
     {
@@ -107,6 +111,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
       }
     }
     _buffer.compact();
+    _count += totalWritten;
+    _rh.read(totalWritten);
+
   }
 
 }
