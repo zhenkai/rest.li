@@ -93,7 +93,10 @@ import java.util.Map;
           @Override
           public void operationComplete(ChannelFuture future) throws Exception
           {
-            entityStream.setReader(new BufferedReader(ctx, MAX_BUFFER_SIZE));
+            if (future.isSuccess())
+            {
+              entityStream.setReader(new BufferedReader(ctx, MAX_BUFFER_SIZE));
+            }
           }
         });
 
@@ -148,8 +151,11 @@ import java.util.Map;
         @Override
         public void operationComplete(ChannelFuture future) throws Exception
         {
-          // data have been written out, we can tell the writer that we can accept more bytes
-          _readHandle.read(dataLen);
+          if (future.isSuccess())
+          {
+            // data have been written out, we can tell the writer that we can accept more bytes
+            _readHandle.read(dataLen);
+          }
         }
       });
       Channels.write(_ctx, writeFuture, chunk);

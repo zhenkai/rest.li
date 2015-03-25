@@ -158,7 +158,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   {
     if (_chunkedMessageWriter != null)
     {
-      _chunkedMessageWriter.fail(new IllegalStateException("Channel closed while receiving the entity."));
+      TimeoutBufferedWriter writer = _chunkedMessageWriter;
+      _chunkedMessageWriter = null;
+      writer.fail(new IllegalStateException("Channel closed while receiving the entity."));
     }
     super.channelClosed(ctx, e);
   }
@@ -169,7 +171,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
   {
     if (_chunkedMessageWriter != null)
     {
-      _chunkedMessageWriter.fail(new IllegalStateException("Exception caught while receiving the entity.", e.getCause()));
+      TimeoutBufferedWriter writer = _chunkedMessageWriter;
+      _chunkedMessageWriter = null;
+      writer.fail(new IllegalStateException("Exception caught while receiving the entity.", e.getCause()));
     }
     super.exceptionCaught(ctx, e);
   }
