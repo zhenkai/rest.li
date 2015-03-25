@@ -140,10 +140,6 @@ public final class EntityStreams
           }
           _reader.onDone();
         }
-        else
-        {
-          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
-        }
       }
 
       @Override
@@ -156,10 +152,6 @@ public final class EntityStreams
             observer.onError(e);
           }
           _reader.onError(e);
-        }
-        else
-        {
-          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
         }
       }
 
