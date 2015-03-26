@@ -18,6 +18,9 @@ import java.nio.ByteBuffer;
   private final Object _lock = new Object();
   private WriteHandle _wh;
 
+  // for debug
+  private int _count = 0;
+
   BufferedRequestHandler(ServletInputStream is)
   {
     _is = is;
@@ -67,6 +70,7 @@ import java.nio.ByteBuffer;
       {
         int maxLen = Math.min(buf.length, _wh.remainingCapacity());
         int bytesRead = _is.read(buf, 0, maxLen);
+        _count += bytesRead;
         if (bytesRead < 0)
         {
           _wh.done();
@@ -80,7 +84,7 @@ import java.nio.ByteBuffer;
     }
     catch (IOException ex)
     {
-      _wh.error(ex);
+      _wh.error(new Exception("Bytes read: " + _count, ex));
     }
   }
 }
