@@ -3,13 +3,17 @@ package test.r2.integ;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.FullEntityReader;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
@@ -39,34 +43,24 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author Zhenkai Zhu
  */
-public class TestStreamEcho
+public class TestStreamEcho extends AbstractStreamTest
 {
-  private HttpClientFactory _clientFactory;
-  private static final int PORT = 8088;
   private static final URI ECHO_URI = URI.create("/echo");
-  private static final long LARGE_BYTES_NUM = 1024 * 1024 * 1024;
-  private static final long SMALL_BYTES_NUM = 1024 * 1024 * 32;
-  private static final byte BYTE = 100;
-  private static final long INTERVAL = 20;
-  private HttpServer _server;
-  private Client _client;
-  private ScheduledExecutorService _scheduler;
 
-  @BeforeSuite
-  public void setup() throws IOException
+  @Override
+  protected StreamDispatcher getStreamDispatcher()
   {
-    _scheduler = Executors.newSingleThreadScheduledExecutor();
-    _clientFactory = new HttpClientFactory();
-    Map<String, String> clientProperties = new HashMap<String, String>();
-    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
-    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "500");
-    _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
-
-    final StreamDispatcher dispatcher = new StreamDispatcherBuilder()
+    return new StreamDispatcherBuilder()
         .addStreamHandler(ECHO_URI, new SteamEchoHandler())
         .build();
-    _server = new HttpServerFactory().createStreamServer(PORT, dispatcher);
-    _server.start();
+  }
+
+  @Override
+  protected Map<String, String> getClientProperties()
+  {
+    Map<String, String> clientProperties = new HashMap<String, String>();
+    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
+    return clientProperties;
   }
 
   @Test
@@ -78,7 +72,7 @@ public class TestStreamEcho
   @Test
   public void testNormalEchoLarge() throws Exception
   {
-    testNormalEcho(LARGE_BYTES_NUM);
+      testNormalEcho(LARGE_BYTES_NUM);
   }
 
   private void testNormalEcho(long bytesNum) throws Exception
@@ -91,39 +85,11 @@ public class TestStreamEcho
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
 
-    final Callback<None> readerCallback = new Callback<None>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        error.set(e);
-        latch.countDown();
-      }
-
-      @Override
-      public void onSuccess(None result)
-      {
-        latch.countDown();
-      }
-    };
+    final Callback<None> readerCallback = getReaderCallback(latch, error);
 
     final BytesReader reader = new BytesReader(BYTE, readerCallback);
 
-    Callback<StreamResponse> callback = new Callback<StreamResponse>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        readerCallback.onError(e);
-      }
-
-      @Override
-      public void onSuccess(StreamResponse result)
-      {
-        status.set(result.getStatus());
-        result.getEntityStream().setReader(reader);
-      }
-    };
+    Callback<StreamResponse> callback = getCallback(status, readerCallback, reader);
 
     _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
@@ -144,21 +110,7 @@ public class TestStreamEcho
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
 
-    final Callback<None> readerCallback = new Callback<None>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        error.set(e);
-        latch.countDown();
-      }
-
-      @Override
-      public void onSuccess(None result)
-      {
-        latch.countDown();
-      }
-    };
+    final Callback<None> readerCallback = getReaderCallback(latch, error);
 
     final TimedBytesReader reader = new TimedBytesReader(BYTE, readerCallback)
     {
@@ -186,21 +138,7 @@ public class TestStreamEcho
       }
     };
 
-    Callback<StreamResponse> callback = new Callback<StreamResponse>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        readerCallback.onError(e);
-      }
-
-      @Override
-      public void onSuccess(StreamResponse result)
-      {
-        status.set(result.getStatus());
-        result.getEntityStream().setReader(reader);
-      }
-    };
+    Callback<StreamResponse> callback = getCallback(status, readerCallback, reader);
 
     _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
@@ -216,30 +154,51 @@ public class TestStreamEcho
     Assert.assertTrue(diffRatio < 0.05);
   }
 
-  @AfterSuite
-  public void tearDown() throws Exception
-  {
-    _scheduler.shutdown();
-    if (_server != null) {
-      _server.stop();
-      _server.waitForStop();
-    }
-    final FutureCallback<None> clientCallback = new FutureCallback<None>();
-    _client.shutdown(clientCallback);
-    clientCallback.get();
-
-    final FutureCallback<None> factoryCallback = new FutureCallback<None>();
-    _clientFactory.shutdown(factoryCallback);
-    factoryCallback.get();
-  }
-
   private static class SteamEchoHandler implements StreamRequestHandler
   {
     @Override
-    public void handleRequest(StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
+    public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
       StreamResponseBuilder builder = new StreamResponseBuilder();
       callback.onSuccess(builder.build(request.getEntityStream()));
     }
+  }
+
+  private Callback<None> getReaderCallback(final CountDownLatch latch, final AtomicReference<Throwable> error)
+  {
+    return new Callback<None>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        error.set(e);
+        latch.countDown();
+      }
+
+      @Override
+      public void onSuccess(None result)
+      {
+        latch.countDown();
+      }
+    };
+  }
+
+  private Callback<StreamResponse> getCallback(final AtomicInteger status, final Callback<None> readerCallback, final BytesReader reader)
+  {
+    return new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        readerCallback.onError(e);
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        status.set(result.getStatus());
+        result.getEntityStream().setReader(reader);
+      }
+    };
   }
 }
