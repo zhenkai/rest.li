@@ -42,7 +42,7 @@ public abstract class AbstractStreamTest
     _scheduler = Executors.newSingleThreadScheduledExecutor();
     _clientFactory = new HttpClientFactory();
     _client = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
-    _server = new HttpServerFactory().createStreamServer(PORT, getStreamDispatcher());
+    _server = getServerFactory().createStreamServer(PORT, getStreamDispatcher());
     _server.start();
   }
 
@@ -70,6 +70,11 @@ public abstract class AbstractStreamTest
   protected Map<String, String> getClientProperties()
   {
     return Collections.emptyMap();
+  }
+
+  protected HttpServerFactory getServerFactory()
+  {
+    return new HttpServerFactory();
   }
 
 }

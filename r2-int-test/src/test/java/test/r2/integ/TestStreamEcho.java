@@ -73,11 +73,14 @@ public class TestStreamEcho extends AbstractStreamTest
   public void testNormalEchoLarge() throws Exception
   {
     /**
-     * This test fails most of times due to
+     * This test fails for Jetty 9 most of times due to
      * Caused by: java.lang.IllegalStateException: state=UNREADY
         at org.eclipse.jetty.server.HttpOutput.run(HttpOutput.java:822)
 
      I suspect this is a bug in jetty because the write to outputstream if always after isReady() returns true
+
+     Update 3/27/2015: for some reason, after the work to support Jetty 8, this test stops failing for Jetty 9;
+     or at least not easy to produce the failure (no failure after 10ish runs)
      */
     testNormalEcho(LARGE_BYTES_NUM);
   }
