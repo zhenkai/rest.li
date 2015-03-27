@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author Zhenkai Zhu
  */
-/* package private */class BufferedResponseHandler implements WriteListener, Reader
+/* package private */class AsyncIOResponseHandler implements WriteListener, Reader
 {
   private final ByteBuffer _buffer;
   private final Object _lock = new Object();
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
   // for debug
   private int _count = 0;
 
-  BufferedResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx)
+  AsyncIOResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx)
   {
     _buffer = ByteBuffer.allocate(bufferSize);
     _os = os;

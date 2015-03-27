@@ -54,11 +54,10 @@ public class HttpJettyServer implements HttpServer
                          int threadPoolSize,
                          HttpDispatcher dispatcher,
                          boolean useAsync,
+                         boolean asyncIO,
                          int asyncTimeOut)
   {
-    this(port, contextPath, threadPoolSize,
-         useAsync ? new RAPServlet(dispatcher, asyncTimeOut) :
-                    new RAPServlet(dispatcher));
+    this(port, contextPath, threadPoolSize, createServlet(dispatcher, asyncIO, useAsync, asyncTimeOut));
   }
 
   public HttpJettyServer(int port, HttpServlet servlet)
@@ -83,7 +82,7 @@ public class HttpJettyServer implements HttpServer
     _server = new Server(new QueuedThreadPool(_threadPoolSize));
     ServerConnector http = new ServerConnector(_server);
     http.setPort(_port);
-    _server.setConnectors(new Connector[] { http });
+    _server.setConnectors(new Connector[]{http});
     ServletContextHandler root =
         new ServletContextHandler(_server, _contextPath, ServletContextHandler.SESSIONS);
     root.addServlet(new ServletHolder(_servlet), "/*");
@@ -119,5 +118,24 @@ public class HttpJettyServer implements HttpServer
   public void waitForStop() throws InterruptedException
   {
     _server.join();
+  }
+
+  private static HttpServlet createServlet(HttpDispatcher dispatcher, boolean asyncIO, boolean useAsync, int asyncTimeOut)
+  {
+    HttpServlet httpServlet;
+    if (asyncIO)
+    {
+      httpServlet = new AsyncIORAPServlet(dispatcher, asyncTimeOut);
+    }
+    else if (useAsync)
+    {
+      httpServlet = new AsyncR2Servlet(dispatcher, asyncTimeOut);
+    }
+    else
+    {
+      httpServlet = new RAPServlet(dispatcher);
+    }
+
+    return httpServlet;
   }
 }

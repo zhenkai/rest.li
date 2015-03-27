@@ -43,29 +43,26 @@ import java.io.IOException;
  * @author Goksel Genc
  * @version $Revision$
  *
- * @deprecated Use {@link com.linkedin.r2.transport.http.server.AbstractR2Servlet}
+ * TODO [ZZ]: figure out how to support this; if we behavor differently then it's trivia; i.e.
+ * run loop() for request, and then run loop for response; that means streaming of request and response
+ *  cannot be going on at the same time, which may be reasonable for most use cases.
  */
 @SuppressWarnings("serial")
-@Deprecated
 public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 {
+  private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
+
+  // servlet async context timeout in ms.
+  private final long _timeout;
+
+  /**
+   * Initialize the servlet, optionally using servlet-api-3.0 async API, if supported
+   * by the container. The latter is checked later in init()
+   */
   public AbstractAsyncR2Servlet(long timeout)
   {
-    super(timeout);
+    _timeout = timeout;
   }
-//  private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
-//
-//  // servlet async context timeout in ms.
-//  private final long _timeout;
-//
-//  /**
-//   * Initialize the servlet, optionally using servlet-api-3.0 async API, if supported
-//   * by the container. The latter is checked later in init()
-//   */
-//  public AbstractAsyncR2Servlet(long timeout)
-//  {
-//    _timeout = timeout;
-//  }
 //
 //  @Override
 //  public void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException,
@@ -151,9 +148,9 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 //
 //    getDispatcher().handleRequest(restRequest, requestContext, callback);
 //  }
-//
-//  public long getTimeout()
-//  {
-//    return _timeout;
-//  }
+
+  public long getTimeout()
+  {
+    return _timeout;
+  }
 }

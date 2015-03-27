@@ -36,15 +36,27 @@ public class HttpServerFactory
   public static final boolean DEFAULT_USE_ASYNC_SERVLET_API = false;
 
   private final FilterChain _filters;
+  private final boolean _asyncIO;
 
   public HttpServerFactory()
   {
-    this(FilterChains.empty());
+    this(false);
+  }
+
+  public HttpServerFactory(boolean asyncIO)
+  {
+    this(FilterChains.empty(), asyncIO);
   }
 
   public HttpServerFactory(FilterChain filters)
   {
+    this(filters, false);
+  }
+
+  public HttpServerFactory(FilterChain filters, boolean asyncIO)
+  {
     _filters = filters;
+    _asyncIO = asyncIO;
   }
 
   public HttpServer createServer(int port, TransportDispatcher transportDispatcher)
@@ -108,6 +120,7 @@ public class HttpServerFactory
                                threadPoolSize,
                                dispatcher,
                                useAsyncServletApi,
+                               _asyncIO,
                                asyncTimeOut);
   }
 
@@ -126,6 +139,7 @@ public class HttpServerFactory
         threadPoolSize,
         dispatcher,
         useAsyncServletApi,
+        _asyncIO,
         asyncTimeOut);
   }
 
@@ -146,6 +160,7 @@ public class HttpServerFactory
         threadPoolSize,
         dispatcher,
         useAsyncServletApi,
+        _asyncIO,
         asyncTimeOut);
   }
 }

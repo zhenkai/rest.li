@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 /**
  * @author Zhenkai Zhu
  */
-/* package private */ class BufferedRequestHandler implements ReadListener, Writer
+/* package private */ class AsyncIORequestHandler implements ReadListener, Writer
 {
   private final ServletInputStream _is;
   private final Object _lock = new Object();
@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
   // for debug
   private int _count = 0;
 
-  BufferedRequestHandler(ServletInputStream is)
+  AsyncIORequestHandler(ServletInputStream is)
   {
     _is = is;
   }

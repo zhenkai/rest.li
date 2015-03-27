@@ -60,6 +60,9 @@ public class TestStreamRequest extends AbstractStreamTest
     EntityStream entityStream = EntityStreams.newEntityStream(new BytesWriter(totalBytes, BYTE));
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, LARGE_URI));
     StreamRequest request = builder.setMethod("POST").build(entityStream);
+
+
+
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
     Callback<StreamResponse> callback = expectSuccessCallback(latch, status);
