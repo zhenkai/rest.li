@@ -28,4 +28,6 @@ import com.linkedin.r2.message.Request;
  */
 public interface StreamRequest extends RestMessage, Request, RequestHead
 {
+  @Override
+  StreamRequestBuilder transformBuilder();
 }

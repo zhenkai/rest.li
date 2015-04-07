@@ -1,6 +1,7 @@
 package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.MessageBuilder;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.util.ArgumentUtil;
 
@@ -9,7 +10,7 @@ import java.net.URI;
 /**
  * @author Zhenkai Zhu
  */
-public final class RestRequestBuilder extends BaseRequestBuilder<RestRequestBuilder>
+public final class RestRequestBuilder extends BaseRequestBuilder<RestRequestBuilder> implements MessageBuilder<RestRequestBuilder>
 {
   private ByteString _entity = ByteString.empty();
 

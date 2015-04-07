@@ -431,7 +431,7 @@ import org.slf4j.LoggerFactory;
       port = scheme.equalsIgnoreCase("http") ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
 
-    final StreamRequest newRequest = new StreamRequestBuilder(request)
+    final StreamRequest newRequest = request.transformBuilder()
                                              .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
                                              .build(request.getEntityStream());
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
