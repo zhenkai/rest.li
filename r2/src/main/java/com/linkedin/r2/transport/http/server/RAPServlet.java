@@ -20,7 +20,7 @@
 
 package com.linkedin.r2.transport.http.server;
 
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 /**
  * @author Steven Ihde
@@ -38,7 +38,7 @@ public class RAPServlet extends AbstractR2Servlet
     _dispatcher = dispatcher;
   }
 
-  public RAPServlet(StreamDispatcher dispatcher)
+  public RAPServlet(TransportDispatcher dispatcher)
   {
     this(new HttpDispatcher(dispatcher));
   }
@@ -57,7 +57,7 @@ public class RAPServlet extends AbstractR2Servlet
   /**
    * Initialize the RAPServlet.
    */
-  public RAPServlet(StreamDispatcher dispatcher,
+  public RAPServlet(TransportDispatcher dispatcher,
                     boolean useContinuations,
                     int timeOut,
                     int timeOutDelta)

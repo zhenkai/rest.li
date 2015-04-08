@@ -18,7 +18,6 @@
 package com.linkedin.restli.internal.server.methods.response;
 
 
-import com.linkedin.r2.message.Response;
 import com.linkedin.restli.common.HttpStatus;
 import com.linkedin.restli.common.ResourceMethod;
 import com.linkedin.restli.internal.server.AugmentedRestLiResponseData;

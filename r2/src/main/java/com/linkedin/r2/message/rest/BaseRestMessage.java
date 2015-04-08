@@ -18,28 +18,22 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.r2.message.BaseStreamMessage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import com.linkedin.r2.message.streaming.EntityStream;
-
 
 /**
  * @author Chris Pettitt
  * @version $Revision$
  */
-/* package private */ abstract class BaseRestMessage extends BaseStreamMessage implements RestMessage
+/* package private */ abstract class BaseRestMessage implements RestMessage
 {
   private final Map<String, String> _headers;
 
   private final List<String> _cookies;
 
-  protected BaseRestMessage(EntityStream entityStream, Map<String, String> headers, List<String> cookies)
+  protected BaseRestMessage(Map<String, String> headers, List<String> cookies)
   {
-    super(entityStream);
-
     assert headers != null;
     assert cookies != null;
     _headers = headers;

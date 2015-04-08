@@ -4,7 +4,7 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RequestHead;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -12,16 +12,15 @@ import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.StreamDecider;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.RestRequestHandler;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandlerAdapter;
 import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
-import com.linkedin.r2.transport.common.bridge.server.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportCallbackAdapter;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
@@ -39,7 +38,7 @@ import java.util.Map;
 /**
  * @author Zhenkai Zhu
  */
-public class TestStreamDecider
+public class TestMixUseOfStreamAndNonStream
 {
   private HttpClientFactory _clientFactory;
   private static final int PORT = 8098;
@@ -55,47 +54,29 @@ public class TestStreamDecider
   public void setup() throws IOException
   {
     _clientFactory = new HttpClientFactory();
-    Map<String, String> clientProperties = new HashMap<String, String>();
+    final Map<String, String> clientProperties = new HashMap<String, String>();
     _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
 
+    final RestHandler restHandler = new RestHandler();
+    final StreamRequestHandler adaptedHandler = new StreamRequestHandlerAdapter(restHandler);
     final StreamHandler streamHandler = new StreamHandler();
-
-    final StreamDispatcher streamDispatcher = new StreamDispatcher()
+    final TransportDispatcher dispatcher = new TransportDispatcher()
     {
       @Override
       public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<StreamResponse> callback)
       {
-        streamHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
-      }
-    };
-
-    final RestHandler restHandler = new RestHandler();
-
-    final TransportDispatcher restDispatcher = new TransportDispatcher()
-    {
-      @Override
-      public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<RestResponse> callback)
-      {
-        restHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<RestResponse>(callback));
-      }
-    };
-
-    StreamDecider decider = new StreamDecider()
-    {
-      @Override
-      public StreamDecision decide(RequestHead requestHead)
-      {
-        if (REST_RESOURCE_URI.equals(requestHead.getURI()))
+        if (req.getURI().equals(REST_RESOURCE_URI))
         {
-          return StreamDecision.FULL_ENTITY;
+          adaptedHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
         }
         else
         {
-          return StreamDecision.STREAM_ENTITY;
+          streamHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
         }
       }
     };
-    _server = new HttpServerFactory().createMixedServer(PORT, streamDispatcher, restDispatcher, decider);
+
+    _server = new HttpServerFactory().createServer(PORT, dispatcher);
     _server.start();
   }
 
@@ -153,7 +134,7 @@ public class TestStreamDecider
       builder.setStatus(RestStatus.OK);
       builder.setEntity(STREAM_MESSAGE.getBytes());
       RestResponse response = builder.build();
-      callback.onSuccess(response);
+      callback.onSuccess(Messages.toStreamResponse(response));
     }
   }
 }

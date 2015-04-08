@@ -18,8 +18,8 @@
 package test.r2.caprep;
 
 import com.linkedin.r2.filter.FilterChain;
-import com.linkedin.r2.message.Request;
-import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;

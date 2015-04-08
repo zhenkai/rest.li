@@ -27,13 +27,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -41,10 +42,6 @@ import java.io.IOException;
  * containers supporting Servlet API 3.0 or greater.
  * @author Goksel Genc
  * @version $Revision$
- *
- * TODO [ZZ]: figure out how to support this; if we behavor differently then it's trivia; i.e.
- * run loop() for request, and then run loop for response; that means streaming of request and response
- *  cannot be going on at the same time, which may be reasonable for most use cases.
  */
 @SuppressWarnings("serial")
 public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
@@ -62,43 +59,44 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
   {
     _timeout = timeout;
   }
-//
-//  @Override
-//  public void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException,
-//                                                                                                 IOException
-//  {
-//    RequestContext requestContext = readRequestContext(req);
-//
-//    RestRequest restRequest;
-//
-//    try
-//    {
-//      restRequest = readFromServletRequest(req, requestContext);
-//    }
-//    catch (URISyntaxException e)
-//    {
-//      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
-//      return;
-//    }
-//    catch (MessagingException e)
-//    {
-//      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
-//      return;
-//    }
-//
-//    final AsyncContext ctx = req.startAsync(req, resp);
-//
-//    ctx.setTimeout(_timeout);
+
+  @Override
+  public void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException,
+                                                                                                 IOException
+  {
+    final AsyncContext ctx = req.startAsync(req, resp);
+    ctx.setTimeout(_timeout);
+
+    final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 1024 * 16);
+    RequestContext requestContext = readRequestContext(req);
+
+    StreamRequest streamRequest;
+
+    try
+    {
+      streamRequest = readFromServletRequest(req, requestContext, ioHandler);
+    }
+    catch (URISyntaxException e)
+    {
+      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+      return;
+    }
+    catch (MessagingException e)
+    {
+      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+      return;
+    }
+
 //    ctx.addListener(new AsyncListener()
 //    {
 //      @Override
 //      public void onTimeout(AsyncEvent event) throws IOException
 //      {
-//        AsyncContext ctx = event.getAsyncContext();
-//        writeToServletError((HttpServletResponse) ctx.getResponse(),
-//                            RestStatus.INTERNAL_SERVER_ERROR,
-//                            "Server Timeout");
-//        ctx.complete();
+////        AsyncContext ctx = event.getAsyncContext();
+////        writeToServletError((HttpServletResponse) ctx.getResponse(),
+////                            RestStatus.INTERNAL_SERVER_ERROR,
+////                            "Server Timeout");
+////        ctx.complete();
 //      }
 //
 //      @Override
@@ -110,10 +108,10 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 //      @Override
 //      public void onError(AsyncEvent event) throws IOException
 //      {
-//        writeToServletError((HttpServletResponse) event.getSuppliedResponse(),
-//                            RestStatus.INTERNAL_SERVER_ERROR,
-//                            "Server Error");
-//        ctx.complete();
+////        writeToServletError((HttpServletResponse) event.getSuppliedResponse(),
+////                            RestStatus.INTERNAL_SERVER_ERROR,
+////                            "Server Error");
+////        ctx.complete();
 //      }
 //
 //      @Override
@@ -121,32 +119,35 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 //      {
 //        Object exception = req.getAttribute(TRANSPORT_CALLBACK_IOEXCEPTION);
 //        if (exception != null)
-//          throw new IOException((IOException) exception);
+//        {
+//          throw new IOException((Throwable)exception);
+//        }
 //      }
 //    });
-//
-//    TransportCallback<RestResponse> callback = new TransportCallback<RestResponse>()
-//    {
-//      @Override
-//      public void onResponse(TransportResponse<RestResponse> response)
-//      {
-//        try
-//        {
-//          writeToServletResponse(response, (HttpServletResponse) ctx.getResponse());
-//        }
-//        catch (IOException e)
-//        {
-//          req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
-//        }
-//        finally
-//        {
-//          ctx.complete();
-//        }
-//      }
-//    };
-//
-//    getDispatcher().handleRequest(restRequest, requestContext, callback);
-//  }
+
+    TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
+    {
+      @Override
+      public void onResponse(TransportResponse<StreamResponse> response)
+      {
+        try
+        {
+          ioHandler.startWritingResponse();
+          StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
+          streamResponse.getEntityStream().setReader(ioHandler);
+          ioHandler.loop();
+        }
+        catch (Exception e)
+        {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+
+    getDispatcher().handleRequest(streamRequest, requestContext, callback);
+    ioHandler.startReadingRequest();
+    ioHandler.loop();
+  }
 
   public long getTimeout()
   {

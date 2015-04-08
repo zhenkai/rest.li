@@ -16,25 +16,23 @@ public final class EntityStreams
 {
   private EntityStreams() {}
 
-  private final static EntityStream EMPTY_STREAM = newEntityStream(new Writer()
-  {
-    private WriteHandle _wh;
-    @Override
-    public void onInit(WriteHandle wh)
-    {
-      _wh = wh;
-    }
-
-    @Override
-    public void onWritePossible()
-    {
-      _wh.done();
-    }
-  });
-
   public static EntityStream emptyStream()
   {
-    return EMPTY_STREAM;
+    return newEntityStream(new Writer()
+    {
+      private WriteHandle _wh;
+      @Override
+      public void onInit(WriteHandle wh)
+      {
+        _wh = wh;
+      }
+
+      @Override
+      public void onWritePossible()
+      {
+        _wh.done();
+      }
+    });
   }
 
   /**

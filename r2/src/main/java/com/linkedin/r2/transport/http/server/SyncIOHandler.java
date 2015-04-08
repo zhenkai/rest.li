@@ -82,7 +82,7 @@ public class SyncIOHandler implements Writer, Reader
 
   public void loop() throws ServletException, IOException
   {
-    while(!_responseWriteFinished || !_requestReadFinished)
+    while(shouldContinue())
     {
 
       Event event;
@@ -153,6 +153,21 @@ public class SyncIOHandler implements Writer, Reader
         throw new ServletException(((ResponseDataErrorEvent) event).getCause());
       }
     }
+  }
+
+  protected boolean shouldContinue()
+  {
+    return !_responseWriteFinished || !_requestReadFinished;
+  }
+
+  protected boolean responseWriteFinished()
+  {
+    return _responseWriteFinished;
+  }
+
+  protected boolean requestReadFinished()
+  {
+    return _requestReadFinished;
   }
 
   private interface Event

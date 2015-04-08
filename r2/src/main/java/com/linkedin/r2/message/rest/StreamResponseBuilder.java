@@ -1,11 +1,13 @@
 package com.linkedin.r2.message.rest;
 
+import com.linkedin.r2.message.StreamMessageBuilder;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
  * @author Zhenkai Zhu
  */
 public final class StreamResponseBuilder extends BaseResponseBuilder<StreamResponseBuilder>
+    implements StreamMessageBuilder<StreamResponseBuilder>
 {
   /**
    * Constructs a new builder with no initial values.
@@ -18,7 +20,7 @@ public final class StreamResponseBuilder extends BaseResponseBuilder<StreamRespo
    *
    * @param response the response to copy
    */
-  public StreamResponseBuilder(StreamResponse response)
+  public StreamResponseBuilder(Response response)
   {
     super(response);
   }

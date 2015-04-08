@@ -21,6 +21,7 @@ package test.r2.filter;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.testutils.filter.MessageCountFilter;
@@ -152,14 +153,14 @@ public class TestFilterChainImpl
 
   private void fireRestRequest(FilterChain fc)
   {
-    fc.onRestRequest(new RestRequestBuilder(URI.create("src/test/resources/test")).build(),
+    fc.onRequest(Messages.toStreamRequest(new RestRequestBuilder(URI.create("src/test/resources/test")).build()),
                      createRequestContext(), createWireAttributes()
     );
   }
 
   private void fireRestResponse(FilterChain fc)
   {
-    fc.onResponse(new RestResponseBuilder().build(),
+    fc.onResponse(Messages.toStreamResponse(new RestResponseBuilder().build()),
                       createRequestContext(), createWireAttributes()
     );
   }

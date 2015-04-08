@@ -1,6 +1,6 @@
 package com.linkedin.r2.transport.http.server;
 
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 /**
  * @author Zhenkai Zhu
@@ -18,7 +18,7 @@ public class AsyncIORAPServlet extends AbstractAsyncIOR2Servlet
     _dispatcher = dispatcher;
   }
 
-  public AsyncIORAPServlet(StreamDispatcher dispatcher, int timeout)
+  public AsyncIORAPServlet(TransportDispatcher dispatcher, int timeout)
   {
     this(new HttpDispatcher(dispatcher), timeout);
   }
@@ -28,7 +28,7 @@ public class AsyncIORAPServlet extends AbstractAsyncIOR2Servlet
     this(dispatcher, DEFAULT_TIMEOUT);
   }
 
-  public AsyncIORAPServlet(StreamDispatcher dispatcher)
+  public AsyncIORAPServlet(TransportDispatcher dispatcher)
   {
     this(new HttpDispatcher(dispatcher));
   }

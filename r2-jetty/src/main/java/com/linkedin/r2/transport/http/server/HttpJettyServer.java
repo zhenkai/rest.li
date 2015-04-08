@@ -44,6 +44,8 @@ public class HttpJettyServer implements HttpServer
   private Server            _server;
   private final HttpServlet _servlet;
 
+  public enum ServletType {RAP, ASYNC_EVENT, ASYNC_IO}
+
   public HttpJettyServer(int port, HttpDispatcher dispatcher)
   {
     this(port, new RAPServlet(dispatcher));
@@ -52,12 +54,19 @@ public class HttpJettyServer implements HttpServer
   public HttpJettyServer(int port,
                          String contextPath,
                          int threadPoolSize,
-                         HttpDispatcher dispatcher,
-                         boolean useAsync,
-                         boolean asyncIO,
-                         int asyncTimeOut)
+                         HttpDispatcher dispatcher)
   {
-    this(port, contextPath, threadPoolSize, createServlet(dispatcher, asyncIO, useAsync, asyncTimeOut));
+    this(port, contextPath, threadPoolSize, dispatcher, ServletType.RAP, 0);
+  }
+
+  public HttpJettyServer(int port,
+                         String contextPath,
+                         int threadPoolSize,
+                         HttpDispatcher dispatcher,
+                         ServletType type,
+                         int asyncTimeout)
+  {
+    this(port, contextPath, threadPoolSize, createServlet(dispatcher, type, asyncTimeout));
   }
 
   public HttpJettyServer(int port, HttpServlet servlet)
@@ -119,7 +128,6 @@ public class HttpJettyServer implements HttpServer
     _server.join();
   }
 
-
   protected Connector[] getConnectors(Server server)
   {
     ServerConnector http = new ServerConnector(server);
@@ -127,20 +135,19 @@ public class HttpJettyServer implements HttpServer
     return new Connector[]{http};
   }
 
-  private static HttpServlet createServlet(HttpDispatcher dispatcher, boolean asyncIO, boolean useAsync, int asyncTimeOut)
+  private static HttpServlet createServlet(HttpDispatcher dispatcher, ServletType type, int asyncTimeOut)
   {
     HttpServlet httpServlet;
-    if (asyncIO)
+    switch (type)
     {
-      httpServlet = new AsyncIORAPServlet(dispatcher, asyncTimeOut);
-    }
-    else if (useAsync)
-    {
-      httpServlet = new AsyncR2Servlet(dispatcher, asyncTimeOut);
-    }
-    else
-    {
-      httpServlet = new RAPServlet(dispatcher);
+      case ASYNC_IO:
+        httpServlet = new AsyncIORAPServlet(dispatcher, asyncTimeOut);
+        break;
+      case ASYNC_EVENT:
+        httpServlet = new AsyncR2Servlet(dispatcher, asyncTimeOut);
+        break;
+      default:
+        httpServlet = new RAPServlet(dispatcher);
     }
 
     return httpServlet;

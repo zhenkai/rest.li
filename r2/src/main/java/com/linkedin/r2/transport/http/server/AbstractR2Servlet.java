@@ -21,6 +21,7 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamException;
@@ -68,16 +69,15 @@ public abstract class AbstractR2Servlet extends HttpServlet
   protected void service(final HttpServletRequest req, final HttpServletResponse resp)
           throws ServletException, IOException
   {
-    int cl = req.getContentLength();
     final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 1024 * 16);
 
     RequestContext requestContext = readRequestContext(req);
 
-    StreamRequest restRequest;
+    StreamRequest streamRequest;
 
     try
     {
-      restRequest = readFromServletRequest(req, requestContext, ioHandler);
+      streamRequest = readFromServletRequest(req, requestContext, ioHandler);
     }
     catch (URISyntaxException e)
     {
@@ -101,7 +101,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
       }
     };
 
-    getDispatcher().handleRequest(restRequest, requestContext, callback);
+    getDispatcher().handleRequest(streamRequest, requestContext, callback);
 
     ioHandler.loop();
   }
@@ -126,7 +126,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
       }
       if (streamResponse == null)
       {
-        streamResponse = RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e);
+        streamResponse = Messages.toStreamResponse(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e));
       }
     } else
     {
@@ -153,7 +153,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
   {
     RestResponse restResponse =
         RestStatus.responseForStatus(statusCode, message);
-    writeResponseHeadToServletResponse(TransportResponseImpl.<StreamResponse>success(restResponse), resp);
+    writeResponseHeadToServletResponse(TransportResponseImpl.success(Messages.toStreamResponse(restResponse)), resp);
     final ByteString entity = restResponse.getEntity();
     entity.write(resp.getOutputStream());
     resp.getOutputStream().close();

@@ -19,7 +19,6 @@ package com.linkedin.restli.internal.server.methods.response;
 
 
 import com.linkedin.pegasus.generator.examples.Foo;
-import com.linkedin.r2.message.Response;
 import com.linkedin.restli.common.BatchCreateIdResponse;
 import com.linkedin.restli.common.HttpStatus;
 import com.linkedin.restli.common.ResourceMethod;
