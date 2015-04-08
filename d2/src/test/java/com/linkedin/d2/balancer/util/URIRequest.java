@@ -22,7 +22,7 @@ package com.linkedin.d2.balancer.util;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.MessageBuilder;
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestBuilder;
 
 import java.net.URI;

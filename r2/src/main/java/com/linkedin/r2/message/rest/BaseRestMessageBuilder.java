@@ -17,8 +17,6 @@
 /* $Id$ */
 package com.linkedin.r2.message.rest;
 
-
-import com.linkedin.r2.message.BaseStreamMessageBuilder;
 import com.linkedin.util.ArgumentUtil;
 
 import java.util.ArrayList;
@@ -37,7 +35,6 @@ import java.util.TreeMap;
  * @version $Revision$
  */
 /* package private */ abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>>
-    extends BaseStreamMessageBuilder<B>
     implements RestMessageBuilder<B>
 {
   private static final String CANONICAL_REGEX = "[ \t\n\r]+";
@@ -320,5 +317,11 @@ import java.util.TreeMap;
     }
 
     return Collections.unmodifiableList(cookies);
+  }
+
+  @SuppressWarnings("unchecked")
+  protected B thisBuilder()
+  {
+    return (B)this;
   }
 }

@@ -27,15 +27,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.StreamResponse;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.linkedin.common.callback.FutureCallback;
-import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.ResponseBuilder;
 import com.linkedin.r2.message.rest.RestException;
-import com.linkedin.r2.message.rest.RestMessageBuilder;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -62,7 +60,8 @@ public class TestHttpBridge
 
     FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(futureCallback);
-    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.restToHttpCallback(callback, r);
+    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.streamToHttpCallback(callback,
+        Messages.toStreamRequest(r));
 
     bridgeCallback.onResponse(TransportResponseImpl.<StreamResponse>error(new Exception()));
 
@@ -84,7 +83,7 @@ public class TestHttpBridge
     FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback =
         new TransportCallbackAdapter<StreamResponse>(futureCallback);
-    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.httpToRestCallback(callback);
+    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.httpToStreamCallback(callback);
 
     RestResponse restResponse = new RestResponseBuilder().build();
 

@@ -18,7 +18,6 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.r2.message.RequestBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.util.ArgumentUtil;
 
@@ -31,7 +30,7 @@ import java.net.URI;
  */
 /* package private */ abstract class BaseRequestBuilder<B extends BaseRequestBuilder<B>>
         extends BaseRestMessageBuilder<B>
-        implements RequestBuilder<B>, RestMessageBuilder<B>
+        implements RestMessageBuilder<B>
 {
   private URI _uri;
 
@@ -53,7 +52,7 @@ import java.net.URI;
    *
    * @param request the request to copy
    */
-  public BaseRequestBuilder(StreamRequest request)
+  public BaseRequestBuilder(Request request)
   {
     super(request);
 
@@ -61,13 +60,11 @@ import java.net.URI;
     setMethod(request.getMethod());
   }
 
-  @Override
   public URI getURI()
   {
     return _uri;
   }
 
-  @Override
   public B setURI(URI uri)
   {
     ArgumentUtil.notNull(uri, "uri");

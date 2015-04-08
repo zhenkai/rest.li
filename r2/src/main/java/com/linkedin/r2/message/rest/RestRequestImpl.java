@@ -13,14 +13,14 @@ import java.util.Map;
 /**
  * @author Zhenkai Zhu
  */
-/* package private */ final class RestRequestImpl extends StreamRequestImpl implements RestRequest
+/* package private */ final class RestRequestImpl extends BaseRequest implements RestRequest
 {
   private final ByteString _entity;
 
   /* package private */ RestRequestImpl(ByteString entity, Map<String, String> headers,
                                         List<String> cookies, URI uri, String method)
   {
-    super(createEntityStream(entity), headers, cookies, uri, method);
+    super(headers, cookies, uri, method);
     _entity = entity;
   }
 
@@ -80,12 +80,6 @@ import java.util.Map;
         .append(_entity.length())
         .append("]");
     return builder.toString();
-  }
-
-  private static EntityStream createEntityStream(ByteString entity)
-  {
-    ArgumentUtil.notNull(entity, "entity");
-    return EntityStreams.newEntityStream(new ByteStringWriter(entity));
   }
 
 }

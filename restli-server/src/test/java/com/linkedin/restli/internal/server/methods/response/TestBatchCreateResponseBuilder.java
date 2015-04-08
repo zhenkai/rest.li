@@ -19,7 +19,6 @@ package com.linkedin.restli.internal.server.methods.response;
 
 
 import com.linkedin.pegasus.generator.examples.Foo;
-import com.linkedin.r2.message.Response;
 import com.linkedin.restli.common.BatchCreateIdResponse;
 import com.linkedin.restli.common.HttpStatus;
 import com.linkedin.restli.common.ResourceMethod;
@@ -30,7 +29,6 @@ import com.linkedin.restli.server.BatchCreateResult;
 import com.linkedin.restli.server.CreateResponse;
 import com.linkedin.restli.server.RestLiServiceException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.easymock.EasyMock;

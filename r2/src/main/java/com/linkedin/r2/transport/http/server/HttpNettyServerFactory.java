@@ -20,7 +20,6 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.transport.FilterChainDispatcher;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 /**
@@ -52,7 +51,7 @@ public class HttpNettyServerFactory
 
   public HttpServer createServer(int port, int threadPoolSize, TransportDispatcher transportDispatcher)
   {
-    final StreamDispatcher filterDispatcher = new FilterChainDispatcher(transportDispatcher, _filters);
+    final TransportDispatcher filterDispatcher = new FilterChainDispatcher(transportDispatcher, _filters);
     final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
     return new HttpNettyServer(port, threadPoolSize, dispatcher);
   }

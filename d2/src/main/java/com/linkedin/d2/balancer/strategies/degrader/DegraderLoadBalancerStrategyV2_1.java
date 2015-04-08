@@ -25,7 +25,7 @@ import com.linkedin.d2.balancer.util.hashing.RandomHash;
 import com.linkedin.d2.balancer.util.hashing.Ring;
 import com.linkedin.d2.balancer.util.hashing.URIRegexHash;
 import com.linkedin.d2.balancer.util.partitions.DefaultPartitionAccessor;
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestContext;
 
 import java.util.ArrayList;

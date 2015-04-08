@@ -2,7 +2,8 @@ package test.r2.integ;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
@@ -13,7 +14,7 @@ import java.util.Map;
 /**
  * @author Zhenkai Zhu
  */
-public class LogEntityLengthFilter implements StreamFilter
+public class LogEntityLengthFilter implements StreamRequestFilter, StreamResponseFilter
 {
   private volatile int _reqEntityLen = 0;
   private volatile int _resEntityLen = 0;

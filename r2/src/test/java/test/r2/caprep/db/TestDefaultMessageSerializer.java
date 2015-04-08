@@ -22,8 +22,6 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.caprep.db.DefaultMessageSerializer;
 import com.linkedin.r2.caprep.db.MessageSerializer;
 import com.linkedin.r2.message.Message;
-import com.linkedin.r2.message.Request;
-import com.linkedin.r2.message.Response;
 import com.linkedin.r2.message.rest.RestMethod;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;

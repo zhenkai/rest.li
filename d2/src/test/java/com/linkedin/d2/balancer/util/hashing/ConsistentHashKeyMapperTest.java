@@ -37,7 +37,7 @@ import com.linkedin.d2.balancer.util.MapKeyResult;
 import com.linkedin.d2.balancer.util.partitions.PartitionAccessException;
 import com.linkedin.d2.balancer.util.partitions.PartitionAccessor;
 import com.linkedin.d2.balancer.util.partitions.PartitionInfoProvider;
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestContext;
 import java.util.Arrays;
 import org.testng.Assert;
