@@ -28,6 +28,8 @@ import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.ByteStringWriter;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.FullEntityReader;
 import com.linkedin.r2.message.streaming.Reader;
 
@@ -86,7 +88,10 @@ public abstract class AbstractClient implements Client
   @Override
   public void restRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
   {
-    streamRequest(request, requestContext, adaptToStreamCallback(callback));
+    // RestRequest may be used multiple times, so we should construct a StreamRequest from RestRequest
+    StreamRequest streamRequest = request.transformBuilder()
+        .build(EntityStreams.newEntityStream(new ByteStringWriter(request.getEntity())));
+    streamRequest(streamRequest, requestContext, adaptToStreamCallback(callback));
   }
 
   @Override
