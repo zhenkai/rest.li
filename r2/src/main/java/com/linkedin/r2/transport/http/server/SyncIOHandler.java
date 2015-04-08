@@ -30,6 +30,9 @@ public class SyncIOHandler implements Writer, Reader
   final private BlockingQueue<Event> _eventQueue;
   private WriteHandle _wh;
   private ReadHandle _rh;
+  private boolean _requestReadFinished = false;
+  private boolean _responseWriteFinished = false;
+  private int _firstByte;
 
   public SyncIOHandler(ServletInputStream is, ServletOutputStream os, int bufferCapacity)
   {
@@ -37,6 +40,7 @@ public class SyncIOHandler implements Writer, Reader
     _os = os;
     _bufferCapacity = bufferCapacity;
     _eventQueue = new LinkedBlockingDeque<Event>();
+    _eventQueue.add(new ReadFirstByteOfRequestEvent());
   }
 
   @Override
@@ -78,10 +82,7 @@ public class SyncIOHandler implements Writer, Reader
 
   public void loop() throws ServletException, IOException
   {
-    //boolean requestReadFinished = false;
-    boolean responseWriteFinished = false;
-
-    while(!responseWriteFinished)
+    while(!_responseWriteFinished || !_requestReadFinished)
     {
 
       Event event;
@@ -94,7 +95,15 @@ public class SyncIOHandler implements Writer, Reader
         throw new ServletException(ex);
       }
 
-      if (event instanceof ResponseDataAvailableEvent)
+      if (event instanceof ReadFirstByteOfRequestEvent)
+      {
+        _firstByte = _is.read();
+        if (_firstByte < 0)
+        {
+          _requestReadFinished = true;
+        }
+      }
+      else if (event instanceof ResponseDataAvailableEvent)
       {
         ByteString data = ((ResponseDataAvailableEvent) event).getData();
         data.write(_os);
@@ -109,7 +118,16 @@ public class SyncIOHandler implements Writer, Reader
           int actualLen;
           try
           {
-            actualLen = _is.read(buf, 0, len);
+            if (_firstByte >= 0)
+            {
+              actualLen = _is.read(buf, 1, len - 1) + 1;
+              buf[0] = (byte) _firstByte;
+              _firstByte = -1;
+            }
+            else
+            {
+              actualLen = _is.read(buf, 0, len);
+            }
           }
           catch (IOException ex)
           {
@@ -119,6 +137,7 @@ public class SyncIOHandler implements Writer, Reader
           if (actualLen < 0)
           {
             _wh.done();
+            _requestReadFinished = true;
             break;
           }
           _wh.write(ByteString.copy(buf, 0, actualLen));
@@ -127,7 +146,7 @@ public class SyncIOHandler implements Writer, Reader
       else if (event instanceof FullResponseReceivedEvent)
       {
         _os.close();
-        responseWriteFinished = true;
+        _responseWriteFinished = true;
       }
       else if (event instanceof ResponseDataErrorEvent)
       {
@@ -192,5 +211,9 @@ public class SyncIOHandler implements Writer, Reader
     {
       return _cause;
     }
+  }
+
+  private static class ReadFirstByteOfRequestEvent implements Event
+  {
   }
 }

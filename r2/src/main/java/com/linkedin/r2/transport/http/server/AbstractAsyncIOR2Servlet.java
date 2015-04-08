@@ -27,6 +27,7 @@ import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -192,7 +193,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
       }
 
       ServletOutputStream os = resp.getOutputStream();
-      AsyncIOResponseHandler handler = new AsyncIOResponseHandler(MAX_BUFFER_SIZE, os, ctx.getCtx());
+      AsyncIOResponseHandler handler = new AsyncIOResponseHandler(MAX_BUFFER_SIZE, os, ctx.getCtx(), ctx.getOtherDirectionFinished());
       EntityStream responseStream = streamResponse.getEntityStream();
       responseStream.setReader(handler);
     }
@@ -241,9 +242,12 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
       }
     }
 
+
     ServletInputStream is = req.getInputStream();
-    AsyncIORequestHandler handler = new AsyncIORequestHandler(is);
-    return builder.build(EntityStreams.newEntityStream(handler));
+    AsyncIORequestHandler handler = new AsyncIORequestHandler(is, ctx.getCtx(), ctx.getOtherDirectionFinished());
+    is.setReadListener(handler);
+    EntityStream entityStream = EntityStreams.newEntityStream(handler);
+    return builder.build(entityStream);
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil
     // return QueryTunnelUtil.decode(rb.build(), requestContext);
   }
@@ -335,10 +339,11 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
     return pathInfo;
   }
 
-  /* package private */ static class WrappedAsyncContext
+  private static class WrappedAsyncContext
   {
     private final AsyncContext _ctx;
     private final AtomicBoolean _writeStarted;
+    private final AtomicBoolean _otherDirectionFinished = new AtomicBoolean(false);
 
     WrappedAsyncContext(AsyncContext ctx, AtomicBoolean writeStarted)
     {
@@ -355,5 +360,11 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
     {
       return _writeStarted;
     }
+
+    AtomicBoolean getOtherDirectionFinished()
+    {
+      return _otherDirectionFinished;
+    }
+
   }
 }

@@ -4,10 +4,12 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Zhenkai Zhu
@@ -15,22 +17,29 @@ import java.nio.ByteBuffer;
 /* package private */ class AsyncIORequestHandler implements ReadListener, Writer
 {
   private final ServletInputStream _is;
+  private final AsyncContext _ctx;
+  private final AtomicBoolean _otherDirectionFinished;
   private final Object _lock = new Object();
   private WriteHandle _wh;
 
   // for debug
   private int _count = 0;
 
-  AsyncIORequestHandler(ServletInputStream is)
+  AsyncIORequestHandler(ServletInputStream is, AsyncContext ctx, AtomicBoolean otherDirectionFinished)
   {
     _is = is;
+    _ctx = ctx;
+    _otherDirectionFinished = otherDirectionFinished;
   }
 
   public void onDataAvailable() throws IOException
   {
     synchronized (_lock)
     {
-      writeIfPossible();
+      if (_wh != null)
+      {
+        writeIfPossible();
+      }
     }
   }
 
@@ -38,7 +47,15 @@ import java.nio.ByteBuffer;
   {
     synchronized (_lock)
     {
-      writeIfPossible();
+      if (_wh != null)
+      {
+        writeIfPossible();
+      }
+    }
+    if (!_otherDirectionFinished.compareAndSet(false, true))
+    {
+      // the other direction finished, we can complete
+      _ctx.complete();
     }
   }
 
@@ -49,8 +66,11 @@ import java.nio.ByteBuffer;
 
   public void onInit(final WriteHandle wh)
   {
-    _wh = wh;
-    _is.setReadListener(this);
+    synchronized (_lock)
+    {
+      _wh = wh;
+    }
+    //_is.setReadListener(this);
   }
 
   public void onWritePossible()

@@ -76,6 +76,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
   protected void service(final HttpServletRequest req, final HttpServletResponse resp)
           throws ServletException, IOException
   {
+    int cl = req.getContentLength();
     final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 1024 * 16);
 
     RequestContext requestContext = readRequestContext(req);

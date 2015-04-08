@@ -24,15 +24,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
   private ReadHandle _rh;
   private volatile boolean _allDataRead = false;
   private final AtomicBoolean _completed = new AtomicBoolean(false);
+  private final AtomicBoolean _otherDirectionFinished;
 
   // for debug
   private int _count = 0;
 
-  AsyncIOResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx)
+  AsyncIOResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx, AtomicBoolean otherDirectionFinished)
   {
     _buffer = ByteBuffer.allocate(bufferSize);
     _os = os;
     _ctx = ctx;
+    _otherDirectionFinished = otherDirectionFinished;
   }
 
   // for some reason onWritePossible would be invoked for the first time after doWrite had finished
@@ -107,7 +109,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
     {
       if (_completed.compareAndSet(false, true))
       {
-        _ctx.complete();
+        if (!_otherDirectionFinished.compareAndSet(false, true))
+        {
+          // other direction finished
+          _ctx.complete();
+        }
       }
     }
     _buffer.compact();
