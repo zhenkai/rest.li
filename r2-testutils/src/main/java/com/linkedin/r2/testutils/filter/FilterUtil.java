@@ -18,9 +18,10 @@
 package com.linkedin.r2.testutils.filter;
 
 import com.linkedin.r2.filter.FilterChain;
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -45,7 +46,7 @@ public class FilterUtil
 
   public static void fireSimpleRestResponse(FilterChain fc)
   {
-    fc.onResponse(simpleRestResponse(), emptyRequestContext(), emptyWireAttrs());
+    fc.onResponse(Messages.toStreamResponse(simpleRestResponse()), emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireSimpleRestError(FilterChain fc)
@@ -55,12 +56,12 @@ public class FilterUtil
 
   public static void fireRestRequest(FilterChain fc, RestRequest req)
   {
-    fc.onRequest(req, emptyRequestContext(), emptyWireAttrs());
+    fc.onRequest(Messages.toStreamRequest(req), emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireRestRequest(FilterChain fc, RestRequest req, Map<String, String> wireAttrs)
   {
-    fc.onRequest(req, emptyRequestContext(), wireAttrs);
+    fc.onRequest(Messages.toStreamRequest(req), emptyRequestContext(), wireAttrs);
   }
 
   public static void fireUntypedRequest(FilterChain fc, Request req)
@@ -80,8 +81,8 @@ public class FilterUtil
   public static void fireRestRequestResponse(FilterChain fc, RestRequest req, RestResponse res)
   {
     final RequestContext context = new RequestContext();
-    fc.onRequest(req, context, emptyWireAttrs());
-    fc.onResponse(res, context, emptyWireAttrs());
+    fc.onRequest(Messages.toStreamRequest(req), context, emptyWireAttrs());
+    fc.onResponse(Messages.toStreamResponse(res), context, emptyWireAttrs());
   }
 
   // Determines the type of the request at runtime.
@@ -100,7 +101,7 @@ public class FilterUtil
   public static void fireRestRequestError(FilterChain fc, RestRequest req, Exception ex)
   {
     final RequestContext context = new RequestContext();
-    fc.onRequest(req, context, emptyWireAttrs());
+    fc.onRequest(Messages.toStreamRequest(req), context, emptyWireAttrs());
     fc.onError(ex, context, emptyWireAttrs());
   }
 

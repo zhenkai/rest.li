@@ -19,6 +19,7 @@ package com.linkedin.r2.message.rest;
 
 
 import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.util.ArgumentUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -28,31 +29,27 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-/* package private */ class StreamResponseImpl extends BaseRestMessage implements StreamResponse
+/* package private */ final class StreamResponseImpl extends BaseResponse implements StreamResponse
 {
-  private final int _status;
+  private final EntityStream _entityStream;
 
-  /* package private */ StreamResponseImpl(EntityStream stream, Map<String, String> headers, List<String> cookies, int status)
+  /* package private */ StreamResponseImpl(EntityStream entityStream, Map<String, String> headers, List<String> cookies, int status)
   {
-    super(stream, headers, cookies);
-    _status = status;
-  }
-
-  public int getStatus()
-  {
-    return _status;
+    super(headers, cookies, status);
+    ArgumentUtil.notNull(entityStream, "entityStream");
+    _entityStream = entityStream;
   }
 
   @Override
-  public StreamResponseBuilder responseBuilder()
-  {
-    return transformBuilder();
-  }
-
-  @Override
-  public StreamResponseBuilder transformBuilder()
+  public StreamResponseBuilder builder()
   {
     return new StreamResponseBuilder(this);
+  }
+
+  @Override
+  public EntityStream getEntityStream()
+  {
+    return _entityStream;
   }
 
   @Override
@@ -72,14 +69,14 @@ import java.util.Map;
     }
 
     StreamResponseImpl that = (StreamResponseImpl) o;
-    return _status == that._status;
+    return _entityStream == that._entityStream;
   }
 
   @Override
   public int hashCode()
   {
     int result = super.hashCode();
-    result = 31 * result + _status;
+    result = 31 * result + _entityStream.hashCode();
     return result;
   }
 
@@ -92,7 +89,7 @@ import java.util.Map;
         .append("cookies=")
         .append(getCookies())
         .append(",status=")
-        .append(_status)
+        .append(getStatus())
         .append("]");
     return builder.toString();
   }

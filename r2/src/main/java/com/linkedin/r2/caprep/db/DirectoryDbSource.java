@@ -18,9 +18,6 @@
 package com.linkedin.r2.caprep.db;
 
 
-import com.linkedin.r2.message.Request;
-import com.linkedin.r2.message.Response;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;

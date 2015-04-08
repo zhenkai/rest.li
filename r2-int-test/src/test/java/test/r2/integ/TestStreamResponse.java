@@ -1,41 +1,32 @@
 package test.r2.integ;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.sample.Bootstrap;
-import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
-import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcherBuilder;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
-import com.linkedin.r2.transport.http.server.HttpServer;
-import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import org.testng.Assert;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,11 +43,11 @@ public class TestStreamResponse extends AbstractStreamTest
 
 
   @Override
-  protected StreamDispatcher getStreamDispatcher()
+  protected TransportDispatcher getTransportDispatcher()
   {
     _smallHandler = new BytesWriterRequestHandler(BYTE, SMALL_BYTES_NUM);
 
-    return new StreamDispatcherBuilder()
+    return new TransportDispatcherBuilder()
         .addStreamHandler(LARGE_URI, new BytesWriterRequestHandler(BYTE, LARGE_BYTES_NUM))
         .addStreamHandler(SMALL_URI, _smallHandler)
         .addStreamHandler(SERVER_ERROR_URI, new ErrorRequestHandler(BYTE, TINY_BYTES_NUM))
@@ -87,8 +78,8 @@ public class TestStreamResponse extends AbstractStreamTest
 
   private void testResponse(URI uri) throws Exception
   {
-    RestRequestBuilder builder = new RestRequestBuilder(uri);
-    StreamRequest request = builder.build();
+    StreamRequestBuilder builder = new StreamRequestBuilder(uri);
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
@@ -108,8 +99,8 @@ public class TestStreamResponse extends AbstractStreamTest
   @Test
   public void testErrorWhileStreaming() throws Exception
   {
-    RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
-    StreamRequest request = builder.build();
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
@@ -130,8 +121,8 @@ public class TestStreamResponse extends AbstractStreamTest
   @Test
   public void testBackpressure() throws Exception
   {
-    RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SMALL_URI));
-    StreamRequest request = builder.build();
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, SMALL_URI));
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
@@ -222,7 +213,7 @@ public class TestStreamResponse extends AbstractStreamTest
     {
       if (written > _total)
       {
-        throw new RuntimeException();
+        throw new RuntimeException("Error writer for testing");
       }
     }
   }

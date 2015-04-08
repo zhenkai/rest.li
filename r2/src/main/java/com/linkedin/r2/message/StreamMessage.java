@@ -16,5 +16,5 @@ public interface StreamMessage
    */
   EntityStream getEntityStream();
 
-  StreamMessageBuilder<? extends StreamMessageBuilder<?>> transformBuilder();
+  StreamMessageBuilder<? extends StreamMessageBuilder<?>> builder();
 }

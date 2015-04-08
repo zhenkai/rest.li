@@ -18,7 +18,6 @@
 package com.linkedin.restli.internal.server.methods.response;
 
 
-import com.linkedin.r2.message.Response;
 import com.linkedin.restli.common.HttpStatus;
 import com.linkedin.restli.common.ResourceMethod;
 import com.linkedin.restli.internal.server.AugmentedRestLiResponseData;
@@ -26,7 +25,7 @@ import com.linkedin.restli.internal.server.RoutingResult;
 import com.linkedin.restli.internal.server.model.ResourceMethodDescriptor;
 import com.linkedin.restli.server.RestLiServiceException;
 import com.linkedin.restli.server.UpdateResponse;
-import java.util.HashMap;
+
 import java.util.Map;
 import org.easymock.EasyMock;
 import org.testng.Assert;

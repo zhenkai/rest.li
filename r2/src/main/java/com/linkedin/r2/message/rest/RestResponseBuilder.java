@@ -26,11 +26,6 @@ public final class RestResponseBuilder extends BaseResponseBuilder<RestResponseB
     super(response);
   }
 
-  public RestResponseBuilder(StreamResponseBuilder builder)
-  {
-    this(builder.build(EntityStreams.emptyStream()));
-  }
-
   public RestResponseBuilder setEntity(ByteString entity)
   {
     ArgumentUtil.notNull(entity, "entity");
@@ -60,17 +55,5 @@ public final class RestResponseBuilder extends BaseResponseBuilder<RestResponseB
   public RestResponse buildCanonical()
   {
     return new RestResponseImpl(_entity, getCanonicalHeaders(), getCanonicalCookies(), getStatus());
-  }
-
-  @Override
-  public StreamResponse build(EntityStream entityStream)
-  {
-    return new StreamResponseImpl(entityStream, getHeaders(), getCookies(), getStatus());
-  }
-
-  @Override
-  public StreamResponse buildCanonical(EntityStream entityStream)
-  {
-    return new StreamResponseImpl(entityStream, getCanonicalHeaders(), getCanonicalCookies(), getStatus());
   }
 }

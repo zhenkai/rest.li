@@ -19,12 +19,8 @@ package com.linkedin.r2.caprep.db;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.Message;
-import com.linkedin.r2.message.MessageBuilder;
-import com.linkedin.r2.message.Request;
-import com.linkedin.r2.message.RequestBuilder;
-import com.linkedin.r2.message.Response;
-import com.linkedin.r2.message.ResponseBuilder;
-import com.linkedin.r2.message.StreamMessageBuilder;
+import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestMessage;
 import com.linkedin.r2.message.rest.RestMessageBuilder;
 import com.linkedin.r2.message.rest.RestRequest;
@@ -130,43 +126,26 @@ public class DefaultMessageSerializer implements MessageSerializer
     return builder.build();
   }
 
-  private void readReqLine(RequestBuilder<?> builder, InputStream in) throws IOException
+  private void readReqLine(RestRequestBuilder builder, InputStream in) throws IOException
   {
-    if (builder instanceof RestRequestBuilder)
-    {
-      ((RestRequestBuilder) builder).setMethod(readUntil(SP_CHAR, in));
-    }
-    else
-    {
-      readIgnore(POST, in);
-      readIgnore(SP, in);
-    }
-
+    builder.setMethod(readUntil(SP_CHAR, in));
     builder.setURI(URI.create(readUntil(SP_CHAR, in)));
     readIgnore(HTTP_1_1, in);
     readIgnoreNewLine(in);
   }
 
-  private void readResLine(ResponseBuilder<?> builder, InputStream in) throws IOException
+  private void readResLine(RestResponseBuilder builder, InputStream in) throws IOException
   {
     readIgnore(HTTP_1_1, in);
     readIgnore(SP, in);
-    if (builder instanceof RestResponseBuilder)
+    try
     {
       final String statusStr = readUntil(SP_CHAR, in);
-      try
-      {
-        ((RestResponseBuilder)builder).setStatus(Integer.parseInt(statusStr));
-      }
-      catch (NumberFormatException e)
-      {
-        throw new IOException("Failed to parse HTTP status code", e);
-      }
+      builder.setStatus(Integer.parseInt(statusStr));
     }
-    else
+    catch (NumberFormatException e)
     {
-      readIgnore(STATUS_200, in);
-      readIgnore(SP, in);
+      throw new IOException("Failed to parse HTTP status code", e);
     }
     readIgnoreLine(in);
   }

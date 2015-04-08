@@ -30,7 +30,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends StreamMessageBuilder<B>
+public interface RestMessageBuilder<B extends RestMessageBuilder<B>>
 {
   /**
    * Replaces the headers in this message with a copy of the supplied headers. Changes to the
