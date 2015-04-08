@@ -17,7 +17,7 @@
 package com.linkedin.r2.transport.http.server;
 
 
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 
 /**
@@ -45,7 +45,7 @@ public class AsyncR2Servlet extends AbstractAsyncR2Servlet
   /**
    * Creates the AsyncR2Servlet.
    */
-  public AsyncR2Servlet(StreamDispatcher dispatcher,
+  public AsyncR2Servlet(TransportDispatcher dispatcher,
                         long timeout)
   {
     this(new HttpDispatcher(dispatcher), timeout);

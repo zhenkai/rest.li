@@ -21,7 +21,7 @@
 package com.linkedin.d2.balancer.util.hashing;
 
 import com.linkedin.common.util.MapUtil;
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.rest.Request;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

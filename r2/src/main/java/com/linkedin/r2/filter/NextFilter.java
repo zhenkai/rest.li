@@ -17,9 +17,9 @@
 /* $Id$ */
 package com.linkedin.r2.filter;
 
-import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.rest.Response;
 
 import java.util.Map;
 

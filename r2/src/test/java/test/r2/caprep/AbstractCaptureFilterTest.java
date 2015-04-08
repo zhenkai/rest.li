@@ -20,11 +20,6 @@ package test.r2.caprep;
 import com.linkedin.r2.caprep.CaptureFilter;
 import com.linkedin.r2.caprep.db.TransientDb;
 import com.linkedin.r2.filter.Filter;
-import com.linkedin.r2.message.Request;
-import com.linkedin.r2.message.Response;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-import com.linkedin.r2.testutils.filter.FilterUtil;
 
 /**
  * @author Chris Pettitt

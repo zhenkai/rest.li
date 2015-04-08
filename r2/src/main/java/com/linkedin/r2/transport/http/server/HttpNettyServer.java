@@ -20,12 +20,16 @@
 
 package com.linkedin.r2.transport.http.server;
 
+import java.net.InetSocketAddress;
+import java.util.Collections;
+
+import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.StreamResponse;
 
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
-import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -45,8 +49,6 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
-import java.net.InetSocketAddress;
-import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +161,7 @@ import org.slf4j.LoggerFactory;
       };
       try
       {
-        _dispatcher.handleRequest(request, writeResponseCallback);
+        _dispatcher.handleRequest(Messages.toStreamRequest(request), writeResponseCallback);
       }
       catch (Exception ex)
       {

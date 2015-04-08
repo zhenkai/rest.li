@@ -1,5 +1,6 @@
 package com.linkedin.r2.message.rest;
 
+import com.linkedin.r2.message.StreamMessageBuilder;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.net.URI;
@@ -8,6 +9,7 @@ import java.net.URI;
  * @author Zhenkai Zhu
  */
 public final class StreamRequestBuilder extends BaseRequestBuilder<StreamRequestBuilder>
+    implements StreamMessageBuilder<StreamRequestBuilder>
 {
   /**
    * Constructs a new builder using the given uri.
@@ -25,7 +27,7 @@ public final class StreamRequestBuilder extends BaseRequestBuilder<StreamRequest
    *
    * @param request the request to copy
    */
-  public StreamRequestBuilder(StreamRequest request)
+  public StreamRequestBuilder(Request request)
   {
     super(request);
   }

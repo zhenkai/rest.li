@@ -204,7 +204,7 @@ import org.slf4j.LoggerFactory;
                           TransportCallback<StreamResponse> callback)
   {
     MessageType.setMessageType(MessageType.Type.REST, wireAttrs);
-    writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.restToHttpCallback(callback, request));
+    writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.streamToHttpCallback(callback, request));
   }
 
   @Override
@@ -329,7 +329,7 @@ import org.slf4j.LoggerFactory;
       port = "http".equalsIgnoreCase(scheme) ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
 
-    final StreamRequest newRequest = request.transformBuilder()
+    final StreamRequest newRequest = request.builder()
                                              .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
                                              .build(request.getEntityStream());
     // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for

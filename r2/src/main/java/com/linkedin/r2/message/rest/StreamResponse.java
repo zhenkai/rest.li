@@ -17,12 +17,7 @@
 /* $Id$ */
 package com.linkedin.r2.message.rest;
 
-
-import java.util.Collections;
-
-import com.linkedin.r2.message.Response;
-import com.linkedin.r2.message.streaming.EntityStreams;
-
+import com.linkedin.r2.message.StreamMessage;
 
 /**
  * An object that contains details of a REST response.<p/>
@@ -31,8 +26,8 @@ import com.linkedin.r2.message.streaming.EntityStreams;
  * @author Zhenkai Zhu
  * @version $Revision$
  */
-public interface StreamResponse extends RestMessage, Response, ResponseHead
+public interface StreamResponse extends Response, StreamMessage
 {
   @Override
-  StreamResponseBuilder transformBuilder();
+  StreamResponseBuilder builder();
 }

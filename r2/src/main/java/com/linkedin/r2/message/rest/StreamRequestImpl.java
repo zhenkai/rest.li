@@ -18,7 +18,6 @@
 package com.linkedin.r2.message.rest;
 
 
-import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.net.URI;
@@ -27,46 +26,29 @@ import java.util.Map;
 
 
 /**
- * @author Chris Pettitt
+ * @author Zhenkai Zhu
  * @version $Revision$
  */
-/* package private */ class StreamRequestImpl extends BaseRestMessage implements StreamRequest
+/* package private */ final class StreamRequestImpl extends BaseRequest implements StreamRequest
 {
-  private final URI _uri;
+  private final EntityStream _entityStream;
 
-  private final String _method;
-
-  /* package private */ StreamRequestImpl(EntityStream stream, Map<String, String> headers, List<String> cookies, URI uri, String method)
+  /* package private */ StreamRequestImpl(EntityStream entityStream, Map<String, String> headers, List<String> cookies, URI uri, String method)
   {
-    super(stream, headers, cookies);
-
-    assert uri != null;
-    assert method != null;
-
-    _uri = uri;
-    _method = method;
-  }
-
-  public URI getURI()
-  {
-    return _uri;
+    super(headers, cookies, uri, method);
+    _entityStream = entityStream;
   }
 
   @Override
-  public StreamRequestBuilder requestBuilder()
-  {
-    return transformBuilder();
-  }
-
-  @Override
-  public StreamRequestBuilder transformBuilder()
+  public StreamRequestBuilder builder()
   {
     return new StreamRequestBuilder(this);
   }
 
-  public String getMethod()
+  @Override
+  public EntityStream getEntityStream()
   {
-    return _method;
+    return _entityStream;
   }
 
   @Override
@@ -85,17 +67,14 @@ import java.util.Map;
       return false;
     }
 
-    StreamRequestImpl that = (StreamRequestImpl) o;
-    return _method.equals(that._method) && _uri.equals(that._uri);
+    return _entityStream == ((StreamRequestImpl) o)._entityStream;
   }
 
   @Override
   public int hashCode()
   {
     int result = super.hashCode();
-    result = 31 * result + _uri.hashCode();
-    result = 31 * result + _method.hashCode();
-    return result;
+    return 31 * result + _entityStream.hashCode();
   }
 
   @Override
@@ -107,9 +86,9 @@ import java.util.Map;
         .append("cookies=")
         .append(getCookies())
         .append(",uri=")
-        .append(_uri)
+        .append(getURI())
         .append(",method=")
-        .append(_method)
+        .append(getMethod())
         .append("]");
     return builder.toString();
   }

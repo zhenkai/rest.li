@@ -21,9 +21,9 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.message.rest.StreamFilter;
-import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestException;
 
 import java.net.URI;
@@ -91,7 +91,7 @@ public class SimpleLoggingFilter implements StreamFilter
     nextFilter.onError(ex, requestContext, wireAttrs);
   }
 
-  private void trace(final String method, final Request request,
+  private void trace(final String method, final StreamRequest request,
                      final Map<String, String> wireAttrs, final RequestContext requestContext)
   {
     Callback<Integer> callback = new Callback<Integer>()
@@ -111,7 +111,7 @@ public class SimpleLoggingFilter implements StreamFilter
     request.getEntityStream().addObserver(new LengthObserver(callback));
   }
 
-  private void trace(final String method, final Response response, final Map<String, String> wireAttrs,
+  private void trace(final String method, final StreamResponse response, final Map<String, String> wireAttrs,
                      final RequestContext requestContext)
   {
     final URI requestUri = (URI)requestContext.getLocalAttr(REQUEST_URI);
