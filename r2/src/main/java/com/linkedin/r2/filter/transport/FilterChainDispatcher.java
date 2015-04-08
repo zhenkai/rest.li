@@ -24,13 +24,11 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.StreamDecider;
-import com.linkedin.r2.message.streaming.StreamDeciders;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.StreamDispatcherAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
-import javax.mail.event.TransportAdapter;
 import java.util.Map;
 
 /**
@@ -48,23 +46,15 @@ public class FilterChainDispatcher implements StreamDispatcher
   public FilterChainDispatcher(TransportDispatcher dispatcher,
                                FilterChain filters)
   {
-    this(dispatcher, NO_STREAM_SUPPORT, StreamDeciders.noStream(), filters);
+    this(new StreamDispatcherAdapter(dispatcher), filters);
   }
 
-  public FilterChainDispatcher(StreamDispatcher streamDispatcher,
-                               FilterChain filters)
-  {
-    this(NO_REST_SUPPORT, streamDispatcher, StreamDeciders.alwaysStream(), filters);
-  }
-
-  public FilterChainDispatcher(TransportDispatcher dispatcher,
-                               StreamDispatcher streamDispatcher,
-                               StreamDecider streamDecider,
+  public FilterChainDispatcher(StreamDispatcher dispatcher,
                                FilterChain filters)
   {
     _filters = filters
             .addFirst(new ResponseFilter())
-            .addLast(new DispatcherRequestFilter(dispatcher, streamDispatcher, streamDecider));
+            .addLast(new DispatcherRequestFilter(dispatcher));
   }
 
   @Override
@@ -75,22 +65,4 @@ public class FilterChainDispatcher implements StreamDispatcher
     ResponseFilter.registerCallback(callback, requestContext);
     _filters.onRequest(req, requestContext, wireAttrs);
   }
-
-  private static final TransportDispatcher NO_REST_SUPPORT = new TransportDispatcher()
-  {
-    @Override
-    public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<RestResponse> callback)
-    {
-      throw new UnsupportedOperationException("No TransportDispatcher was provided.");
-    }
-  };
-
-  private static final StreamDispatcher NO_STREAM_SUPPORT = new StreamDispatcher()
-  {
-    @Override
-    public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<StreamResponse> callback)
-    {
-      throw new UnsupportedOperationException("No StreamDispatcher was provided.");
-    }
-  };
 }

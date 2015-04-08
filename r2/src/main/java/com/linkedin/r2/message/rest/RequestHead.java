@@ -5,7 +5,7 @@ import java.net.URI;
 /**
  * @author Zhenkai Zhu
  */
-public interface RequestHead extends RestHead
+public interface RequestHead
 {
   /**
    * Returns the REST method for this request.
