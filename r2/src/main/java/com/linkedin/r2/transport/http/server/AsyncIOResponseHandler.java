@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     synchronized (_lock)
     {
       byte[] tmpBuf = data.copyBytes();
+      // TODO [ZZ]: there was buffer overflow thrown here, how's that possible?
       _buffer.put(tmpBuf);
       try
       {

@@ -320,6 +320,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           }
         }
       }
+      _buffer.discardReadBytes();
     }
   }
 }
