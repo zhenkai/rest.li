@@ -9,7 +9,9 @@ import com.linkedin.r2.transport.common.bridge.server.StreamDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeSuite;
 
 import java.io.IOException;
@@ -26,7 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public abstract class AbstractStreamTest
 {
   protected HttpClientFactory _clientFactory;
-  protected static final int PORT = 8088;
+  protected static final int PORT = 8099;
   protected static final long LARGE_BYTES_NUM = 1024 * 1024 * 1024;
   protected static final long SMALL_BYTES_NUM = 1024 * 1024 * 32;
   protected static final long TINY_BYTES_NUM = 1024 * 64;
@@ -36,7 +38,7 @@ public abstract class AbstractStreamTest
   protected Client _client;
   protected ScheduledExecutorService _scheduler;
 
-  @BeforeSuite
+  @BeforeClass
   public void setup() throws IOException
   {
     _scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -46,7 +48,7 @@ public abstract class AbstractStreamTest
     _server.start();
   }
 
-  @AfterSuite
+  @AfterClass
   public void tearDown() throws Exception
   {
 

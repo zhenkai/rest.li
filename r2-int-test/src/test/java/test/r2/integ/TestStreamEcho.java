@@ -161,7 +161,7 @@ public class TestStreamEcho extends AbstractStreamTest
     long clientReceiveTimespan = reader.getStopTime() - reader.getStartTime();
     double diff = Math.abs(clientReceiveTimespan - clientSendTimespan);
     double diffRatio = diff / clientSendTimespan;
-    Assert.assertTrue(diffRatio < 0.05);
+    Assert.assertTrue(diffRatio < 0.1);
   }
 
   private static class SteamEchoHandler implements StreamRequestHandler

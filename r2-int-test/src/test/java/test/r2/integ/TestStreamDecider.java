@@ -42,7 +42,7 @@ import java.util.Map;
 public class TestStreamDecider
 {
   private HttpClientFactory _clientFactory;
-  private static final int PORT = 8088;
+  private static final int PORT = 8098;
   private static final String REST_MESSAGE = "This is from rest handler";
   private static final String STREAM_MESSAGE = "This is from stream handler";
   private static final URI REST_RESOURCE_URI = URI.create("/rest");
