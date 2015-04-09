@@ -23,12 +23,18 @@ import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.DrainReader;
 import com.linkedin.r2.transport.common.RestRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandlerAdapter;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.util.URIUtil;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -40,17 +46,18 @@ import java.util.Map;
  */
 public class ContextDispatcher implements TransportDispatcher
 {
-  private static final RestRequestHandler DEFAULT_REST_HANDLER = new RestRequestHandler() {
+  private static final StreamRequestHandler DEFAULT_HANDLER = new StreamRequestHandler() {
     @Override
-    public void handleRequest(RestRequest req, RequestContext requestContext, Callback<RestResponse> callback)
+    public void handleRequest(StreamRequest req, RequestContext requestContext, Callback<StreamResponse> callback)
     {
       final RestResponse response =
               RestStatus.responseForStatus(RestStatus.NOT_FOUND, "No resource for URI: " + req.getURI());
       callback.onSuccess(response);
+      req.getEntityStream().setReader(new DrainReader());
     }
   };
 
-  private final Map<String, RestRequestHandler> _restHandlers;
+  private final Map<String, StreamRequestHandler> _restHandlers;
 
   /**
    * Construct a new instance with the specified dispatcher maps.
@@ -61,25 +68,29 @@ public class ContextDispatcher implements TransportDispatcher
    */
   public ContextDispatcher(Map<String, RestRequestHandler> restDispatcher)
   {
-    _restHandlers = restDispatcher;
+    _restHandlers = new HashMap<String, StreamRequestHandler>();
+    for (Map.Entry<String, RestRequestHandler> entry : restDispatcher.entrySet())
+    {
+      _restHandlers.put(entry.getKey(), new StreamRequestHandlerAdapter(entry.getValue()));
+    }
   }
 
   @Override
-  public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
+  public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs,
                                 RequestContext requestContext,
-                                TransportCallback<RestResponse> callback)
+                                TransportCallback<StreamResponse> callback)
   {
-    final RestRequestHandler handler = getHandler(req.getURI(), _restHandlers,
-            DEFAULT_REST_HANDLER);
+    final StreamRequestHandler handler = getHandler(req.getURI(), _restHandlers,
+            DEFAULT_HANDLER);
 
     try
     {
-      handler.handleRequest(req, requestContext, new TransportCallbackAdapter<RestResponse>(callback));
+      handler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
     }
     catch (Exception e)
     {
       final Exception ex = RestException.forError(RestStatus.INTERNAL_SERVER_ERROR, e);
-      callback.onResponse(TransportResponseImpl.<RestResponse>error(ex));
+      callback.onResponse(TransportResponseImpl.<StreamResponse>error(ex));
     }
   }
 

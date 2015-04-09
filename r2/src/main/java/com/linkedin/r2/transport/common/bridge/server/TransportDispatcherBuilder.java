@@ -1,87 +1,47 @@
-/*
-   Copyright (c) 2012 LinkedIn Corp.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
-/* $Id$ */
 package com.linkedin.r2.transport.common.bridge.server;
 
-
 import com.linkedin.r2.transport.common.RestRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandlerAdapter;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Builder for {@link TransportDispatcher} instances.
- *
- * @author Chris Pettitt
- * @version $Revision$
+ * @author Zhenkai Zhu
  */
 public class TransportDispatcherBuilder
 {
-  private final Map<URI, RestRequestHandler> _restHandlers = new HashMap<URI, RestRequestHandler>();
+  private final Map<URI, StreamRequestHandler> _streamHandlers = new HashMap<URI, StreamRequestHandler>();
 
-  /**
-   * Add a {@link RestRequestHandler} at the specified URI.
-   *
-   * @param uri the URI at which the handler is bound.
-   * @param handler the handler to bind to the specified URI.
-   * @return the current Builder object (fluent interface pattern).
-   */
+  public TransportDispatcherBuilder addStreamHandler(URI uri, StreamRequestHandler handler)
+  {
+    _streamHandlers.put(uri, handler);
+    return this;
+  }
+
   public TransportDispatcherBuilder addRestHandler(URI uri, RestRequestHandler handler)
   {
-    _restHandlers.put(uri, handler);
+    _streamHandlers.put(uri, new StreamRequestHandlerAdapter(handler));
     return this;
   }
 
-  /**
-   * Remove any {@link RestRequestHandler} bound to the specified URI.
-   *
-   * @param uri the URI for which the handler should be removed.
-   * @return the {@link RestRequestHandler} which was removed, or null if no handler
-   *         exists.
-   */
-  public RestRequestHandler removeRestHandler(URI uri)
+  public StreamRequestHandler removeStreamHandler(URI uri)
   {
-    return _restHandlers.remove(uri);
+    return _streamHandlers.remove(uri);
   }
 
-  /**
-   * Reset the state of this builder to its initial state.
-   *
-   * @return the current builder object (fluent interface pattern).
-   */
+
   public TransportDispatcherBuilder reset()
   {
-    _restHandlers.clear();
+    _streamHandlers.clear();
     return this;
   }
 
-  /**
-   * Build a new {@link TransportDispatcher} using the settings of this builder.
-   *
-   * @return a new {@link TransportDispatcher} using the settings of this builder.
-   */
   public TransportDispatcher build()
   {
-    return new TransportDispatcherImpl(copy(_restHandlers));
+    return new TransportDispatcherImpl(new HashMap<URI, StreamRequestHandler>(_streamHandlers));
   }
 
-  private <T> Map<URI, T> copy(Map<URI, T> handlers)
-  {
-    return new HashMap<URI, T>(handlers);
-  }
 }

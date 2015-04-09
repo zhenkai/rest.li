@@ -26,7 +26,6 @@ import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 import java.util.HashMap;
@@ -40,14 +39,14 @@ import java.util.Map;
  */
 public class DispatcherRequestFilter implements StreamRequestFilter
 {
-  private final StreamDispatcher _dispatcher;
+  private final TransportDispatcher _dispatcher;
 
   /**
-   * Construct a new instance, using the specified {@link StreamDispatcher}.
+   * Construct a new instance, using the specified {@link com.linkedin.r2.transport.common.bridge.server.TransportDispatcher}.
    *
-   * @param dispatcher the {@link com.linkedin.r2.transport.common.bridge.server.StreamDispatcher} to be used for processing requests.C
+   * @param dispatcher the {@link com.linkedin.r2.transport.common.bridge.server.TransportDispatcher} to be used for processing requests.C
    */
-  public DispatcherRequestFilter(StreamDispatcher dispatcher)
+  public DispatcherRequestFilter(TransportDispatcher dispatcher)
   {
     _dispatcher = dispatcher;
   }

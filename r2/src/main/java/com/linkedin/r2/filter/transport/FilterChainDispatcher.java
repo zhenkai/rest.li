@@ -20,13 +20,9 @@ package com.linkedin.r2.filter.transport;
 
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcherAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 import java.util.Map;
@@ -38,18 +34,11 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class FilterChainDispatcher implements StreamDispatcher
+public class FilterChainDispatcher implements TransportDispatcher
 {
   private final FilterChain _filters;
 
-
   public FilterChainDispatcher(TransportDispatcher dispatcher,
-                               FilterChain filters)
-  {
-    this(new StreamDispatcherAdapter(dispatcher), filters);
-  }
-
-  public FilterChainDispatcher(StreamDispatcher dispatcher,
                                FilterChain filters)
   {
     _filters = filters

@@ -22,7 +22,11 @@ import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.RestRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandlerAdapter;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.common.bridge.server.TransportCallbackAdapter;
@@ -37,27 +41,27 @@ import java.util.Map;
  */
 public class DelegatingTransportDispatcher implements TransportDispatcher
 {
-  private final RestRequestHandler _handler;
+  private final StreamRequestHandler _handler;
 
   public DelegatingTransportDispatcher(final RestRequestHandler handler)
   {
-    _handler = handler;
+    _handler = new StreamRequestHandlerAdapter(handler);
   }
 
   @Override
-  public void handleRestRequest(final RestRequest req,
+  public void handleStreamRequest(final StreamRequest req,
                                 final Map<String, String> wireAttrs,
                                 final RequestContext requestContext,
-                                final TransportCallback<RestResponse> callback)
+                                final TransportCallback<StreamResponse> callback)
   {
     try
     {
-      _handler.handleRequest(req, requestContext, new TransportCallbackAdapter<RestResponse>(callback));
+      _handler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
     }
     catch (Exception e)
     {
       final Exception ex = RestException.forError(RestStatus.INTERNAL_SERVER_ERROR, e);
-      callback.onResponse(TransportResponseImpl.<RestResponse>error(ex));
+      callback.onResponse(TransportResponseImpl.<StreamResponse>error(ex));
     }
   }
 }

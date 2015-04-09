@@ -20,7 +20,6 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.transport.FilterChainDispatcher;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 /**
@@ -68,16 +67,6 @@ public class HttpServerFactory
                         DEFAULT_ASYNC_TIMEOUT);
   }
 
-  public HttpServer createStreamServer(int port, StreamDispatcher streamDispatcher)
-  {
-    return createStreamServer(port,
-        DEFAULT_CONTEXT_PATH,
-        DEFAULT_THREAD_POOL_SIZE,
-        streamDispatcher,
-        DEFAULT_USE_ASYNC_SERVLET_API,
-        DEFAULT_ASYNC_TIMEOUT);
-  }
-
   public HttpServer createServer(int port,
                                  String contextPath,
                                  int threadPoolSize,
@@ -98,7 +87,7 @@ public class HttpServerFactory
                                  boolean useAsyncServletApi,
                                  int asyncTimeOut)
   {
-    final StreamDispatcher filterDispatcher =
+    final TransportDispatcher filterDispatcher =
         new FilterChainDispatcher(transportDispatcher,  _filters);
     final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
     return new HttpJettyServer(port,
@@ -108,24 +97,5 @@ public class HttpServerFactory
                                useAsyncServletApi,
                                _asyncIO,
                                asyncTimeOut);
-  }
-
-  public HttpServer createStreamServer(int port,
-                                 String contextPath,
-                                 int threadPoolSize,
-                                 StreamDispatcher streamDispatcher,
-                                 boolean useAsyncServletApi,
-                                 int asyncTimeOut)
-  {
-    final StreamDispatcher filterDispatcher =
-        new FilterChainDispatcher(streamDispatcher,  _filters);
-    final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
-    return new HttpJettyServer(port,
-        contextPath,
-        threadPoolSize,
-        dispatcher,
-        useAsyncServletApi,
-        _asyncIO,
-        asyncTimeOut);
   }
 }

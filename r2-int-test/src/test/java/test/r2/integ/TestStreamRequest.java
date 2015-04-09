@@ -16,8 +16,8 @@ import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcherBuilder;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -42,12 +42,12 @@ public class TestStreamRequest extends AbstractStreamTest
   private RateLimitedRequestHandler _rateLimitedRequestHandler;
 
   @Override
-  protected StreamDispatcher getStreamDispatcher()
+  protected TransportDispatcher getTransportDispatcher()
   {
     _scheduler = Executors.newSingleThreadScheduledExecutor();
     _checkRequestHandler = new CheckRequestHandler(BYTE);
     _rateLimitedRequestHandler = new RateLimitedRequestHandler(_scheduler, INTERVAL, BYTE);
-    return new StreamDispatcherBuilder()
+    return new TransportDispatcherBuilder()
         .addStreamHandler(LARGE_URI, _checkRequestHandler)
         .addStreamHandler(RATE_LIMITED_URI, _rateLimitedRequestHandler)
         .build();

@@ -25,7 +25,7 @@ import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
-import com.linkedin.r2.transport.common.bridge.server.StreamDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.http.common.HttpBridge;
 
 import java.util.Collections;
@@ -38,21 +38,21 @@ import java.util.Map;
  */
 public class HttpDispatcher
 {
-  private final StreamDispatcher _dispatcher;
+  private final TransportDispatcher _dispatcher;
 
   /**
    * Construct a new instance which delegates to the specified dispatcher.
    *
-   * @param dispatcher the {@link StreamDispatcher} to which requests are delegated.
+   * @param dispatcher the {@link com.linkedin.r2.transport.common.bridge.server.TransportDispatcher} to which requests are delegated.
    */
-  public HttpDispatcher(StreamDispatcher dispatcher)
+  public HttpDispatcher(TransportDispatcher dispatcher)
   {
     _dispatcher = dispatcher;
   }
 
   /**
    * handle a {@link com.linkedin.r2.message.rest.StreamRequest}.
-   * @see StreamDispatcher#handleStreamRequest
+   * @see com.linkedin.r2.transport.common.bridge.server.TransportDispatcher#handleStreamRequest
    *
    * @param req the request to be handled.
    * @param callback the callback to be invoked with the response or error.
@@ -65,7 +65,7 @@ public class HttpDispatcher
 
   /**
    * handle a {@link com.linkedin.r2.message.rest.StreamRequest} using the given request context.
-   * @see com.linkedin.r2.transport.common.bridge.server.StreamDispatcher#handleStreamRequest
+   * @see com.linkedin.r2.transport.common.bridge.server.TransportDispatcher#handleStreamRequest
    *
    * @param req the request to be handled.
    * @param context the request context.
