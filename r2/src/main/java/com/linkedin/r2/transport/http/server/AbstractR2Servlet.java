@@ -21,19 +21,13 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.QueryTunnelUtil;
-import com.linkedin.r2.message.rest.RestException;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -42,13 +36,10 @@ import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.mail.MessagingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -76,16 +67,15 @@ public abstract class AbstractR2Servlet extends HttpServlet
   protected void service(final HttpServletRequest req, final HttpServletResponse resp)
           throws ServletException, IOException
   {
-    int cl = req.getContentLength();
     final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 1024 * 16);
 
     RequestContext requestContext = readRequestContext(req);
 
-    StreamRequest restRequest;
+    StreamRequest streamRequest;
 
     try
     {
-      restRequest = readFromServletRequest(req, requestContext, ioHandler);
+      streamRequest = readFromServletRequest(req, requestContext, ioHandler);
     }
     catch (URISyntaxException e)
     {
@@ -109,7 +99,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
       }
     };
 
-    getDispatcher().handleRequest(restRequest, requestContext, callback);
+    getDispatcher().handleRequest(streamRequest, requestContext, callback);
 
     ioHandler.loop();
   }

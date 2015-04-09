@@ -36,9 +36,15 @@ public class TestStreamEcho extends AbstractStreamTest
   @Override
   protected TransportDispatcher getTransportDispatcher()
   {
-    return new TransportDispatcherBuilder()
-        .addStreamHandler(ECHO_URI, new SteamEchoHandler())
+    return new TransportDispatcherBuilder(getHandlers())
         .build();
+  }
+
+  protected Map<URI, StreamRequestHandler> getHandlers()
+  {
+    Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
+    handlers.put(ECHO_URI, new SteamEchoHandler());
+    return handlers;
   }
 
   @Override

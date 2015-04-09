@@ -5,6 +5,7 @@ import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.StreamRequestHandlerAdapter;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,7 +14,17 @@ import java.util.Map;
  */
 public class TransportDispatcherBuilder
 {
-  private final Map<URI, StreamRequestHandler> _streamHandlers = new HashMap<URI, StreamRequestHandler>();
+  private final Map<URI, StreamRequestHandler> _streamHandlers;
+
+  public TransportDispatcherBuilder()
+  {
+    this(new HashMap<URI, StreamRequestHandler>());
+  }
+
+  public TransportDispatcherBuilder(Map<URI, StreamRequestHandler> handlers)
+  {
+    _streamHandlers = new HashMap<URI, StreamRequestHandler>(handlers);
+  }
 
   public TransportDispatcherBuilder addStreamHandler(URI uri, StreamRequestHandler handler)
   {
