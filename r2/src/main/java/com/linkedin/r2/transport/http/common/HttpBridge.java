@@ -49,7 +49,7 @@ public class HttpBridge
    *          occurs
    * @return the callback to receive the incoming HTTP response
    */
-  public static TransportCallback<StreamResponse> restToHttpCallback(final TransportCallback<StreamResponse> callback,
+  public static TransportCallback<StreamResponse> streamToHttpCallback(final TransportCallback<StreamResponse> callback,
                                                         StreamRequest request)
   {
     final URI uri = request.getURI();
@@ -83,22 +83,6 @@ public class HttpBridge
     };
   }
 
-  /**
-   * Combine the specified {@link RestRequest} and map of headers to construct a new
-   * {@link RestRequest}.
-   *
-   * @param request the {@link RestRequest} to be used as a source object.
-   * @param headers the headers to set on the request. These override any headers on the
-   *          source request.
-   * @return a new {@link RestRequest} which combines the specified request and headers.
-   */
-  public static RestRequest toRestRequest(RestRequest request, Map<String, String> headers)
-  {
-    return new RestRequestBuilder(request)
-            .unsafeSetHeaders(headers)
-            .build();
-  }
-
   public static StreamRequest toStreamRequest(StreamRequest request, Map<String, String> headers)
   {
     return request.transformBuilder()
@@ -113,7 +97,7 @@ public class HttpBridge
    * @param callback the callback to receive the outgoing HTTP response
    * @return the callback to receive the outgoing REST response
    */
-  public static TransportCallback<StreamResponse> httpToRestCallback(final TransportCallback<StreamResponse> callback)
+  public static TransportCallback<StreamResponse> httpToStreamCallback(final TransportCallback<StreamResponse> callback)
   {
     return new TransportCallback<StreamResponse>()
     {

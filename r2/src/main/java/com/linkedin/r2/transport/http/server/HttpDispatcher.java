@@ -87,7 +87,7 @@ public class HttpDispatcher
         case REST:
           _dispatcher.handleStreamRequest(HttpBridge.toStreamRequest(req, headers),
                                         wireAttrs,
-                                        context, HttpBridge.httpToRestCallback(callback)
+                                        context, HttpBridge.httpToStreamCallback(callback)
           );
       }
     }

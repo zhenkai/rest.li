@@ -62,7 +62,7 @@ public class TestHttpBridge
 
     FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(futureCallback);
-    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.restToHttpCallback(callback, r);
+    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.streamToHttpCallback(callback, r);
 
     bridgeCallback.onResponse(TransportResponseImpl.<StreamResponse>error(new Exception()));
 
@@ -84,7 +84,7 @@ public class TestHttpBridge
     FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback =
         new TransportCallbackAdapter<StreamResponse>(futureCallback);
-    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.httpToRestCallback(callback);
+    TransportCallback<StreamResponse> bridgeCallback = HttpBridge.httpToStreamCallback(callback);
 
     RestResponse restResponse = new RestResponseBuilder().build();
 

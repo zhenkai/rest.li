@@ -307,7 +307,7 @@ import org.slf4j.LoggerFactory;
                           TransportCallback<StreamResponse> callback)
   {
     MessageType.setMessageType(MessageType.Type.REST, wireAttrs);
-    writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.restToHttpCallback(callback, request));
+    writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.streamToHttpCallback(callback, request));
   }
 
   @Override
