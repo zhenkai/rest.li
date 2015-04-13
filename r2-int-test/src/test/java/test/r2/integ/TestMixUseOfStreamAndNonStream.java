@@ -4,6 +4,7 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -133,7 +134,7 @@ public class TestMixUseOfStreamAndNonStream
       builder.setStatus(RestStatus.OK);
       builder.setEntity(STREAM_MESSAGE.getBytes());
       RestResponse response = builder.build();
-      callback.onSuccess(response);
+      callback.onSuccess(Messages.toStreamResponse(response));
     }
   }
 }

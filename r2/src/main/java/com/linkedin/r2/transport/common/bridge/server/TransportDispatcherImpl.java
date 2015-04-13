@@ -1,6 +1,7 @@
 package com.linkedin.r2.transport.common.bridge.server;
 
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
@@ -38,7 +39,7 @@ import java.util.Map;
     {
       final RestResponse response =
           RestStatus.responseForStatus(RestStatus.NOT_FOUND, "No resource for URI: " + address);
-      callback.onResponse(TransportResponseImpl.success((StreamResponse)response));
+      callback.onResponse(TransportResponseImpl.success(Messages.toStreamResponse(response)));
       req.getEntityStream().setReader(new DrainReader());
       return;
     }

@@ -20,6 +20,7 @@ package com.linkedin.r2.transport.http.server;
 
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
@@ -27,7 +28,6 @@ import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -172,7 +172,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
         }
         if (streamResponse == null)
         {
-          streamResponse = RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e);
+          streamResponse = Messages.toStreamResponse(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e));
         }
       } else
       {
@@ -202,7 +202,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
   private void writeToServletError(HttpServletResponse resp, int statusCode, String message, WrappedAsyncContext ctx) throws IOException
   {
     StreamResponse streamResponse =
-        RestStatus.responseForStatus(statusCode, message);
+        Messages.toStreamResponse(RestStatus.responseForStatus(statusCode, message));
     writeToServletResponse(TransportResponseImpl.success(streamResponse), resp, ctx);
   }
 

@@ -17,7 +17,7 @@
 /* $Id$ */
 package com.linkedin.r2.message.rest;
 
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.StreamMessage;
 
 /**
  * An object that contains details of a REST request.<p/>
@@ -26,8 +26,8 @@ import com.linkedin.r2.message.Request;
  * @author Zhenkai Zhu
  * @version $Revision$
  */
-public interface StreamRequest extends RestMessage, Request, RequestHead
+public interface StreamRequest extends Request, StreamMessage
 {
   @Override
-  StreamRequestBuilder transformBuilder();
+  StreamRequestBuilder builder();
 }

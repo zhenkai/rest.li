@@ -19,8 +19,8 @@ package test.r2.caprep;
 
 import com.linkedin.r2.caprep.db.TransientDb;
 import com.linkedin.r2.filter.Filter;
-import com.linkedin.r2.message.Request;
-import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.rest.Response;
 import org.testng.annotations.BeforeMethod;
 import com.linkedin.r2.testutils.filter.BaseFilterTest;
 

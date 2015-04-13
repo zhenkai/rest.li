@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.StreamResponse;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -97,7 +98,7 @@ public class TestHttpNettyClient
     RestRequest r = new RestRequestBuilder(URI.create("http://localhost/")).build();
     FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
-    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+    client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String, String>(), callback);
     try
     {
       // This timeout needs to be significantly larger than the getTimeout of the netty client;
@@ -128,7 +129,7 @@ public class TestHttpNettyClient
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
     FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
-    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+    client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String, String>(), callback);
 
     try
     {
@@ -159,7 +160,7 @@ public class TestHttpNettyClient
     RestRequest r = new RestRequestBuilder(URI.create("http://this.host.does.not.exist.linkedin.com")).build();
     FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
-    client.streamRequest(r, new RequestContext(), new HashMap<String,String>(), callback);
+    client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String,String>(), callback);
     try
     {
       cb.get(30, TimeUnit.SECONDS);
@@ -191,7 +192,7 @@ public class TestHttpNettyClient
     RestRequest r = new RestRequestBuilder(testServer.getResponseOfSizeURI(responseSize)).build();
     FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
-    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), callback);
+    client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String, String>(), callback);
 
     try
     {
@@ -226,7 +227,7 @@ public class TestHttpNettyClient
     // Now verify a new request will also fail
     RestRequest r = new RestRequestBuilder(URI.create("http://no.such.host.linkedin.com")).build();
     FutureCallback<StreamResponse> callback = new FutureCallback<StreamResponse>();
-    client.streamRequest(r, new RequestContext(), new HashMap<String,String>(), new TransportCallbackAdapter<StreamResponse>(callback));
+    client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String,String>(), new TransportCallbackAdapter<StreamResponse>(callback));
     try
     {
       callback.get(30, TimeUnit.SECONDS);
@@ -246,7 +247,7 @@ public class TestHttpNettyClient
 
     RestRequest r = new RestRequestBuilder(URI.create("http://some.host/")).build();
     FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
-    client.streamRequest(r, new RequestContext(), new HashMap<String, String>(), new TransportCallbackAdapter<StreamResponse>(futureCallback));
+    client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String, String>(), new TransportCallbackAdapter<StreamResponse>(futureCallback));
 
     FutureCallback<None> shutdownCallback = new FutureCallback<None>();
     client.shutdown(shutdownCallback);
@@ -299,7 +300,7 @@ public class TestHttpNettyClient
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
     FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
-    client.streamRequest(r, new RequestContext(), new HashMap<String,String>(), callback);
+    client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String,String>(), callback);
 
     FutureCallback<None> shutdownCallback = new FutureCallback<None>();
     client.shutdown(shutdownCallback);

@@ -60,16 +60,4 @@ public final class RestRequestBuilder extends BaseRequestBuilder<RestRequestBuil
   {
     return new RestRequestImpl(_entity, getCanonicalHeaders(), getCanonicalCookies(), getURI(), getMethod());
   }
-
-  @Override
-  public StreamRequest build(EntityStream entityStream)
-  {
-    return new StreamRequestImpl(entityStream, getHeaders(), getCookies(), getURI(), getMethod());
-  }
-
-  @Override
-  public StreamRequest buildCanonical(EntityStream entityStream)
-  {
-    return new StreamRequestImpl(entityStream, getCanonicalHeaders(), getCanonicalCookies(), getURI().normalize(), getMethod());
-  }
 }

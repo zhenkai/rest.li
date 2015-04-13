@@ -1,11 +1,13 @@
 package com.linkedin.r2.message.rest;
 
+import com.linkedin.r2.message.rest.RestMessage;
+
 import java.net.URI;
 
 /**
  * @author Zhenkai Zhu
  */
-public interface RequestHead
+public interface Request extends RestMessage
 {
   /**
    * Returns the REST method for this request.

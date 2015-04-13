@@ -32,7 +32,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestMessage extends StreamMessage
+public interface RestMessage
 {
   /**
    * Gets the value of the header with the given name. If there is no header with the given name

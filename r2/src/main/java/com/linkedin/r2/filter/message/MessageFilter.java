@@ -18,8 +18,7 @@
 package com.linkedin.r2.filter.message;
 
 /**
- * A generic message filter that processes {@link com.linkedin.r2.message.Request}s and
- * {@link com.linkedin.r2.message.Response}s.
+ * A generic message filter that processes
  *
  * @author Chris Pettitt
  * @version $Revision$

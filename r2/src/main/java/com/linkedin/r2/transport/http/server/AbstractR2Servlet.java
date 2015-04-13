@@ -21,6 +21,7 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamException;
@@ -124,7 +125,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
       }
       if (streamResponse == null)
       {
-        streamResponse = RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e);
+        streamResponse = Messages.toStreamResponse(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e));
       }
     } else
     {
@@ -151,7 +152,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
   {
     RestResponse restResponse =
         RestStatus.responseForStatus(statusCode, message);
-    writeResponseHeadToServletResponse(TransportResponseImpl.<StreamResponse>success(restResponse), resp);
+    writeResponseHeadToServletResponse(TransportResponseImpl.success(Messages.toStreamResponse(restResponse)), resp);
     final ByteString entity = restResponse.getEntity();
     entity.write(resp.getOutputStream());
     resp.getOutputStream().close();

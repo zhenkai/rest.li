@@ -22,9 +22,9 @@ import java.util.Map;
 import com.linkedin.r2.filter.message.MessageFilter;
 import com.linkedin.r2.filter.message.RequestFilter;
 import com.linkedin.r2.filter.message.ResponseFilter;
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.Response;
 
 /**
  * A filter that composes independent request and response filters into a single message

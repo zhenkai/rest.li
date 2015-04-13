@@ -17,9 +17,7 @@
 /* $Id$ */
 package com.linkedin.r2.message.rest;
 
-import com.linkedin.r2.message.ResponseBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
-import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
  * @author Chris Pettitt
@@ -27,7 +25,7 @@ import com.linkedin.r2.message.streaming.EntityStream;
  */
 /* package private */ abstract class BaseResponseBuilder<B extends BaseResponseBuilder<B>>
         extends BaseRestMessageBuilder<B>
-        implements ResponseBuilder<B>, RestMessageBuilder<B>
+        implements RestMessageBuilder<B>
 {
   private int _status = RestStatus.OK;
 
@@ -42,7 +40,7 @@ import com.linkedin.r2.message.streaming.EntityStream;
    *
    * @param response the response to copy
    */
-  public BaseResponseBuilder(StreamResponse response)
+  public BaseResponseBuilder(Response response)
   {
     super(response);
     setStatus(response.getStatus());

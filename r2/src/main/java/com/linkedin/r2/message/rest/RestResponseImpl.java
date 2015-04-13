@@ -13,13 +13,14 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * @author Zhenkai Zhu
  */
-/* package private */ final class RestResponseImpl extends StreamResponseImpl implements RestResponse
+/* package private */ final class RestResponseImpl extends BaseResponse implements RestResponse
 {
   private final ByteString _entity;
 
   /* package private */ RestResponseImpl(ByteString entity, Map<String, String> headers, List<String> cookies, int status)
   {
-    super(createEntityStream(entity), headers, cookies, status);
+    super(headers, cookies, status);
+    ArgumentUtil.notNull(entity, "entity");
     _entity = entity;
   }
 
@@ -77,11 +78,5 @@ import java.util.concurrent.atomic.AtomicReference;
         .append(_entity.length())
         .append("]");
     return builder.toString();
-  }
-
-  private static EntityStream createEntityStream(ByteString entity)
-  {
-    ArgumentUtil.notNull(entity, "entity");
-    return EntityStreams.newEntityStream(new ByteStringWriter(entity));
   }
 }

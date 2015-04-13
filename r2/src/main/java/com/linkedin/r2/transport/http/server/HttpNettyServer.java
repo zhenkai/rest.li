@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.StreamResponse;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -169,7 +170,7 @@ import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
       RestRequest request = (RestRequest) e.getMessage();
       try
       {
-        _dispatcher.handleRequest(request, writeResponseCallback);
+        _dispatcher.handleRequest(Messages.toStreamRequest(request), writeResponseCallback);
       }
       catch (Exception ex)
       {

@@ -6,6 +6,7 @@ import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.EntityStreams;
@@ -77,8 +78,8 @@ public class TestStreamResponse extends AbstractStreamTest
 
   private void testResponse(URI uri) throws Exception
   {
-    RestRequestBuilder builder = new RestRequestBuilder(uri);
-    StreamRequest request = builder.build();
+    StreamRequestBuilder builder = new StreamRequestBuilder(uri);
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
@@ -98,8 +99,8 @@ public class TestStreamResponse extends AbstractStreamTest
   @Test
   public void testErrorWhileStreaming() throws Exception
   {
-    RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
-    StreamRequest request = builder.build();
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
@@ -120,8 +121,8 @@ public class TestStreamResponse extends AbstractStreamTest
   @Test
   public void testBackpressure() throws Exception
   {
-    RestRequestBuilder builder = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, SMALL_URI));
-    StreamRequest request = builder.build();
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, SMALL_URI));
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
     final AtomicInteger status = new AtomicInteger(-1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();

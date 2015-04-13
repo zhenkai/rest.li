@@ -19,6 +19,7 @@ package com.linkedin.r2.transport.common.bridge.server;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -52,7 +53,7 @@ public class ContextDispatcher implements TransportDispatcher
     {
       final RestResponse response =
               RestStatus.responseForStatus(RestStatus.NOT_FOUND, "No resource for URI: " + req.getURI());
-      callback.onSuccess(response);
+      callback.onSuccess(Messages.toStreamResponse(response));
       req.getEntityStream().setReader(new DrainReader());
     }
   };

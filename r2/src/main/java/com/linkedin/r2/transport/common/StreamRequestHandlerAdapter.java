@@ -3,6 +3,7 @@ package com.linkedin.r2.transport.common;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
@@ -70,9 +71,7 @@ public class StreamRequestHandlerAdapter implements StreamRequestHandler
        @Override
        public void onSuccess(RestResponse result)
        {
-         // RestResponse could be used multiple times, so we should construct a StreamResponse from RestResponse
-         final StreamResponse streamResponse = result.transformBuilder()
-             .build(EntityStreams.newEntityStream(new ByteStringWriter(result.getEntity())));
+         final StreamResponse streamResponse = Messages.toStreamResponse(result);
          callback.onSuccess(streamResponse);
        }
     };

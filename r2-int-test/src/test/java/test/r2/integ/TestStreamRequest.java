@@ -3,6 +3,7 @@ package test.r2.integ;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
@@ -144,7 +145,7 @@ public class TestStreamRequest extends AbstractStreamTest
         public void onSuccess(None result)
         {
           RestResponse response = RestStatus.responseForStatus(RestStatus.OK, "");
-          callback.onSuccess(response);
+          callback.onSuccess(Messages.toStreamResponse(response));
         }
       };
       _reader = createReader(_b, readerCallback);
