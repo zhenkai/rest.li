@@ -24,19 +24,17 @@ import java.net.URI;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.linkedin.common.callback.FutureCallback;
-import com.linkedin.r2.message.ResponseBuilder;
-import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
-import com.linkedin.r2.message.rest.RestResponse;
-import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.transport.common.bridge.client.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
@@ -84,16 +82,16 @@ public class TestHttpBridge
         new TransportCallbackAdapter<StreamResponse>(futureCallback);
     TransportCallback<StreamResponse> bridgeCallback = HttpBridge.httpToStreamCallback(callback);
 
-    RestResponse restResponse = new RestResponseBuilder().build();
+    StreamResponse streamResponse = new StreamResponseBuilder().build(EntityStreams.emptyStream());
 
     // Note: FutureCallback will fail if called twice. An exception would be raised on the current
     // thread because we begin the callback sequence here in onResponse.
     // (test originally added due to bug with double callback invocation)
-    bridgeCallback.onResponse(TransportResponseImpl.<StreamResponse> error(new RestException(restResponse)));
+    bridgeCallback.onResponse(TransportResponseImpl.<StreamResponse> error(new StreamException(streamResponse)));
 
     StreamResponse resp = futureCallback.get(30, TimeUnit.SECONDS);
     // should have unpacked restResponse from the RestException that we passed in without
     // propagating the actual exception
-    Assert.assertSame(resp, restResponse);
+    Assert.assertSame(resp, streamResponse);
   }
 }
