@@ -49,7 +49,7 @@ project.ext.externalDependency = [
   'jacksonCoreAsl_1_8': 'org.codehaus.jackson:jackson-core-asl:1.8.8',
   'javaxInject': 'javax.inject:javax.inject:1',
   'jdkTools': files("${System.getProperty('java.home')}/../lib/tools.jar"),
-  'jetty': 'org.eclipse.jetty.aggregate:jetty-all:9.2.7.v20150116',
+  'jetty': 'org.eclipse.jetty.aggregate:jetty-all:9.2.10.v20150310',
   'json': 'org.json:json:20070829',
   'log4j': 'log4j:log4j:1.2.15',
   'mail': 'javax.mail:mail:1.4.1',
