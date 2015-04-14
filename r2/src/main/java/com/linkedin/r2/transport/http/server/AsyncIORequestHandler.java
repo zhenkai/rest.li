@@ -8,7 +8,6 @@ import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -86,9 +85,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
     byte[] buf = new byte[4096];
     try
     {
-      while (_is.isReady() && _wh.remainingCapacity() > 0)
+      while (_is.isReady() && _wh.remaining() > 0)
       {
-        int maxLen = Math.min(buf.length, _wh.remainingCapacity());
+        int maxLen = Math.min(buf.length, _wh.remaining());
         int bytesRead = _is.read(buf, 0, maxLen);
         _count += bytesRead;
         if (bytesRead < 0)
