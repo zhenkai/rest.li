@@ -4,6 +4,7 @@ import com.linkedin.data.ByteString;
 
 /**
  * This is the handle to write data to an EntityStream.
+ * This is not thread-safe.
  *
  * @author Zhenkai Zhu
  */
@@ -34,5 +35,5 @@ public interface WriteHandle
    *
    * @return the remaining capacity in number of bytes
    */
-  int remainingCapacity();
+  int remaining();
 }
