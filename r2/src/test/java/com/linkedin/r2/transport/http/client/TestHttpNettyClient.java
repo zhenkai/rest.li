@@ -99,6 +99,7 @@ public class TestHttpNettyClient
     FutureCallback<StreamResponse> cb = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback = new TransportCallbackAdapter<StreamResponse>(cb);
     client.streamRequest(Messages.toStreamRequest(r), new RequestContext(), new HashMap<String, String>(), callback);
+
     try
     {
       // This timeout needs to be significantly larger than the getTimeout of the netty client;
