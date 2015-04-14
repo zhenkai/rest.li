@@ -426,7 +426,7 @@ public class TestDefaultMessageSerializer
 
   private void assertMsgEquals(Message expected, Message actual)
   {
-    //Assert.assertEquals(actual.builder().buildCanonical(), expected.builder().buildCanonical());
+    Assert.assertEquals(actual.builder().buildCanonical(), expected.builder().buildCanonical());
   }
 
   private InputStream getResource(String name)
