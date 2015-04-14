@@ -23,6 +23,8 @@ import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import com.linkedin.r2.testutils.filter.CaptureLastCallFilter;
@@ -51,13 +53,13 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
   @Test
   public void testReplayWithMatch()
   {
-    final Request req = request();
-    final Response res = response();
+    final RestRequest req = request();
+    final RestResponse res = response();
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
     final FilterChain fc = getFilterChain().addFirst(captureFilter);
 
     // Record a response for the request we will fire
-//    getDb().record(req, res);
+    getDb().record(req, res);
 
     // We should be able to fire just the request - the response should be replayed from the
     // capture we set up above.

@@ -1,17 +1,11 @@
 package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
-import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.ByteStringWriter;
-import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.FullEntityReader;
-import com.linkedin.r2.message.streaming.Reader;
 
 
 /**
@@ -20,7 +14,6 @@ import com.linkedin.r2.message.streaming.Reader;
 public class StreamRequestHandlerAdapter implements StreamRequestHandler
 {
   private final RestRequestHandler _restRequestHandler;
-  private final static String CONTENT_LENGTH_HEADER = "Content-Length";
 
   public StreamRequestHandlerAdapter(RestRequestHandler restRequestHandler)
   {
@@ -28,52 +21,22 @@ public class StreamRequestHandlerAdapter implements StreamRequestHandler
   }
 
   @Override
-  public void handleRequest(StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
+  public void handleRequest(StreamRequest request, final RequestContext requestContext, final Callback<StreamResponse> callback)
   {
-    Callback<ByteString> assemblyFinishCallback = getAssemblyFinishCallback(request, requestContext, callback);
-    Reader reader = new FullEntityReader(assemblyFinishCallback);
-    request.getEntityStream().setReader(reader);
-  }
-
-  private Callback<ByteString> getAssemblyFinishCallback(final StreamRequest req,
-                                                         final RequestContext requestContext,
-                                                         final Callback<StreamResponse> callback)
-  {
-    return new Callback<ByteString>()
+    Messages.toRestRequest(request, new Callback<RestRequest>()
     {
       @Override
       public void onError(Throwable e)
       {
+        // we cannot use callback because callback is only for response error, but this is error in receiving request
         throw new RuntimeException(e);
       }
 
       @Override
-      public void onSuccess(ByteString result)
+      public void onSuccess(RestRequest restRequest)
       {
-        RestRequestBuilder builder = new RestRequestBuilder(req);
-        builder.setEntity(result).setHeader(CONTENT_LENGTH_HEADER, String.valueOf(result.length()));
-        _restRequestHandler.handleRequest(builder.build(),
-            requestContext, adaptToRestResponseCallback(callback));
+        _restRequestHandler.handleRequest(restRequest, requestContext, Messages.toRestCallback(callback));
       }
-    };
-  }
-
-  private static Callback<RestResponse> adaptToRestResponseCallback(final Callback<StreamResponse> callback)
-  {
-     return new Callback<RestResponse>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        callback.onError(e);
-      }
-
-       @Override
-       public void onSuccess(RestResponse result)
-       {
-         final StreamResponse streamResponse = Messages.toStreamResponse(result);
-         callback.onSuccess(streamResponse);
-       }
-    };
+    });
   }
 }

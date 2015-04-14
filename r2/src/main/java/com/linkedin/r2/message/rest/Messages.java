@@ -5,6 +5,7 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.ByteStringWriter;
 import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.FullEntityReader;
+import com.linkedin.r2.message.streaming.Reader;
 
 
 /**
@@ -67,4 +68,106 @@ public final class Messages
     StreamResponseBuilder builder = new StreamResponseBuilder(restResponse);
     return builder.build(EntityStreams.newEntityStream(new ByteStringWriter(restResponse.getEntity())));
   }
+
+  public static void toRestException(final StreamException streamException, final Callback<RestException> callback)
+  {
+    toRestResponse(streamException.getResponse(), new Callback<RestResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        callback.onError(e);
+      }
+
+      @Override
+      public void onSuccess(RestResponse result)
+      {
+        callback.onSuccess(new RestException(result, streamException.getMessage(), streamException.getCause()));
+
+      }
+    });
+  }
+
+  public static StreamException toStreamException(final RestException restException)
+  {
+    return new StreamException(toStreamResponse(restException.getResponse()), restException.getMessage(), restException.getCause());
+  }
+
+  public static Callback<StreamResponse> toStreamCallback(final Callback<RestResponse> callback)
+  {
+    return new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable originalException)
+      {
+        if (originalException instanceof StreamException)
+        {
+          toRestException((StreamException)originalException, new Callback<RestException>()
+          {
+            @Override
+            public void onError(Throwable e)
+            {
+              // shall we use originalException?
+              callback.onError(e);
+            }
+
+            @Override
+            public void onSuccess(RestException restException)
+            {
+              callback.onError(restException);
+            }
+          });
+        }
+        else
+        {
+          callback.onError(originalException);
+        }
+      }
+
+      @Override
+      public void onSuccess(StreamResponse streamResponse)
+      {
+        toRestResponse(streamResponse, new Callback<RestResponse>()
+        {
+          @Override
+          public void onError(Throwable e)
+          {
+            callback.onError(e);
+          }
+
+          @Override
+          public void onSuccess(RestResponse restResponse)
+          {
+            callback.onSuccess(restResponse);
+          }
+        });
+      }
+    };
+  }
+
+  public static Callback<RestResponse> toRestCallback(final Callback<StreamResponse> callback)
+  {
+    return new Callback<RestResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        if (e instanceof RestException)
+        {
+          callback.onError(toStreamException((RestException)e));
+        }
+        else
+        {
+          callback.onError(e);
+        }
+      }
+
+      @Override
+      public void onSuccess(RestResponse result)
+      {
+        callback.onSuccess(toStreamResponse(result));
+      }
+    };
+  }
+
 }

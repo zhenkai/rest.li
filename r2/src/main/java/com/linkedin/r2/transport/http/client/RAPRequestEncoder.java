@@ -61,10 +61,6 @@ import java.util.Map;
 
       nettyRequest.headers().set(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
 
-      // TODO [ZZ]: for stream request with no or small entity, shall we try to not send in HttpChunk form?
-      // This reduce the wire transfer overhead a little bit, but is it worth it? If we want to wait and cache for the small
-      // entity before sending, how long to wait?
-
       // code in if block works; for now always use streaming during dev
       //if (request instanceof RestRequest)
       if (false)
