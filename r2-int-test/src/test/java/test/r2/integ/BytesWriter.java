@@ -34,9 +34,9 @@ import java.util.Arrays;
   public void onWritePossible()
   {
 
-    while(_wh.remainingCapacity() >  0 && _written < _total)
+    while(_wh.remaining() >  0 && _written < _total)
     {
-      int bytesNum = (int)Math.min(_wh.remainingCapacity(), _total - _written);
+      int bytesNum = (int)Math.min(_wh.remaining(), _total - _written);
       _wh.write(generate(bytesNum));
       _written += bytesNum;
       afterWrite(_wh, _written);

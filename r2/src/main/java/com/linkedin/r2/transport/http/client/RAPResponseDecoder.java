@@ -301,7 +301,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       {
         for (;;)
         {
-          int remaining = _wh.remainingCapacity();
+          int remaining = _wh.remaining();
           if (remaining > 0)
           {
             int dataLen = Math.min(remaining, _buffer.readableBytes());
