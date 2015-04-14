@@ -19,6 +19,12 @@ package test.r2.caprep;
 
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
+import com.linkedin.r2.message.rest.RestException;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.rest.RestStatus;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import com.linkedin.r2.testutils.filter.FilterUtil;
 
@@ -31,23 +37,23 @@ public class TestRestCaptureFilter extends AbstractCaptureFilterTest
   @Test
   public void testCaptureRestException()
   {
-//    final Request req = request();
-//    final RestResponse res = new RestResponseBuilder().setStatus(RestStatus.NOT_FOUND).build();
-//    final Exception ex = new RestException(res);
-//
-//    FilterUtil.fireUntypedRequestError(getFilterChain(), req, ex);
-//
-//    Assert.assertEquals(res, getDb().replay(req));
+    final RestRequest req = request();
+    final RestResponse res = new RestResponseBuilder().setStatus(RestStatus.NOT_FOUND).build();
+    final Exception ex = new RestException(res);
+
+    FilterUtil.fireUntypedRequestError(getFilterChain(), req, ex);
+
+    Assert.assertEquals(res, getDb().replay(req));
   }
 
   @Override
-  protected Request request()
+  protected RestRequest request()
   {
     return FilterUtil.simpleRestRequest();
   }
 
   @Override
-  protected Response response()
+  protected RestResponse response()
   {
     return FilterUtil.simpleRestResponse();
   }
