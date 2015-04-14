@@ -154,7 +154,7 @@ public final class EntityStreams
       }
 
       @Override
-      public int remainingCapacity()
+      public int remaining()
       {
         synchronized (_lock)
         {

@@ -297,9 +297,9 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     // this method does not block
     private void doWrite()
     {
-      while (_wh.remainingCapacity() > 0)
+      while (_wh.remaining() > 0)
       {
-        int dataLen = Math.min(_wh.remainingCapacity(), Math.min(_bytes.length, _buffer.readableBytes()));
+        int dataLen = Math.min(_wh.remaining(), Math.min(_bytes.length, _buffer.readableBytes()));
         if (dataLen == 0)
         {
           if (_lastChunkReceived)

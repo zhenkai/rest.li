@@ -10,9 +10,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import java.io.IOException;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
@@ -112,9 +110,9 @@ public class SyncIOHandler implements Writer, Reader
       else if (event instanceof WriteRequestPossibleEvent)
       {
         byte[] buf = new byte[4096];
-        while(_wh.remainingCapacity() > 0)
+        while(_wh.remaining() > 0)
         {
-          int len = Math.min(buf.length, _wh.remainingCapacity());
+          int len = Math.min(buf.length, _wh.remaining());
           int actualLen;
           try
           {
