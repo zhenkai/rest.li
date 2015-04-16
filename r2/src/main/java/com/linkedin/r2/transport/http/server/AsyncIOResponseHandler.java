@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
   private final AsyncContext _ctx;
   private ReadHandle _rh;
   private volatile boolean _allDataRead = false;
+  private final AtomicBoolean _writeCouldStart = new AtomicBoolean(false);
   private final AtomicBoolean _completed = new AtomicBoolean(false);
   private final AtomicBoolean _otherDirectionFinished;
 
@@ -37,11 +38,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
     _otherDirectionFinished = otherDirectionFinished;
   }
 
-  // for some reason onWritePossible would be invoked for the first time after doWrite had finished
-  // that is isReady returned true and we did writing and finished; isReady never returned false;
-  // and then onWritePossible got invoked
   public void onWritePossible() throws IOException
   {
+    if (_writeCouldStart.compareAndSet(false, true))
+    {
+      _rh.read(_buffer.capacity());
+    }
     synchronized (_lock)
     {
       doWrite();
@@ -90,7 +92,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
   public void onInit(final ReadHandle rh)
   {
     _rh = rh;
-    _rh.read(_buffer.capacity());
     _os.setWriteListener(this);
   }
 
