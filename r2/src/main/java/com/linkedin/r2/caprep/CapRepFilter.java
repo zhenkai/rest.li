@@ -24,6 +24,7 @@ import com.linkedin.r2.caprep.db.DirectoryDbSource;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.RestFilter;
+import com.linkedin.r2.filter.message.rest.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -31,14 +32,20 @@ import com.linkedin.r2.message.rest.RestResponse;
 import java.io.IOException;
 import java.util.Map;
 
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * WARNING: This filter is not compatible with r2 streaming feature.
+ * Use this filter would result in both request and response being fully cached in memory; do not use with
+ * large requests/responses.
+ *
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class CapRepFilter implements RestFilter, CapRepAdmin
+public class CapRepFilter implements StreamFilter, CapRepAdmin
 {
   private static final Logger _log = LoggerFactory.getLogger(CapRepFilter.class);
 
@@ -104,26 +111,26 @@ public class CapRepFilter implements RestFilter, CapRepAdmin
   }
 
   @Override
-  public void onRestRequest(RestRequest req, RequestContext requestContext,
+  public void onRequest(StreamRequest req, RequestContext requestContext,
                             Map<String, String> wireAttrs,
-                            NextFilter<RestRequest, RestResponse> nextFilter)
+                            NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    _filter.onRestRequest(req, requestContext, wireAttrs, nextFilter);
+    _filter.onRequest(req, requestContext, wireAttrs, nextFilter);
   }
 
   @Override
-  public void onRestResponse(RestResponse res, RequestContext requestContext,
+  public void onResponse(StreamResponse res, RequestContext requestContext,
                              Map<String, String> wireAttrs,
-                             NextFilter<RestRequest, RestResponse> nextFilter)
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    _filter.onRestResponse(res, requestContext, wireAttrs, nextFilter);
+    _filter.onResponse(res, requestContext, wireAttrs, nextFilter);
   }
 
   @Override
-  public void onRestError(Throwable ex, RequestContext requestContext,
+  public void onError(Throwable ex, RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          NextFilter<RestRequest, RestResponse> nextFilter)
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    _filter.onRestError(ex, requestContext, wireAttrs, nextFilter);
+    _filter.onError(ex, requestContext, wireAttrs, nextFilter);
   }
 }

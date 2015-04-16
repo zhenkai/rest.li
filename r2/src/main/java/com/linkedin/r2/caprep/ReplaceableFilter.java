@@ -23,9 +23,14 @@ import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.RestFilter;
 import com.linkedin.r2.filter.message.rest.RestRequestFilter;
 import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
+import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.util.ArgumentUtil;
 
 import java.util.Map;
@@ -37,7 +42,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ReplaceableFilter implements RestFilter
+public class ReplaceableFilter implements StreamFilter
 {
   private volatile Filter _filter;
 
@@ -73,33 +78,33 @@ public class ReplaceableFilter implements RestFilter
   }
 
   @Override
-  public void onRestRequest(RestRequest req,
+  public void onRequest(StreamRequest req,
                             RequestContext requestContext,
                             Map<String, String> wireAttrs,
-                            NextFilter<RestRequest, RestResponse> nextFilter)
+                            NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     final Filter filter = _filter;
-    ((RestRequestFilter)filter).onRestRequest(req, requestContext, wireAttrs, nextFilter);
+    ((StreamRequestFilter)filter).onRequest(req, requestContext, wireAttrs, nextFilter);
   }
 
   @Override
-  public void onRestResponse(RestResponse res,
+  public void onResponse(StreamResponse res,
                              RequestContext requestContext,
                              Map<String, String> wireAttrs,
-                             NextFilter<RestRequest, RestResponse> nextFilter)
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     final Filter filter = _filter;
-    ((RestResponseFilter) filter).onRestResponse(res, requestContext, wireAttrs, nextFilter);
+    ((StreamResponseFilter) filter).onResponse(res, requestContext, wireAttrs, nextFilter);
 
   }
 
   @Override
-  public void onRestError(Throwable ex,
+  public void onError(Throwable ex,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
-                          NextFilter<RestRequest, RestResponse> nextFilter)
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     final Filter filter = _filter;
-    ((RestResponseFilter) filter).onRestError(ex, requestContext, wireAttrs, nextFilter);
+    ((StreamResponseFilter) filter).onError(ex, requestContext, wireAttrs, nextFilter);
   }
 }
