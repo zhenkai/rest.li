@@ -18,17 +18,25 @@
 
 package test.r2.message;
 
+import com.linkedin.common.callback.Callback;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.QueryTunnelUtil;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.activation.DataSource;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMultipart;
+
+import com.linkedin.r2.message.rest.StreamRequest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -45,13 +53,13 @@ public class TestQueryTunnel
                                        .setMethod("GET").build();
 
     // Pass to encode, but there are no query args, so nothing should change
-    RestRequest encoded = QueryTunnelUtil.encode(request, 0);
+    RestRequest encoded = encode(request, 0);
     Assert.assertEquals(request.getURI(), encoded.getURI());
     Assert.assertEquals(request.getMethod(), encoded.getMethod());
 
     // Pass the request - either one will do - to the decode side. Again, nothing should change
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(encoded, requestContext);
+    RestRequest decoded = decode(encoded, requestContext);
     Assert.assertEquals(request.getURI(), decoded.getURI());
     Assert.assertEquals(request.getMethod(), decoded.getMethod());
     Assert.assertEquals(request.getHeader("Content-Type"), decoded.getHeader("Content-Type"));
@@ -66,14 +74,14 @@ public class TestQueryTunnel
 
     // Process GET request with params. Set threshold to 0, which should convert the result to a POST
     // with no query, and a body
-    RestRequest encoded = QueryTunnelUtil.encode(request, 0);
+    RestRequest encoded = encode(request, 0);
     Assert.assertEquals(encoded.getMethod(), "POST");
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279");
     Assert.assertTrue(encoded.getEntity().length() > 0);
 
     // Decode, and we should get the original request back
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(encoded, requestContext);
+    RestRequest decoded = decode(encoded, requestContext);
     Assert.assertEquals(request.getURI(), decoded.getURI());
     Assert.assertEquals(request.getMethod(), decoded.getMethod());
     Assert.assertEquals(request.getHeader("Content-Type"), decoded.getHeader("Content-Type"));
@@ -91,7 +99,7 @@ public class TestQueryTunnel
     RestRequest req = new RestRequestBuilder(new URI(sb.toString())).setMethod("GET").build();
 
     RequestContext requestContext = new RequestContext();
-    RestRequest roundTrip = QueryTunnelUtil.decode(QueryTunnelUtil.encode(req, 0), requestContext);
+    RestRequest roundTrip = decode(encode(req, 0), requestContext);
 
     Assert.assertEquals(req, roundTrip);
     Assert.assertTrue((Boolean) requestContext.getLocalAttr(R2Constants.IS_QUERY_TUNNELED));
@@ -107,7 +115,7 @@ public class TestQueryTunnel
                                        .setHeader("Content-Type", "application/json").build();
 
     // Test Conversion, should have a multipart body
-    RestRequest encoded = QueryTunnelUtil.encode(request, 0);
+    RestRequest encoded = encode(request, 0);
     Assert.assertEquals(encoded.getMethod(), "POST");
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279");
     Assert.assertTrue(encoded.getEntity().length() > 0);
@@ -115,7 +123,7 @@ public class TestQueryTunnel
 
     // Decode, and we should get the original request back
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(encoded, requestContext);
+    RestRequest decoded = decode(encoded, requestContext);
     Assert.assertEquals(request.getURI(), decoded.getURI());
     Assert.assertEquals(request.getMethod(), decoded.getMethod());
     Assert.assertEquals(request.getEntity(), decoded.getEntity());
@@ -133,7 +141,7 @@ public class TestQueryTunnel
                                        .setHeader("Content-Type", "application/json").build();
 
     // Should do nothing, request should come back unchanged
-    RestRequest encoded = QueryTunnelUtil.encode(request, Integer.MAX_VALUE);
+    RestRequest encoded = encode(request, Integer.MAX_VALUE);
     Assert.assertEquals(request.getURI(), encoded.getURI());
     Assert.assertEquals(request.getMethod(), encoded.getMethod());
     Assert.assertEquals(request.getEntity(), encoded.getEntity());
@@ -150,7 +158,7 @@ public class TestQueryTunnel
                                        .setHeader("Content-Type", "application/json").build();
 
     RequestContext requestContext = new RequestContext();
-    RestRequest tunneled = QueryTunnelUtil.decode(QueryTunnelUtil.encode(request, 0), requestContext);
+    RestRequest tunneled = decode(encode(request, 0), requestContext);
     Assert.assertEquals(request.getURI(), tunneled.getURI());
     Assert.assertEquals(request.getMethod(), tunneled.getMethod());
     Assert.assertEquals(request.getEntity(), tunneled.getEntity());
@@ -170,7 +178,7 @@ public class TestQueryTunnel
 
     try {
       // Should fail because there is no Content-Type specified
-      QueryTunnelUtil.encode(request, 0);
+      encode(request, 0);
       Assert.fail("Expected Exception");
     }
     catch(Exception e)
@@ -189,7 +197,7 @@ public class TestQueryTunnel
         .setEntity(new String("q=123").getBytes()).build();
 
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(request, requestContext);
+    RestRequest decoded = decode(request, requestContext);
     Assert.assertEquals(decoded.getURI().toString(), "http://localhost:7279?q=123");
     Assert.assertEquals(decoded.getMethod(), "GET");
     Assert.assertTrue((Boolean) requestContext.getLocalAttr(R2Constants.IS_QUERY_TUNNELED));
@@ -226,7 +234,7 @@ public class TestQueryTunnel
         .setEntity(ByteString.copy(os.toByteArray())).build();
 
     // Encode and verify
-    RestRequest encoded = QueryTunnelUtil.encode(request, 0);
+    RestRequest encoded = encode(request, 0);
     Assert.assertEquals(encoded.getMethod(), "POST");
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279");
     Assert.assertTrue(encoded.getEntity().length() > 0);
@@ -234,7 +242,7 @@ public class TestQueryTunnel
 
     // Decode and make sure we have the original request back
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(encoded, requestContext);
+    RestRequest decoded = decode(encoded, requestContext);
     Assert.assertEquals(decoded.getURI().toString(), "http://localhost:7279?args=xyz");
     Assert.assertEquals(decoded.getMethod(), "PUT");
     Assert.assertEquals(decoded.getEntity(), request.getEntity());
@@ -254,14 +262,14 @@ public class TestQueryTunnel
     RestRequest request = new RestRequestBuilder(new URI("http://localhost:7279?" + query))
                                       .setMethod("GET").build();
 
-    RestRequest encoded = QueryTunnelUtil.encode(request, query.length()-1);  // Set threshold < query length
+    RestRequest encoded = encode(request, query.length()-1);  // Set threshold < query length
     Assert.assertEquals(encoded.getMethod(), "POST");
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279");
     Assert.assertTrue(encoded.getEntity().length() == query.length());
     Assert.assertEquals(encoded.getHeader("Content-Type"), "application/x-www-form-urlencoded");
 
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(encoded, requestContext);
+    RestRequest decoded = decode(encoded, requestContext);
     Assert.assertEquals(decoded.getURI(), request.getURI());
     Assert.assertEquals(decoded.getMethod(), "GET");
     Assert.assertTrue((Boolean) requestContext.getLocalAttr(R2Constants.IS_QUERY_TUNNELED));
@@ -279,7 +287,7 @@ public class TestQueryTunnel
     RestRequest request = new RestRequestBuilder(new URI("http://localhost:7279?" + query))
         .setMethod("GET").build();
 
-    RestRequest encoded = QueryTunnelUtil.encode(request, query.length()-1);  // Set threshold < query length
+    RestRequest encoded = encode(request, query.length()-1);  // Set threshold < query length
     Assert.assertEquals(encoded.getMethod(), "POST");
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279");
     Assert.assertTrue(encoded.getEntity().length() == query.length());
@@ -290,7 +298,7 @@ public class TestQueryTunnel
     RestRequest modified = rb.build();
 
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(modified, requestContext);
+    RestRequest decoded = decode(modified, requestContext);
     Assert.assertEquals(decoded.getURI().toString(), "http://localhost:7279?" + query);
     Assert.assertTrue((Boolean) requestContext.getLocalAttr(R2Constants.IS_QUERY_TUNNELED));
   }
@@ -306,7 +314,7 @@ public class TestQueryTunnel
     RestRequest request = new RestRequestBuilder(new URI("http://localhost:7279?" + query))
         .setMethod("GET").build();
 
-    RestRequest encoded = QueryTunnelUtil.encode(request, query.length()-1);  // Set threshold < query length
+    RestRequest encoded = encode(request, query.length()-1);  // Set threshold < query length
     Assert.assertEquals(encoded.getMethod(), "POST");
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279");
     Assert.assertTrue(encoded.getEntity().length() == query.length());
@@ -317,7 +325,7 @@ public class TestQueryTunnel
     RestRequest modified = rb.build();
 
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(modified, requestContext);
+    RestRequest decoded = decode(modified, requestContext);
     Assert.assertEquals(decoded.getURI().toString(), "http://localhost:7279?uh=f&" + query);
     Assert.assertTrue((Boolean) requestContext.getLocalAttr(R2Constants.IS_QUERY_TUNNELED));
   }
@@ -331,12 +339,12 @@ public class TestQueryTunnel
     RestRequest request = new RestRequestBuilder(new URI("http://localhost:7279/foo?"))
         .setMethod("GET").build();
 
-    RestRequest encoded = QueryTunnelUtil.encode(request, 0);
+    RestRequest encoded = encode(request, 0);
     Assert.assertEquals(encoded.getMethod(), "GET"); // SHould not actually encode this case
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279/foo?");
 
     RequestContext requestContext = new RequestContext();
-    RestRequest decoded = QueryTunnelUtil.decode(encoded, requestContext);
+    RestRequest decoded = decode(encoded, requestContext);
     Assert.assertEquals(decoded.getURI().toString(), "http://localhost:7279/foo?");
     Assert.assertNull(requestContext.getLocalAttr(R2Constants.IS_QUERY_TUNNELED));
   }
@@ -353,7 +361,7 @@ public class TestQueryTunnel
     requestContext.putLocalAttr(R2Constants.FORCE_QUERY_TUNNEL, true);
 
     // should encode
-    RestRequest encoded = QueryTunnelUtil.encode(request, requestContext, Integer.MAX_VALUE);
+    RestRequest encoded = encode(request, requestContext, Integer.MAX_VALUE);
     Assert.assertEquals(encoded.getMethod(), "POST");
     Assert.assertEquals(encoded.getURI().toString(), "http://localhost:7279");
     Assert.assertTrue(encoded.getEntity().length() > 0);
@@ -369,7 +377,7 @@ public class TestQueryTunnel
 
     // should not encode
     RequestContext emptyContext = new RequestContext();
-    RestRequest encodedWithEmptyContext = QueryTunnelUtil.encode(request, emptyContext, Integer.MAX_VALUE);
+    RestRequest encodedWithEmptyContext = encode(request, emptyContext, Integer.MAX_VALUE);
     Assert.assertEquals(request.getURI(), encodedWithEmptyContext.getURI());
     Assert.assertEquals(request.getMethod(), encodedWithEmptyContext.getMethod());
     Assert.assertEquals(request.getEntity(), encodedWithEmptyContext.getEntity());
@@ -377,10 +385,85 @@ public class TestQueryTunnel
     // should not encode
     RequestContext falseFlag = new RequestContext();
     falseFlag.putLocalAttr(R2Constants.FORCE_QUERY_TUNNEL, false);
-    RestRequest encodedWithFalseFlag = QueryTunnelUtil.encode(request, falseFlag, Integer.MAX_VALUE);
+    RestRequest encodedWithFalseFlag = encode(request, falseFlag, Integer.MAX_VALUE);
     Assert.assertEquals(request.getURI(), encodedWithFalseFlag.getURI());
     Assert.assertEquals(request.getMethod(), encodedWithFalseFlag.getMethod());
     Assert.assertEquals(request.getEntity(), encodedWithFalseFlag.getEntity());
+  }
+
+  private static RestRequest encode(RestRequest request, int threshold) throws Exception
+  {
+    return encode(request, new RequestContext(), threshold);
+  }
+
+  private static RestRequest encode(RestRequest request, RequestContext requestContext, int threshold) throws Exception
+  {
+    TestCallback callback = new TestCallback();
+    QueryTunnelUtil.encode(Messages.toStreamRequest(request), requestContext, threshold, callback);
+    return callback.getRestRequest();
+  }
+
+  private static RestRequest decode(RestRequest request) throws Exception
+  {
+    return decode(request, new RequestContext());
+  }
+
+  private static RestRequest decode(RestRequest request, final RequestContext requestContext) throws Exception
+  {
+    TestCallback callback = new TestCallback();
+    QueryTunnelUtil.decode(Messages.toStreamRequest(request), requestContext, callback);
+    return callback.getRestRequest();
+  }
+
+  private static class TestCallback implements Callback<StreamRequest>
+  {
+    private Throwable _error;
+    private RestRequest _request;
+    private final CountDownLatch _latch = new CountDownLatch(1);
+
+    @Override
+    public void onError(Throwable e)
+    {
+      _error = e;
+      _latch.countDown();
+    }
+
+    @Override
+    public void onSuccess(StreamRequest request)
+    {
+      Messages.toRestRequest(request, new Callback<RestRequest>()
+      {
+        @Override
+        public void onError(Throwable e)
+        {
+          _error = e;
+          _latch.countDown();
+        }
+
+        @Override
+        public void onSuccess(RestRequest result)
+        {
+          _request = result;
+          _latch.countDown();
+        }
+      });
+    }
+
+    public RestRequest getRestRequest() throws Exception
+    {
+      if(_latch.await(500, TimeUnit.MILLISECONDS))
+      {
+        if (_error != null)
+        {
+          throw new Exception(_error);
+        }
+        return _request;
+      }
+      else
+      {
+        throw new TimeoutException();
+      }
+    }
   }
 }
 
