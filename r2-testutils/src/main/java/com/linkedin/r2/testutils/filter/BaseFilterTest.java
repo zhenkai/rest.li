@@ -28,15 +28,15 @@ import com.linkedin.r2.filter.FilterChains;
 public abstract class BaseFilterTest
 {
     private Filter _filter;
-    private RpcRestCountFilter _beforeFilter;
-    private RpcRestCountFilter _afterFilter;
+    private MessageCountFilter _beforeFilter;
+    private MessageCountFilter _afterFilter;
     private FilterChain _fc;
 
     public void setUp() throws Exception
     {
         _filter = getFilter();
-        _beforeFilter = new RpcRestCountFilter();
-        _afterFilter = new RpcRestCountFilter();
+        _beforeFilter = new MessageCountFilter();
+        _afterFilter = new MessageCountFilter();
         _fc = FilterChains.create(_beforeFilter, _filter, _afterFilter);
     }
 
@@ -45,12 +45,12 @@ public abstract class BaseFilterTest
         return _fc;
     }
 
-    protected RpcRestCountFilter getBeforeFilter()
+    protected MessageCountFilter getBeforeFilter()
     {
         return _beforeFilter;
     }
 
-    protected RpcRestCountFilter getAfterFilter()
+    protected MessageCountFilter getAfterFilter()
     {
         return _afterFilter;
     }

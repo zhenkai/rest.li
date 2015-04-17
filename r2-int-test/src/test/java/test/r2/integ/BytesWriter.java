@@ -16,6 +16,7 @@ import java.util.Arrays;
   private final byte _fill;
   private long _written;
   private WriteHandle _wh;
+  private boolean _error = false;
 
   BytesWriter(long total, byte fill)
   {
@@ -34,7 +35,7 @@ import java.util.Arrays;
   public void onWritePossible()
   {
 
-    while(_wh.remaining() >  0 && _written < _total)
+    while(_wh.remaining() >  0 && _written < _total && !_error)
     {
       int bytesNum = (int)Math.min(_wh.remaining(), _total - _written);
       _wh.write(generate(bytesNum));
@@ -42,7 +43,7 @@ import java.util.Arrays;
       afterWrite(_wh, _written);
     }
 
-    if (_written == _total)
+    if (_written == _total && !_error)
     {
       _wh.done();
       onFinish();
@@ -57,6 +58,11 @@ import java.util.Arrays;
   protected void afterWrite(WriteHandle wh, long written)
   {
     // nothing
+  }
+
+  protected void markError()
+  {
+    _error = true;
   }
 
   private ByteString generate(int size)

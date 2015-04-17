@@ -88,8 +88,7 @@ import java.util.Map;
   @Override
   public int hashCode()
   {
-    int result = super.hashCode();
-    result = 31 * result + _headers.hashCode();
+    int result = _headers.hashCode();
     result = 31 * result + _cookies.hashCode();
 
     return result;

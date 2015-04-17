@@ -20,6 +20,7 @@ package test.r2.caprep;
 import com.linkedin.r2.caprep.CaptureFilter;
 import com.linkedin.r2.caprep.db.TransientDb;
 import com.linkedin.r2.filter.Filter;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestRequest;
@@ -44,7 +45,7 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
 
     Assert.assertNull(getDb().replay(req));
 
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res);
+    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamResponse(res));
 
     Assert.assertEquals(res, getDb().replay(req));
   }
@@ -57,8 +58,8 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
     final RestResponse res1 = response();
     final RestResponse res2 = new RestResponseBuilder(res1).setEntity("This is a different response".getBytes()).build();
 
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req1, res1);
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req2, res2);
+    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req1), Messages.toStreamResponse(res1));
+    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req2), Messages.toStreamResponse(res2));
 
     // Should have created two separate entries
     Assert.assertEquals(res1, getDb().replay(req1));
@@ -72,8 +73,8 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
     final RestResponse res1 = response();
     final RestResponse res2 = new RestResponseBuilder().setEntity("This is a different response".getBytes()).build();
 
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res1);
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), req, res2);
+    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamResponse(res1));
+    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamResponse(res2));
 
     // Last one wins
     Assert.assertEquals(res2, getDb().replay(req));
@@ -85,7 +86,7 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
     final RestRequest req = request();
     final Exception ex = new Exception();
 
-    FilterUtil.fireUntypedRequestError(getFilterChain(), req, ex);
+    FilterUtil.fireUntypedRequestError(getFilterChain(), Messages.toStreamRequest(req), ex);
 
     // Request / response should not be recorded
     Assert.assertNull(getDb().replay(req));
