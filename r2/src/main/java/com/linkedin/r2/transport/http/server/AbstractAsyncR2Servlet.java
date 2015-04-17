@@ -80,11 +80,13 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
     catch (URISyntaxException e)
     {
       writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+      ctx.complete();
       return;
     }
     catch (MessagingException e)
     {
       writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+      ctx.complete();
       return;
     }
 
@@ -93,14 +95,7 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
       @Override
       public void onError(Throwable e)
       {
-        try
-        {
-          writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
-        }
-        catch (Exception ex)
-        {
-          throw new RuntimeException(ex);
-        }
+        throw new RuntimeException(e);
       }
 
       @Override
@@ -109,19 +104,26 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
         TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
         {
           @Override
-          public void onResponse(TransportResponse<StreamResponse> response)
+          public void onResponse(final TransportResponse<StreamResponse> response)
           {
-            try
+            ctx.start(new Runnable()
             {
-              ioHandler.startWritingResponse();
-              StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
-              streamResponse.getEntityStream().setReader(ioHandler);
-              ioHandler.loop();
-            }
-            catch (Exception e)
-            {
-              throw new RuntimeException(e);
-            }
+              @Override
+              public void run()
+              {
+                try
+                {
+                  ioHandler.startWritingResponse();
+                  StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
+                  streamResponse.getEntityStream().setReader(ioHandler);
+                  ioHandler.loop();
+                }
+                catch (Exception e)
+                {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
           }
         };
 
@@ -129,10 +131,17 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
       }
     };
 
-    QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
+    try
+    {
+      QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
 
-    ioHandler.startReadingRequest();
-    ioHandler.loop();
+      ioHandler.startReadingRequest();
+      ioHandler.loop();
+    }
+    catch (Exception ex)
+    {
+      throw new ServletException(ex);
+    }
   }
 
   public long getTimeout()

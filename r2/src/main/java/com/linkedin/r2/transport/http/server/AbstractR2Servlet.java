@@ -96,14 +96,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
       @Override
       public void onError(Throwable e)
       {
-        try
-        {
-          writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
-        }
-        catch (Exception ex)
-        {
-          throw new RuntimeException(ex);
-        }
+        throw new RuntimeException(e);
       }
 
       @Override
@@ -124,9 +117,15 @@ public abstract class AbstractR2Servlet extends HttpServlet
       }
     };
 
-    QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
-
-    ioHandler.loop();
+    try
+    {
+      QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
+      ioHandler.loop();
+    }
+    catch (Exception ex)
+    {
+      throw new ServletException(ex);
+    }
   }
 
   protected StreamResponse writeResponseHeadToServletResponse(TransportResponse<StreamResponse> response,

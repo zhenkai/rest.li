@@ -134,14 +134,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
       @Override
       public void onError(Throwable e)
       {
-        try
-        {
-          writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString(), wrappedCtx);
-        }
-        catch (Exception ex)
-        {
-          throw new RuntimeException(ex);
-        }
+        throw new RuntimeException(e);
       }
 
       @Override
