@@ -35,12 +35,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.StreamResponse;
+
+import com.linkedin.r2.message.streaming.ReadHandle;
+import com.linkedin.r2.message.streaming.Reader;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -181,14 +186,17 @@ public class TestHttpNettyClient
   }
 
   @Test
-  public void testMaxResponseSize()
-      throws InterruptedException, IOException, TimeoutException
+  public void testMaxResponseSizeOK() throws InterruptedException, IOException, TimeoutException
   {
     testResponseSize(TEST_MAX_RESPONSE_SIZE - 1, RESPONSE_OK);
 
     testResponseSize(TEST_MAX_RESPONSE_SIZE, RESPONSE_OK);
+  }
 
-    testResponseSize(TEST_MAX_RESPONSE_SIZE + 1, TOO_LARGE);
+  @Test
+  public void setTestMaxResponseSizeTooLarge() throws InterruptedException, IOException, TimeoutException
+  {
+    testResponseSize(TEST_MAX_RESPONSE_SIZE+1, TOO_LARGE);
   }
 
   public void testResponseSize(int responseSize, int expectedResult)
@@ -207,10 +215,46 @@ public class TestHttpNettyClient
 
     try
     {
-      cb.get(30, TimeUnit.SECONDS);
-      if (expectedResult == TOO_LARGE)
+      StreamResponse response = cb.get(30, TimeUnit.SECONDS);
+      final CountDownLatch latch = new CountDownLatch(1);
+      final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+      response.getEntityStream().setReader(new Reader()
       {
-        Assert.fail("Max response size exceeded, expected exception. ");
+        @Override
+        public void onInit(ReadHandle rh)
+        {
+          rh.read(Integer.MAX_VALUE);
+        }
+
+        @Override
+        public void onDataAvailable(ByteString data)
+        {
+        }
+
+        @Override
+        public void onDone()
+        {
+          latch.countDown();
+        }
+
+        @Override
+        public void onError(Throwable e)
+        {
+          error.set(e);
+          latch.countDown();
+        }
+      });
+
+      latch.await(30, TimeUnit.SECONDS);
+
+      if(expectedResult == TOO_LARGE)
+      {
+        Assert.assertNotNull(error.get(), "Max response size exceeded, expected exception. ");
+        verifyCauseChain(error.get(), TooLongFrameException.class);
+      }
+      if (expectedResult == RESPONSE_OK)
+      {
+        Assert.assertNull(error.get(), "Unexpected Exception: response size <= max size");
       }
     }
     catch (ExecutionException e)
@@ -293,6 +337,7 @@ public class TestHttpNettyClient
     catch (ExecutionException e)
     {
       verifyCauseChain(e, RemoteInvocationException.class, IllegalArgumentException.class);
+      Assert.fail("Unexpected ExecutionException");
     }
     testServer.shutdown();
   }

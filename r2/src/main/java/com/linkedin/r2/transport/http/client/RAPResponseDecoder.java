@@ -2,6 +2,7 @@ package com.linkedin.r2.transport.http.client;
 
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
@@ -210,7 +211,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         {
           Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
           ctx.fireExceptionCaught(ex);
-          _wh.error(ex);
+          fail(ex);
+
           _chunkedMessageWriter = null;
         }
       };
@@ -247,16 +249,14 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       {
         if (!chunk.getDecoderResult().isSuccess())
         {
-          _wh.error(chunk.getDecoderResult().cause());
-          // free
-          _buffer.release();
+          fail(chunk.getDecoderResult().cause());
           _chunkedMessageWriter = null;
         }
         else if (chunk.content().readableBytes() + _totalBytesWritten > _maxContentLength)
         {
           TooLongFrameException ex = new TooLongFrameException("HTTP content length exceeded " + _maxContentLength +
               " bytes.");
-          _wh.error(ex);
+          fail(ex);
           _chunkedMessageWriter = null;
           throw ex;
         }
@@ -277,7 +277,10 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
           {
             _lastChunkReceived = true;
           }
-          doWrite();
+          if (_wh != null)
+          {
+            doWrite();
+          }
         }
       }
       if (!_lastChunkReceived)
@@ -290,8 +293,11 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     public void fail(Throwable ex)
     {
       _timeout.getItem();
-      _wh.error(ex);
       _buffer.release();
+      if (_wh != null)
+      {
+        _wh.error(new RemoteInvocationException(ex));
+      }
     }
 
     // this method does not block

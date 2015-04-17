@@ -17,10 +17,12 @@
 /* $Id$ */
 package test.r2.caprep;
 
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
@@ -39,9 +41,9 @@ public class TestRestCaptureFilter extends AbstractCaptureFilterTest
   {
     final RestRequest req = request();
     final RestResponse res = new RestResponseBuilder().setStatus(RestStatus.NOT_FOUND).build();
-    final Exception ex = new RestException(res);
+    final RestException ex = new RestException(res);
 
-    FilterUtil.fireUntypedRequestError(getFilterChain(), req, ex);
+    FilterUtil.fireUntypedRequestError(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamException(ex));
 
     Assert.assertEquals(res, getDb().replay(req));
   }
