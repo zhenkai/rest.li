@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     RestResponseImpl that = (RestResponseImpl) o;
-    return _entity == that._entity;
+    return _entity.equals(that._entity);
   }
 
   @Override

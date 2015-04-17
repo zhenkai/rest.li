@@ -200,7 +200,7 @@ public class TestStreamResponse extends AbstractStreamTest
 
   private static class ErrorWriter extends TimedBytesWriter
   {
-    private final long _total;
+    private long _total;
 
     ErrorWriter(long total, byte fill)
     {
@@ -213,7 +213,9 @@ public class TestStreamResponse extends AbstractStreamTest
     {
       if (written > _total)
       {
-        throw new RuntimeException("Error writer for testing");
+        _total = _total * 2 + 1;
+        wh.error(new RuntimeException());
+        markError();
       }
     }
   }

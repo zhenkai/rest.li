@@ -18,7 +18,6 @@
 package com.linkedin.r2.testutils.filter;
 
 import com.linkedin.r2.filter.FilterChain;
-import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Response;
@@ -26,6 +25,11 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.EntityStreams;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -39,36 +43,36 @@ public class FilterUtil
 {
   private FilterUtil() {}
 
-  public static void fireSimpleRestRequest(FilterChain fc)
+  public static void fireSimpleStreamRequest(FilterChain fc)
   {
-    fireRestRequest(fc, simpleRestRequest());
+    fireStreamRequest(fc, simpleStreamRequest());
   }
 
-  public static void fireSimpleRestResponse(FilterChain fc)
+  public static void fireSimpleStreamResponse(FilterChain fc)
   {
-    fc.onResponse(Messages.toStreamResponse(simpleRestResponse()), emptyRequestContext(), emptyWireAttrs());
+    fc.onResponse(simpleStreamResponse(), emptyRequestContext(), emptyWireAttrs());
   }
 
-  public static void fireSimpleRestError(FilterChain fc)
+  public static void fireSimpleStreamError(FilterChain fc)
   {
     fc.onError(simpleError(), emptyRequestContext(), emptyWireAttrs());
   }
 
-  public static void fireRestRequest(FilterChain fc, RestRequest req)
+  public static void fireStreamRequest(FilterChain fc, StreamRequest req)
   {
-    fc.onRequest(Messages.toStreamRequest(req), emptyRequestContext(), emptyWireAttrs());
+    fc.onRequest(req, emptyRequestContext(), emptyWireAttrs());
   }
 
-  public static void fireRestRequest(FilterChain fc, RestRequest req, Map<String, String> wireAttrs)
+  public static void fireStreamRequest(FilterChain fc, StreamRequest req, Map<String, String> wireAttrs)
   {
-    fc.onRequest(Messages.toStreamRequest(req), emptyRequestContext(), wireAttrs);
+    fc.onRequest(req, emptyRequestContext(), wireAttrs);
   }
 
   public static void fireUntypedRequest(FilterChain fc, Request req)
   {
-    if (req instanceof RestRequest)
+    if (req instanceof StreamRequest)
     {
-      fireRestRequest(fc, (RestRequest)req);
+      fireStreamRequest(fc, (StreamRequest) req);
     }
     else
     {
@@ -78,19 +82,19 @@ public class FilterUtil
 
   // Fires a request, saving the local attributes, and then fires a response with the local
   // attributes.
-  public static void fireRestRequestResponse(FilterChain fc, RestRequest req, RestResponse res)
+  public static void fireStreamRequestResponse(FilterChain fc, StreamRequest req, StreamResponse res)
   {
     final RequestContext context = new RequestContext();
-    fc.onRequest(Messages.toStreamRequest(req), context, emptyWireAttrs());
-    fc.onResponse(Messages.toStreamResponse(res), context, emptyWireAttrs());
+    fc.onRequest(req, context, emptyWireAttrs());
+    fc.onResponse(res, context, emptyWireAttrs());
   }
 
   // Determines the type of the request at runtime.
   public static void fireUntypedRequestResponse(FilterChain fc, Request req, Response res)
   {
-    if (req instanceof RestRequest)
+    if (req instanceof StreamRequest)
     {
-      fireRestRequestResponse(fc, (RestRequest)req, (RestResponse)res);
+      fireStreamRequestResponse(fc, (StreamRequest) req, (StreamResponse) res);
     }
     else
     {
@@ -98,18 +102,18 @@ public class FilterUtil
     }
   }
 
-  public static void fireRestRequestError(FilterChain fc, RestRequest req, Exception ex)
+  public static void fireStreamRequestError(FilterChain fc, StreamRequest req, Exception ex)
   {
     final RequestContext context = new RequestContext();
-    fc.onRequest(Messages.toStreamRequest(req), context, emptyWireAttrs());
+    fc.onRequest(req, context, emptyWireAttrs());
     fc.onError(ex, context, emptyWireAttrs());
   }
 
   public static void fireUntypedRequestError(FilterChain fc, Request req, Exception ex)
   {
-    if (req instanceof RestRequest)
+    if (req instanceof StreamRequest)
     {
-      fireRestRequestError(fc, (RestRequest)req, ex);
+      fireStreamRequestError(fc, (StreamRequest) req, ex);
     }
     else
     {
@@ -117,16 +121,28 @@ public class FilterUtil
     }
   }
 
+  public static StreamRequest simpleStreamRequest()
+  {
+    return new StreamRequestBuilder(URI.create("simple_uri"))
+            .build(EntityStreams.emptyStream());
+  }
+
+  public static StreamResponse simpleStreamResponse()
+  {
+    return new StreamResponseBuilder()
+            .build(EntityStreams.emptyStream());
+  }
+
   public static RestRequest simpleRestRequest()
   {
     return new RestRequestBuilder(URI.create("simple_uri"))
-            .build();
+        .build();
   }
 
   public static RestResponse simpleRestResponse()
   {
     return new RestResponseBuilder()
-            .build();
+        .build();
   }
 
   public static Exception simpleError()
