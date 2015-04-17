@@ -25,7 +25,6 @@ import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.testutils.filter.MessageCountFilter;
-import com.linkedin.r2.testutils.filter.RpcRestCountFilter;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -40,45 +39,6 @@ import org.testng.annotations.Test;
  */
 public class TestFilterChainImpl
 {
-  @Test
-  public void testRestRequestFilter()
-  {
-    final RpcRestCountFilter filter = new RpcRestCountFilter();
-    final FilterChain fc = FilterChains.create(filter);
-
-    fireRestRequest(fc);
-
-    assertRpcCounts(0, 0, 0, filter);
-    assertRestCounts(1, 0, 0, filter);
-    assertMessageCounts(0, 0, 0, filter);
-  }
-
-  @Test
-  public void testRestResponseFilter()
-  {
-    final RpcRestCountFilter filter = new RpcRestCountFilter();
-    final FilterChain fc = FilterChains.create(filter);
-
-    fireRestResponse(fc);
-
-    assertRpcCounts(0, 0, 0, filter);
-    assertRestCounts(0, 1, 0, filter);
-    assertMessageCounts(0, 0, 0, filter);
-  }
-
-  @Test
-  public void testRestErrorFilter()
-  {
-    final RpcRestCountFilter filter = new RpcRestCountFilter();
-    final FilterChain fc = FilterChains.create(filter);
-
-    fireRestError(fc);
-
-    assertRpcCounts(0, 0, 0, filter);
-    assertRestCounts(0, 0, 1, filter);
-    assertMessageCounts(0, 0, 0, filter);
-  }
-
   @Test
   public void testRequestFilter()
   {
@@ -187,19 +147,5 @@ public class TestFilterChainImpl
     Assert.assertEquals(req, filter.getReqCount());
     Assert.assertEquals(res, filter.getResCount());
     Assert.assertEquals(err, filter.getErrCount());
-  }
-
-  private void assertRpcCounts(int req, int res, int err, RpcRestCountFilter filter)
-  {
-    Assert.assertEquals(req, filter.getRpcReqCount());
-    Assert.assertEquals(res, filter.getRpcResCount());
-    Assert.assertEquals(err, filter.getRpcErrCount());
-  }
-
-  private void assertRestCounts(int req, int res, int err, RpcRestCountFilter filter)
-  {
-    Assert.assertEquals(req, filter.getRestReqCount());
-    Assert.assertEquals(res, filter.getRestResCount());
-    Assert.assertEquals(err, filter.getRestErrCount());
   }
 }

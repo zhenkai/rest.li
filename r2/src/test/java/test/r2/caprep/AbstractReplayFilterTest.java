@@ -17,14 +17,18 @@
 /* $Id$ */
 package test.r2.caprep;
 
+import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.caprep.ReplayFilter;
 import com.linkedin.r2.caprep.db.TransientDb;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.FilterChain;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamException;
+import com.linkedin.r2.message.rest.StreamResponse;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import com.linkedin.r2.testutils.filter.CaptureLastCallFilter;
@@ -39,15 +43,28 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
   @Test
   public void testReplayWithNoMatch()
   {
-    final Request req = request();
-    final Response res = response();
+    final RestRequest req = request();
+    final RestResponse res = response();
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
     final FilterChain fc = getFilterChain()
             .addFirst(captureFilter);
 
-    FilterUtil.fireUntypedRequestResponse(fc, req, res);
+    FilterUtil.fireUntypedRequestResponse(fc, Messages.toStreamRequest(req), Messages.toStreamResponse(res));
 
-    Assert.assertEquals(res, captureFilter.getLastRes());
+    Messages.toRestResponse((StreamResponse)captureFilter.getLastRes(), new Callback<RestResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        throw new RuntimeException(e);
+      }
+
+      @Override
+      public void onSuccess(RestResponse result)
+      {
+        Assert.assertEquals(res, result);
+      }
+    });
   }
 
   @Test
@@ -63,8 +80,21 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
 
     // We should be able to fire just the request - the response should be replayed from the
     // capture we set up above.
-    FilterUtil.fireUntypedRequest(fc, req);
-    Assert.assertEquals(res, captureFilter.getLastRes());
+    FilterUtil.fireUntypedRequest(fc, Messages.toStreamRequest(req));
+    Messages.toRestResponse((StreamResponse)captureFilter.getLastRes(), new Callback<RestResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        throw new RuntimeException(e);
+      }
+
+      @Override
+      public void onSuccess(RestResponse result)
+      {
+        Assert.assertEquals(res, result);
+      }
+    });
   }
 
   @Override
