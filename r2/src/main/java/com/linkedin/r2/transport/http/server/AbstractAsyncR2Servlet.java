@@ -127,21 +127,14 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
           }
         };
 
-        getDispatcher().handleRequest(streamRequest, requestContext, callback);
+        getDispatcher().handleRequest(decodingResult, requestContext, callback);
       }
     };
 
-    try
-    {
-      QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
+    QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
 
-      ioHandler.startReadingRequest();
-      ioHandler.loop();
-    }
-    catch (Exception ex)
-    {
-      throw new ServletException(ex);
-    }
+    ioHandler.startReadingRequest();
+    ioHandler.loop();
   }
 
   public long getTimeout()

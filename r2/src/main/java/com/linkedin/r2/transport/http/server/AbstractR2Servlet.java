@@ -117,15 +117,8 @@ public abstract class AbstractR2Servlet extends HttpServlet
       }
     };
 
-    try
-    {
-      QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
-      ioHandler.loop();
-    }
-    catch (Exception ex)
-    {
-      throw new ServletException(ex);
-    }
+    QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
+    ioHandler.loop();
   }
 
   protected StreamResponse writeResponseHeadToServletResponse(TransportResponse<StreamResponse> response,
