@@ -37,51 +37,47 @@ import java.util.Map;
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
   {
     StreamRequest request = (StreamRequest) msg;
+    HttpMethod nettyMethod = HttpMethod.valueOf(request.getMethod());
+    URL url = new URL(request.getURI().toString());
+    String path = url.getFile();
+    // RFC 2616, section 5.1.2:
+    //   Note that the absolute path cannot be empty; if none is present in the original URI,
+    //   it MUST be given as "/" (the server root).
+    if (path.isEmpty())
+    {
+      path = "/";
+    }
 
+    HttpRequest nettyRequest =
+        new DefaultHttpRequest(HttpVersion.HTTP_1_1, nettyMethod, path);
 
-      HttpMethod nettyMethod = HttpMethod.valueOf(request.getMethod());
-      URL url = new URL(request.getURI().toString());
-      String path = url.getFile();
-      // RFC 2616, section 5.1.2:
-      //   Note that the absolute path cannot be empty; if none is present in the original URI,
-      //   it MUST be given as "/" (the server root).
-      if (path.isEmpty())
-      {
-        path = "/";
-      }
+    nettyRequest.headers().set(HttpHeaders.Names.HOST, url.getAuthority());
+    for (Map.Entry<String, String> entry : request.getHeaders().entrySet())
+    {
+      nettyRequest.headers().set(entry.getKey(), entry.getValue());
+    }
 
-      HttpRequest nettyRequest =
-          new DefaultHttpRequest(HttpVersion.HTTP_1_1, nettyMethod, path);
+    nettyRequest.headers().set(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
 
-      nettyRequest.headers().set(HttpHeaders.Names.HOST, url.getAuthority());
-      for (Map.Entry<String, String> entry : request.getHeaders().entrySet())
-      {
-        nettyRequest.headers().set(entry.getKey(), entry.getValue());
-      }
+    if (request instanceof RestRequest)
+    {
+      // this is small optimization for RestRequest so that we don't chunk over the wire because we
+      // don't really gain anything for chunking in such case, but slightly increase the transmitting overhead
+      final ByteString entity = ((RestRequest) request).getEntity();
+      ByteBuf buf = Unpooled.wrappedBuffer(entity.asByteBuffer());
+      HttpContent content = new DefaultHttpContent(buf);
 
-      nettyRequest.headers().set(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
-
-      // code in if block works; for now always use streaming during dev
-      //if (request instanceof RestRequest)
-      if (false)
-      {
-        // this is small optimization for RestRequest so that we don't chunk over the wire because we
-        // don't really gain anything for chunking in such case, but slightly increase the transmitting overhead
-        final ByteString entity = ((RestRequest) request).getEntity();
-        ByteBuf buf = Unpooled.wrappedBuffer(entity.asByteBuffer());
-        HttpContent content = new DefaultHttpContent(buf);
-
-        nettyRequest.headers().set(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
-        ctx.write(nettyRequest);
-        ctx.write(content);
-        ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
-      }
-      else
-      {
-        ctx.write(nettyRequest);
-        _currentReader = new BufferedReader(ctx, MAX_BUFFER_SIZE);
-        request.getEntityStream().setReader(_currentReader);
-      }
+      nettyRequest.headers().set(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
+      ctx.write(nettyRequest);
+      ctx.write(content);
+      ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
+    }
+    else
+    {
+      ctx.write(nettyRequest);
+      _currentReader = new BufferedReader(ctx, MAX_BUFFER_SIZE);
+      request.getEntityStream().setReader(_currentReader);
+    }
   }
 
   @Override
@@ -113,6 +109,8 @@ import java.util.Map;
    *
    * The bufferSize = the permitted size that the writer can still write + the size of data that has been provided
    * by writer but not yet written to socket
+   *
+   * Buffering is actually done by Netty; we just enforce the upper bound of the buffering
    */
   private static class BufferedReader implements Reader
   {
