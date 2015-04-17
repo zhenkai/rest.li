@@ -111,7 +111,6 @@ import org.slf4j.LoggerFactory;
   /**
    * Creates a new HttpNettyClient with some default parameters
    *
-   * @see #HttpNettyClient(ClientSocketChannelFactory,ScheduledExecutorService,int,int,int,int,int,SSLContext,SSLParameters,int,ExecutorService,int)
    */
   public HttpNettyClient(ClientSocketChannelFactory factory,
                          ScheduledExecutorService executor,
@@ -425,41 +424,34 @@ import org.slf4j.LoggerFactory;
           + " (only http/https is supported)"));
       return;
     }
-    String host = uri.getHost();
-    int port = uri.getPort();
-    if (port == -1) {
-      port = scheme.equalsIgnoreCase("http") ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
-    }
+    final String host = uri.getHost();
+    final int port = uri.getPort() != -1 ? uri.getPort() :
+        (scheme.equalsIgnoreCase("http") ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT);
 
     final StreamRequest newRequest = request.builder()
-                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
-                                             .build(request.getEntityStream());
-    // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
-    // request without body, it seems not working with streaming
-//    try
-//    {
-//      newRequest= QueryTunnelUtil.encode(new RestRequestBuilder(request)
-//                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
-//                                             .build(),
-//                                         requestContext,
-//                                         _queryPostThreshold);
-//    }
-//    catch (IOException e)
-//    {
-//      errorResponse(callback, e);
-//      return;
-//    }
-//    catch (URISyntaxException e)
-//    {
-//      errorResponse(callback, e);
-//      return;
-//    }
-//    catch (MessagingException e)
-//    {
-//      errorResponse(callback, e);
-//      return;
-//    }
+        .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+        .build(request.getEntityStream());
 
+    Callback<StreamRequest> queryTunnelCallback = new Callback<StreamRequest>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        errorResponse(callback, e);
+      }
+
+      @Override
+      public void onSuccess(StreamRequest encodingResult)
+      {
+        doWrite(callback, host, port, encodingResult);
+      }
+    };
+
+    QueryTunnelUtil.encode(newRequest, requestContext, _queryPostThreshold, queryTunnelCallback);
+  }
+
+  private void doWrite(final TimeoutTransportCallback<StreamResponse> callback, String host, int port, final StreamRequest request)
+  {
     // TODO investigate DNS resolution and timing
     SocketAddress address = new InetSocketAddress(host, port);
     final AsyncPool<Channel> pool;
@@ -514,7 +506,7 @@ import org.slf4j.LoggerFactory;
           return;
         }
 
-        channel.write(newRequest);
+        channel.write(request);
       }
 
       @Override

@@ -18,9 +18,11 @@
 package com.linkedin.r2.transport.http.server;
 
 
+import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.QueryTunnelUtil;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
@@ -78,7 +80,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
   protected void service(final HttpServletRequest req, final HttpServletResponse resp)
           throws ServletException, IOException
   {
-    RequestContext requestContext = readRequestContext(req);
+    final RequestContext requestContext = readRequestContext(req);
 
     final AsyncContext ctx = req.startAsync();
     ctx.setTimeout(_timeout);
@@ -127,23 +129,46 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
       return;
     }
 
-    TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
+    Callback<StreamRequest> queryTunnelCallback = new Callback<StreamRequest>()
     {
       @Override
-      public void onResponse(TransportResponse<StreamResponse> response)
+      public void onError(Throwable e)
       {
         try
         {
-          writeToServletResponse(response, (HttpServletResponse) ctx.getResponse(), wrappedCtx);
+          writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString(), wrappedCtx);
         }
-        catch (IOException e)
+        catch (Exception ex)
         {
-          req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+          throw new RuntimeException(ex);
         }
+      }
+
+      @Override
+      public void onSuccess(StreamRequest decodingResult)
+      {
+
+        TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
+        {
+          @Override
+          public void onResponse(TransportResponse<StreamResponse> response)
+          {
+            try
+            {
+              writeToServletResponse(response, (HttpServletResponse) ctx.getResponse(), wrappedCtx);
+            }
+            catch (IOException e)
+            {
+              req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+            }
+          }
+        };
+
+        getDispatcher().handleRequest(decodingResult, requestContext, callback);
       }
     };
 
-    getDispatcher().handleRequest(streamRequest, requestContext, callback);
+    QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
 
   }
 

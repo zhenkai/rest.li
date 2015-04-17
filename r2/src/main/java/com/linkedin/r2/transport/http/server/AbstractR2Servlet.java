@@ -18,10 +18,12 @@
 package com.linkedin.r2.transport.http.server;
 
 
+import com.linkedin.common.callback.Callback;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.QueryTunnelUtil;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamException;
@@ -70,9 +72,9 @@ public abstract class AbstractR2Servlet extends HttpServlet
   {
     final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 1024 * 16);
 
-    RequestContext requestContext = readRequestContext(req);
+    final RequestContext requestContext = readRequestContext(req);
 
-    StreamRequest streamRequest;
+    final StreamRequest streamRequest;
 
     try
     {
@@ -89,18 +91,40 @@ public abstract class AbstractR2Servlet extends HttpServlet
       return;
     }
 
-
-    TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
+    Callback<StreamRequest> queryTunnelCallback = new Callback<StreamRequest>()
     {
       @Override
-      public void onResponse(TransportResponse<StreamResponse> response)
+      public void onError(Throwable e)
       {
-        StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
-        streamResponse.getEntityStream().setReader(ioHandler);
+        try
+        {
+          writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+        }
+        catch (Exception ex)
+        {
+          throw new RuntimeException(ex);
+        }
+      }
+
+      @Override
+      public void onSuccess(StreamRequest decodingResult)
+      {
+
+        TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
+        {
+          @Override
+          public void onResponse(TransportResponse<StreamResponse> response)
+          {
+            StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
+            streamResponse.getEntityStream().setReader(ioHandler);
+          }
+        };
+
+        getDispatcher().handleRequest(decodingResult, requestContext, callback);
       }
     };
 
-    getDispatcher().handleRequest(streamRequest, requestContext, callback);
+    QueryTunnelUtil.decode(streamRequest, requestContext, queryTunnelCallback);
 
     ioHandler.loop();
   }
