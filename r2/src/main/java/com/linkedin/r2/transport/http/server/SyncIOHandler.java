@@ -129,7 +129,8 @@ public class SyncIOHandler implements Writer, Reader
               {
                 actualLen = _is.read(buf, 0, len);
               }
-            } catch (IOException ex)
+            }
+            catch (IOException ex)
             {
               _wh.error(ex);
               throw ex;

@@ -1,6 +1,7 @@
 package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.ByteStringWriter;
 import com.linkedin.r2.message.streaming.EntityStream;
@@ -217,7 +218,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
         public void run()
         {
           Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
-          _wh.error(ex);
+          fail(ex);
           _chunkedMessageWriter = null;
           Channels.fireExceptionCaught(ctx, ex);
         }
@@ -261,7 +262,7 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
               "HTTP content length exceeded " + _maxContentLength +
                   " bytes.");
 
-          _wh.error(ex);
+          fail(ex);
           _chunkedMessageWriter = null;
           Channels.fireExceptionCaught(_ctx, ex);
         }
@@ -277,7 +278,10 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
           _lastChunkReceived = true;
         }
 
-        doWrite();
+        if (_wh != null)
+        {
+          doWrite();
+        }
       }
 
       if (!httpChunk.isLast())
@@ -291,7 +295,10 @@ import static org.jboss.netty.handler.codec.http.HttpHeaders.is100ContinueExpect
     public void fail(Throwable ex)
     {
       _timeout.getItem();
-      _wh.error(ex);
+      if (_wh != null)
+      {
+        _wh.error(new RemoteInvocationException(ex));
+      }
     }
 
     // this method does not block
