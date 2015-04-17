@@ -80,10 +80,6 @@ import java.util.Map;
     {
       return false;
     }
-    if (!super.equals(o))
-    {
-      return false;
-    }
 
     BaseRestMessage that = (BaseRestMessage) o;
     return _headers.equals(that._headers) && _cookies.equals(that._cookies);
