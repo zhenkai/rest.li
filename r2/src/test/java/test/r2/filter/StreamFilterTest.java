@@ -23,7 +23,7 @@ import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.testutils.filter.BaseFilterTest;
 import com.linkedin.r2.testutils.filter.FilterUtil;
-import com.linkedin.r2.testutils.filter.RpcRestCountFilter;
+import com.linkedin.r2.testutils.filter.StreamCountFilter;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -34,11 +34,11 @@ import org.testng.annotations.Test;
  * @version $Revision$
  */
 
-public class RpcRestFilterTest extends BaseFilterTest
+public class StreamFilterTest extends BaseFilterTest
 {
     private Filter _filter;
-    private RpcRestCountFilter _beforeFilter;
-    private RpcRestCountFilter _afterFilter;
+    private StreamCountFilter _beforeFilter;
+    private StreamCountFilter _afterFilter;
     private FilterChain _fc;
 
     @Override
@@ -46,8 +46,8 @@ public class RpcRestFilterTest extends BaseFilterTest
     public void setUp() throws Exception
     {
         _filter = getFilter();
-        _beforeFilter = new RpcRestCountFilter();
-        _afterFilter = new RpcRestCountFilter();
+        _beforeFilter = new StreamCountFilter();
+        _afterFilter = new StreamCountFilter();
         _fc = FilterChains.create(_beforeFilter, _filter, _afterFilter);
     }
 
@@ -58,26 +58,26 @@ public class RpcRestFilterTest extends BaseFilterTest
     }
 
     @Test
-    public void testRestRequestCallsNextFilter()
+    public void testStreamRequestCallsNextFilter()
     {
-        FilterUtil.fireSimpleRestRequest(_fc);
+        FilterUtil.fireSimpleStreamRequest(_fc);
 
-        Assert.assertEquals(1, _afterFilter.getRestReqCount());
+        Assert.assertEquals(1, _afterFilter.getStreamReqCount());
     }
 
     @Test
-    public void testRestResponseCallsNextFilter()
+    public void testStreamResponseCallsNextFilter()
     {
-        FilterUtil.fireSimpleRestResponse(_fc);
+        FilterUtil.fireSimpleStreamResponse(_fc);
 
-        Assert.assertEquals(1, _beforeFilter.getRestResCount());
+        Assert.assertEquals(1, _beforeFilter.getStreamResCount());
     }
 
     @Test
     public void testRestErrorCallsNextFilter()
     {
-        FilterUtil.fireSimpleRestError(_fc);
+        FilterUtil.fireSimpleStreamError(_fc);
 
-        Assert.assertEquals(1, _beforeFilter.getRestErrCount());
+        Assert.assertEquals(1, _beforeFilter.getStreamErrCount());
     }
 }
