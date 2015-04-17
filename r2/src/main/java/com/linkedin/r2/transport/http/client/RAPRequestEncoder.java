@@ -69,40 +69,27 @@ import java.util.Map;
 
       nettyRequest.setHeader(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
 
-      // code in if block works; for now always use streaming during dev
-      //if (request instanceof RestRequest)
-      if (false)
+      // TODO [ZZ]: shall we do some optimization here for requests without entity? or with small entity?
+      // e.g. sending those without chunked encoding; this requires us to wait before sending out anything
+      nettyRequest.setChunked(true);
+      nettyRequest.setHeader(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
+      ChannelFuture future = Channels.future(ctx.getChannel());
+      final EntityStream entityStream = request.getEntityStream();
+      future.addListener(new ChannelFutureListener()
       {
-        // this is small optimization for RestRequest so that we don't chunk over the wire because we
-        // don't really gain anything for chunking in such case, but slightly increase the transmitting overhead
-        final ByteString entity = ((RestRequest) request).getEntity();
-        ChannelBuffer buf = ChannelBuffers.wrappedBuffer(entity.asByteBuffer());
-        nettyRequest.setContent(buf);
-        nettyRequest.setHeader(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
-        Channels.write(ctx, Channels.future(ctx.getChannel()), nettyRequest);
-
-      }
-      else
-      {
-        nettyRequest.setChunked(true);
-        nettyRequest.setHeader(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
-        ChannelFuture future = Channels.future(ctx.getChannel());
-        final EntityStream entityStream = request.getEntityStream();
-        future.addListener(new ChannelFutureListener()
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception
         {
-          @Override
-          public void operationComplete(ChannelFuture future) throws Exception
+          if (future.isSuccess())
           {
-            if (future.isSuccess())
-            {
-              entityStream.setReader(new BufferedReader(ctx, MAX_BUFFER_SIZE));
-            }
+            entityStream.setReader(new BufferedReader(ctx, MAX_BUFFER_SIZE));
           }
-        });
+        }
+      });
 
-        Channels.write(ctx, future, nettyRequest);
+      Channels.write(ctx, future, nettyRequest);
 
-      }
+
     }
     else
     {
@@ -116,6 +103,8 @@ import java.util.Map;
    *
    * The bufferSize = the permitted size that the writer can still write + the size of data that has been provided
    * by writer but not yet written to socket
+   *
+   * Buffering is actually done by Netty; we just enforce the upper bound of the buffering
    */
   private static class BufferedReader implements Reader
   {
