@@ -38,7 +38,7 @@ public class SyncIOHandler implements Writer, Reader
     _os = os;
     _bufferCapacity = bufferCapacity;
     _eventQueue = new LinkedBlockingDeque<Event>();
-    _eventQueue.add(new ReadFirstByteOfRequestEvent());
+    _eventQueue.add(Event.ReadFirstByteOfRequestEvent);
   }
 
   @Override
@@ -50,7 +50,7 @@ public class SyncIOHandler implements Writer, Reader
   @Override
   public void onWritePossible()
   {
-    _eventQueue.add(WriteRequestPossibleEvent.create());
+    _eventQueue.add(Event.WriteRequestPossibleEvent);
   }
 
   @Override
@@ -63,19 +63,19 @@ public class SyncIOHandler implements Writer, Reader
   @Override
   public void onDataAvailable(ByteString data)
   {
-    _eventQueue.add(new ResponseDataAvailableEvent(data));
+    _eventQueue.add(new Event(EventType.ResponseDataAvailable, data));
   }
 
   @Override
   public void onDone()
   {
-    _eventQueue.add(FullResponseReceivedEvent.create());
+    _eventQueue.add(Event.FullResponseReceivedEvent);
   }
 
   @Override
   public void onError(Throwable e)
   {
-    _eventQueue.add(new ResponseDataErrorEvent(e));
+    _eventQueue.add(new Event(EventType.ResponseDataError, e));
   }
 
   public void loop() throws ServletException, IOException
@@ -93,62 +93,69 @@ public class SyncIOHandler implements Writer, Reader
         throw new ServletException(ex);
       }
 
-      if (event instanceof ReadFirstByteOfRequestEvent)
+      switch (event.getEventType())
       {
-        _firstByte = _is.read();
-        if (_firstByte < 0)
+        case ReadFirstByteOfRequest:
         {
-          _requestReadFinished = true;
-        }
-      }
-      else if (event instanceof ResponseDataAvailableEvent)
-      {
-        ByteString data = ((ResponseDataAvailableEvent) event).getData();
-        data.write(_os);
-        _rh.read(data.length());
-      }
-      else if (event instanceof WriteRequestPossibleEvent)
-      {
-        byte[] buf = new byte[4096];
-        while(_wh.remaining() > 0)
-        {
-          int len = Math.min(buf.length, _wh.remaining());
-          int actualLen;
-          try
+          _firstByte = _is.read();
+          if (_firstByte < 0)
           {
-            if (_firstByte >= 0)
-            {
-              actualLen = _is.read(buf, 1, len - 1) + 1;
-              buf[0] = (byte) _firstByte;
-              _firstByte = -1;
-            }
-            else
-            {
-              actualLen = _is.read(buf, 0, len);
-            }
-          }
-          catch (IOException ex)
-          {
-            _wh.error(ex);
-            throw ex;
-          }
-          if (actualLen < 0)
-          {
-            _wh.done();
             _requestReadFinished = true;
-            break;
           }
-          _wh.write(ByteString.copy(buf, 0, actualLen));
+          break;
         }
-      }
-      else if (event instanceof FullResponseReceivedEvent)
-      {
-        _os.close();
-        _responseWriteFinished = true;
-      }
-      else if (event instanceof ResponseDataErrorEvent)
-      {
-        throw new ServletException(((ResponseDataErrorEvent) event).getCause());
+        case ResponseDataAvailable:
+        {
+          ByteString data =  (ByteString) event.getData();
+          data.write(_os);
+          _rh.read(data.length());
+          break;
+        }
+        case WriteRequestPossible:
+        {
+          byte[] buf = new byte[4096];
+          while (_wh.remaining() > 0)
+          {
+            int len = Math.min(buf.length, _wh.remaining());
+            int actualLen;
+            try
+            {
+              if (_firstByte >= 0)
+              {
+                actualLen = _is.read(buf, 1, len - 1) + 1;
+                buf[0] = (byte) _firstByte;
+                _firstByte = -1;
+              } else
+              {
+                actualLen = _is.read(buf, 0, len);
+              }
+            } catch (IOException ex)
+            {
+              _wh.error(ex);
+              throw ex;
+            }
+            if (actualLen < 0)
+            {
+              _wh.done();
+              _requestReadFinished = true;
+              break;
+            }
+            _wh.write(ByteString.copy(buf, 0, actualLen));
+          }
+          break;
+        }
+        case FullResponseReceived:
+        {
+          _os.close();
+          _responseWriteFinished = true;
+          break;
+        }
+        case ResponseDataError:
+        {
+          throw new ServletException((Throwable)event.getData());
+        }
+        default:
+          throw new IllegalStateException("Unknown event type:" + event.getEventType());
       }
     }
   }
@@ -168,65 +175,43 @@ public class SyncIOHandler implements Writer, Reader
     return _requestReadFinished;
   }
 
-  private interface Event
+  private static enum  EventType
   {
-
+    WriteRequestPossible,
+    FullResponseReceived,
+    ResponseDataAvailable,
+    ResponseDataError,
+    ReadFirstByteOfRequest
   }
 
-  private static class WriteRequestPossibleEvent implements Event
+  private static class Event
   {
-    private static final WriteRequestPossibleEvent EVENT = new WriteRequestPossibleEvent();
+    private final EventType _eventType;
+    private final Object _data;
 
-    private WriteRequestPossibleEvent() {}
+    static Event WriteRequestPossibleEvent = new Event(EventType.WriteRequestPossible);
+    static Event FullResponseReceivedEvent = new Event(EventType.FullResponseReceived);
+    static Event ReadFirstByteOfRequestEvent = new Event(EventType.ReadFirstByteOfRequest);
 
-    static WriteRequestPossibleEvent create()
+    Event(EventType eventType)
     {
-      return EVENT;
+      this(eventType, null);
     }
-  }
 
-  private static class FullResponseReceivedEvent implements Event
-  {
-    private static final FullResponseReceivedEvent EVENT = new FullResponseReceivedEvent();
-    private FullResponseReceivedEvent() {}
-
-    static FullResponseReceivedEvent create()
+    Event(EventType eventType, Object data)
     {
-      return EVENT;
-    }
-  }
-
-  private static class ResponseDataAvailableEvent implements Event
-  {
-    private final ByteString _data;
-
-    ResponseDataAvailableEvent(ByteString data)
-    {
+      _eventType = eventType;
       _data = data;
     }
 
-    ByteString getData()
+    EventType getEventType()
+    {
+      return _eventType;
+    }
+
+    Object getData()
     {
       return _data;
     }
-  }
-
-  private static class ResponseDataErrorEvent implements Event
-  {
-    private final Throwable _cause;
-
-    ResponseDataErrorEvent(Throwable cause)
-    {
-      _cause = cause;
-    }
-
-    Throwable getCause()
-    {
-      return _cause;
-    }
-  }
-
-  private static class ReadFirstByteOfRequestEvent implements Event
-  {
   }
 }
