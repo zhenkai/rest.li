@@ -80,6 +80,7 @@ public class SyncIOHandler implements Writer, Reader
 
   public void loop() throws ServletException, IOException
   {
+    // TODO [ZZ]: consider adding timeout here, e.g. if no activity in 30 seconds (configurable)
     while(shouldContinue())
     {
 

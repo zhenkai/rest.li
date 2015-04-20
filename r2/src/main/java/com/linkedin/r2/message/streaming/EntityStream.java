@@ -3,7 +3,7 @@ package com.linkedin.r2.message.streaming;
 /**
  * An object that represents the stream of request/response entity.
  *
- * Each entityStream can have multiple Observers {@link com.linkedin.r2.message.streaming.Observer} and
+ * Each entityStream can have one Writer, multiple Observers {@link com.linkedin.r2.message.streaming.Observer} and
  * exactly one Reader {@link com.linkedin.r2.message.streaming.Reader}. The data flow of a stream is reader
  * driven: that is, if reader doesn't read, there is no data flow.
  */

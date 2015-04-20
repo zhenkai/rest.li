@@ -15,19 +15,25 @@ import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
 
 import com.linkedin.r2.message.streaming.ReadHandle;
+import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
+import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class tests client sending streaming request && server receiving streaming request
@@ -91,6 +97,35 @@ public class TestStreamRequest extends AbstractStreamTest
     _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), 404);
+  }
+
+  @Test
+  public void testErrorWriter() throws Exception
+  {
+    final long totalBytes = SMALL_BYTES_NUM;
+    EntityStream entityStream = EntityStreams.newEntityStream(new ErrorWriter(totalBytes, BYTE));
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, LARGE_URI));
+    StreamRequest request = builder.setMethod("POST").build(entityStream);
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+    Callback<StreamResponse> callback = new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        error.set(e);
+        latch.countDown();
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        latch.countDown();
+      }
+    };
+    _client.streamRequest(request, callback);
+    latch.await();
+    Assert.assertNotNull(error.get());
   }
 
   @Test
@@ -248,5 +283,27 @@ public class TestStreamRequest extends AbstractStreamTest
         latch.countDown();
       }
     };
+  }
+
+
+  private static class ErrorWriter extends TimedBytesWriter
+  {
+    private long _total;
+
+    ErrorWriter(long total, byte fill)
+    {
+      super(total * 2, fill);
+      _total = total;
+    }
+
+    @Override
+    protected void afterWrite(WriteHandle wh, long written)
+    {
+      if (written > _total)
+      {
+        _total = _total * 2;
+        wh.error(new RuntimeException());
+      }
+    }
   }
 }
