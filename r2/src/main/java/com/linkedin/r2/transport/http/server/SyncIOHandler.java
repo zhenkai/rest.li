@@ -119,23 +119,17 @@ public class SyncIOHandler implements Writer, Reader
           {
             int len = Math.min(buf.length, _wh.remaining());
             int actualLen;
-            try
+
+            if (_firstByte >= 0)
             {
-              if (_firstByte >= 0)
-              {
-                actualLen = _is.read(buf, 1, len - 1) + 1;
-                buf[0] = (byte) _firstByte;
-                _firstByte = -1;
-              } else
-              {
-                actualLen = _is.read(buf, 0, len);
-              }
-            }
-            catch (IOException ex)
+              actualLen = _is.read(buf, 1, len - 1) + 1;
+              buf[0] = (byte) _firstByte;
+              _firstByte = -1;
+            } else
             {
-              _wh.error(ex);
-              throw ex;
+              actualLen = _is.read(buf, 0, len);
             }
+
             if (actualLen < 0)
             {
               _wh.done();
