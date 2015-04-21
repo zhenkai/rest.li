@@ -1,11 +1,18 @@
 package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.ByteStringWriter;
+import com.linkedin.r2.message.streaming.EntityStreams;
 
 
 /**
@@ -28,8 +35,11 @@ public class StreamRequestHandlerAdapter implements StreamRequestHandler
       @Override
       public void onError(Throwable e)
       {
-        // we cannot use callback because callback is only for response error, but this is error in receiving request
-        throw new RuntimeException(e);
+        // this mostly likely would not happen as we'd fail already before reaching here
+        RestResponse restResponse =
+            RestStatus.responseForStatus(RestStatus.INTERNAL_SERVER_ERROR, e.toString());
+
+        callback.onSuccess(Messages.toStreamResponse(restResponse));
       }
 
       @Override
