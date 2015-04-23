@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -63,7 +64,7 @@ public class TestHttpServer
             .addRestHandler(URI.create("/foobar"), new FoobarHandler())
             .build();
 
-    _server = new HttpServerFactory().createServer(PORT, dispatcher);
+    _server = getServerFactory().createServer(PORT, dispatcher);
     _server.start();
   }
 
@@ -74,6 +75,12 @@ public class TestHttpServer
       _server.stop();
     }
   }
+
+  protected HttpServerFactory getServerFactory()
+  {
+    return new HttpServerFactory();
+  }
+
 
   @Test
   public void testSuccess() throws Exception
@@ -89,6 +96,20 @@ public class TestHttpServer
     }
     String response = new String(baos.toByteArray());
     assertEquals(response, "Hello, world!");
+  }
+
+  @Test
+  public void testPost() throws Exception
+  {
+    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/foobar").openConnection();
+    c.setRequestMethod("POST");
+    c.setDoInput(true);
+    c.setDoOutput(true);
+    OutputStream os = c.getOutputStream();
+    os.write(1);
+    os.close();
+    c.connect();
+    assertEquals(c.getResponseCode(), RestStatus.OK);
   }
 
   @Test
