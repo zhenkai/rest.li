@@ -69,6 +69,8 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
     ctx.setTimeout(_timeout);
 
     final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 1024 * 16);
+    ioHandler.initialize();
+
     RequestContext requestContext = readRequestContext(req);
 
     StreamRequest streamRequest;

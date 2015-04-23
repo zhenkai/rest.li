@@ -30,6 +30,7 @@ public class SyncIOHandler implements Writer, Reader
   private ReadHandle _rh;
   private boolean _requestReadFinished = false;
   private boolean _responseWriteFinished = false;
+  private boolean _requestBodyEmpty = false;
   private int _firstByte;
 
   public SyncIOHandler(ServletInputStream is, ServletOutputStream os, int bufferCapacity)
@@ -38,7 +39,18 @@ public class SyncIOHandler implements Writer, Reader
     _os = os;
     _bufferCapacity = bufferCapacity;
     _eventQueue = new LinkedBlockingDeque<Event>();
-    _eventQueue.add(Event.ReadFirstByteOfRequestEvent);
+  }
+
+  // a hack because users may not put a reader to the entitystream if it's a GET request
+  // this must be called before SyncIOHandler is used
+  public void initialize() throws IOException
+  {
+    _firstByte = _is.read();
+    if (_firstByte < 0)
+    {
+      _requestBodyEmpty = true;
+      _requestReadFinished = true;
+    }
   }
 
   @Override
@@ -50,7 +62,14 @@ public class SyncIOHandler implements Writer, Reader
   @Override
   public void onWritePossible()
   {
-    _eventQueue.add(Event.WriteRequestPossibleEvent);
+    if (_requestBodyEmpty)
+    {
+      _wh.done();
+    }
+    else
+    {
+      _eventQueue.add(Event.WriteRequestPossibleEvent);
+    }
   }
 
   @Override
@@ -96,15 +115,6 @@ public class SyncIOHandler implements Writer, Reader
 
       switch (event.getEventType())
       {
-        case ReadFirstByteOfRequest:
-        {
-          _firstByte = _is.read();
-          if (_firstByte < 0)
-          {
-            _requestReadFinished = true;
-          }
-          break;
-        }
         case ResponseDataAvailable:
         {
           ByteString data =  (ByteString) event.getData();
@@ -120,6 +130,7 @@ public class SyncIOHandler implements Writer, Reader
             int len = Math.min(buf.length, _wh.remaining());
             int actualLen;
 
+            // _firstByte was read in our hack above
             if (_firstByte >= 0)
             {
               actualLen = _is.read(buf, 1, len - 1) + 1;
@@ -187,7 +198,6 @@ public class SyncIOHandler implements Writer, Reader
 
     static Event WriteRequestPossibleEvent = new Event(EventType.WriteRequestPossible);
     static Event FullResponseReceivedEvent = new Event(EventType.FullResponseReceived);
-    static Event ReadFirstByteOfRequestEvent = new Event(EventType.ReadFirstByteOfRequest);
 
     Event(EventType eventType)
     {
