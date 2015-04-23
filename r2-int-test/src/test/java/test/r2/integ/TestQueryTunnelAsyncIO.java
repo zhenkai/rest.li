@@ -2,16 +2,15 @@ package test.r2.integ;
 
 import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
-import org.testng.annotations.Test;
 
 /**
  * @author Zhenkai Zhu
  */
-public class TestQueryTunnelAsyncEvent extends TestQueryTunnel
+public class TestQueryTunnelAsyncIO extends TestQueryTunnel
 {
   @Override
   protected HttpServerFactory getServerFactory()
   {
-    return new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_EVENT);
+    return new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_IO);
   }
 }
