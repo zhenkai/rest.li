@@ -30,6 +30,8 @@ import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.Observer;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -237,27 +239,37 @@ public class TrackerClient implements LoadBalancerClient
       }
       else
       {
-        // TODO [ZZ]: what if the user code never reads response entity stream??
-        Observer observer = new Observer()
+        EntityStream entityStream = response.getResponse().getEntityStream();
+
+        // this is a hack for to deal with user code that does not read empty stream (e.g. just check status code)
+        if (EntityStreams.isEmptyStream(entityStream))
         {
-          @Override
-          public void onDataAvailable(ByteString data)
+          _callCompletion.endCall();
+        }
+        else
+        {
+          _callCompletion.record();
+          Observer observer = new Observer()
           {
-          }
+            @Override
+            public void onDataAvailable(ByteString data)
+            {
+            }
 
-          @Override
-          public void onDone()
-          {
-            _callCompletion.endCall();
-          }
+            @Override
+            public void onDone()
+            {
+              _callCompletion.endCall();
+            }
 
-          @Override
-          public void onError(Throwable e)
-          {
-            handleError(_callCompletion, e);
-          }
-        };
-        response.getResponse().getEntityStream().addObserver(observer);
+            @Override
+            public void onError(Throwable e)
+            {
+              handleError(_callCompletion, e);
+            }
+          };
+          entityStream.addObserver(observer);
+        }
       }
 
       _wrappedCallback.onResponse(response);

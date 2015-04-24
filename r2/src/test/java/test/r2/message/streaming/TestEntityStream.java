@@ -1,11 +1,13 @@
 package test.r2.message.streaming;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
+import junit.framework.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -14,6 +16,12 @@ import org.testng.annotations.Test;
 public class TestEntityStream
 {
 
+  @Test
+  public void testIsEmptyStream() throws Exception
+  {
+    EntityStream empty = EntityStreams.emptyStream();
+    Assert.assertTrue(EntityStreams.isEmptyStream(empty));
+  }
 
   @Test
   public void testNoStackOverflow() throws Exception

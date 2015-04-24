@@ -29,6 +29,10 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -48,20 +52,19 @@ public class RewriteClientTest
     assertEquals(client.getServiceName(), serviceName);
     assertEquals(client.getWrappedClient(), wrappedClient);
 
-    RestRequest restRequest = new RestRequestBuilder(URI.create("d2://HistoryService/getCube")).build();
+    StreamRequest streamRequest = new StreamRequestBuilder(URI.create("d2://HistoryService/getCube")).build(EntityStreams.emptyStream());
     Map<String, String> restWireAttrs = new HashMap<String, String>();
-    TestTransportCallback<RestResponse> restCallback =
-        new TestTransportCallback<RestResponse>();
+    TestTransportCallback<StreamResponse> restCallback =
+        new TestTransportCallback<StreamResponse>();
 
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
     assertFalse(restCallback.response.hasError());
-    assertEquals(wrappedClient.restRequest.getHeaders(), restRequest.getHeaders());
-    assertEquals(wrappedClient.restRequest.getEntity(), restRequest.getEntity());
-    assertEquals(wrappedClient.restRequest.getMethod(), restRequest.getMethod());
+    assertEquals(wrappedClient.streamRequest.getHeaders(), streamRequest.getHeaders());
+    assertEquals(wrappedClient.streamRequest.getMethod(), streamRequest.getMethod());
 
     // check the rewrite
-    assertEquals(wrappedClient.restRequest.getURI(),
+    assertEquals(wrappedClient.streamRequest.getURI(),
                  URI.create("http://test.linkedin.com/test/getCube"));
     assertEquals(wrappedClient.restWireAttrs, restWireAttrs);
   }
@@ -78,18 +81,17 @@ public class RewriteClientTest
     assertEquals(client.getServiceName(), serviceName);
     assertEquals(client.getWrappedClient(), wrappedClient);
 
-    RestRequest restRequest = new RestRequestBuilder(URI.create("d2://HistoryService/getCube?bar=baz#fragId")).build();
+    StreamRequest streamRequest = getRequest("d2://HistoryService/getCube?bar=baz#fragId");
     Map<String, String> restWireAttrs = new HashMap<String, String>();
-    TestTransportCallback<RestResponse> restCallback =
-        new TestTransportCallback<RestResponse>();
+    TestTransportCallback<StreamResponse> restCallback =
+        new TestTransportCallback<StreamResponse>();
 
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
     assertFalse(restCallback.response.hasError());
-    assertEquals(wrappedClient.restRequest.getHeaders(), restRequest.getHeaders());
-    assertEquals(wrappedClient.restRequest.getEntity(), restRequest.getEntity());
-    assertEquals(wrappedClient.restRequest.getMethod(), restRequest.getMethod());
-    assertEquals(wrappedClient.restRequest.getURI(), URI.create("http://test.linkedin.com/test/getCube?bar=baz#fragId"));
+    assertEquals(wrappedClient.streamRequest.getHeaders(), streamRequest.getHeaders());
+    assertEquals(wrappedClient.streamRequest.getMethod(), streamRequest.getMethod());
+    assertEquals(wrappedClient.streamRequest.getURI(), URI.create("http://test.linkedin.com/test/getCube?bar=baz#fragId"));
 
   }
 
@@ -130,18 +132,17 @@ public class RewriteClientTest
     assertEquals(client.getServiceName(), serviceName);
     assertEquals(client.getWrappedClient(), wrappedClient);
 
-    RestRequest restRequest = new RestRequestBuilder(URI.create("d2://" + serviceName + path)).build();
+    StreamRequest streamRequest = getRequest("d2://" + serviceName + path);
     Map<String, String> restWireAttrs = new HashMap<String, String>();
-    TestTransportCallback<RestResponse> restCallback =
-        new TestTransportCallback<RestResponse>();
+    TestTransportCallback<StreamResponse> restCallback =
+        new TestTransportCallback<StreamResponse>();
 
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
     assertFalse(restCallback.response.hasError());
-    assertEquals(wrappedClient.restRequest.getHeaders(), restRequest.getHeaders());
-    assertEquals(wrappedClient.restRequest.getEntity(), restRequest.getEntity());
-    assertEquals(wrappedClient.restRequest.getMethod(), restRequest.getMethod());
-    assertEquals(wrappedClient.restRequest.getURI(), URI.create(hostUri + path));
+    assertEquals(wrappedClient.streamRequest.getHeaders(), streamRequest.getHeaders());
+    assertEquals(wrappedClient.streamRequest.getMethod(), streamRequest.getMethod());
+    assertEquals(wrappedClient.streamRequest.getURI(), URI.create(hostUri + path));
 
   }
 
@@ -157,18 +158,17 @@ public class RewriteClientTest
     assertEquals(client.getServiceName(), serviceName);
     assertEquals(client.getWrappedClient(), wrappedClient);
 
-    RestRequest restRequest = new RestRequestBuilder(URI.create("d2://HistoryService/getCube?bar=baz#fragId")).build();
+    StreamRequest streamRequest = getRequest("d2://HistoryService/getCube?bar=baz#fragId");
     Map<String, String> restWireAttrs = new HashMap<String, String>();
-    TestTransportCallback<RestResponse> restCallback =
-        new TestTransportCallback<RestResponse>();
+    TestTransportCallback<StreamResponse> restCallback =
+        new TestTransportCallback<StreamResponse>();
 
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
     assertFalse(restCallback.response.hasError());
-    assertEquals(wrappedClient.restRequest.getHeaders(), restRequest.getHeaders());
-    assertEquals(wrappedClient.restRequest.getEntity(), restRequest.getEntity());
-    assertEquals(wrappedClient.restRequest.getMethod(), restRequest.getMethod());
-    assertEquals(wrappedClient.restRequest.getURI(), URI.create("http://username:password@test.linkedin.com:9876/test/getCube?bar=baz#fragId"));
+    assertEquals(wrappedClient.streamRequest.getHeaders(), streamRequest.getHeaders());
+    assertEquals(wrappedClient.streamRequest.getMethod(), streamRequest.getMethod());
+    assertEquals(wrappedClient.streamRequest.getURI(), URI.create("http://username:password@test.linkedin.com:9876/test/getCube?bar=baz#fragId"));
   }
 
   @Test
@@ -183,46 +183,50 @@ public class RewriteClientTest
     assertEquals(client.getServiceName(), serviceName);
     assertEquals(client.getWrappedClient(), wrappedClient);
 
-    RestRequest restRequest;
+    StreamRequest streamRequest;
     Map<String, String> restWireAttrs = new HashMap<String, String>();
-    TestTransportCallback<RestResponse> restCallback =
-            new TestTransportCallback<RestResponse>();
+    TestTransportCallback<StreamResponse> restCallback =
+            new TestTransportCallback<StreamResponse>();
 
-    restRequest = new RestRequestBuilder(URI.create("d2://HistoryService")).build();
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    streamRequest = getRequest("d2://HistoryService");
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
-    checkRewrite(wrappedClient, restRequest, restCallback, "http://test.linkedin.com:9876/test");
+    checkRewrite(wrappedClient, streamRequest, restCallback, "http://test.linkedin.com:9876/test");
 
-    restRequest = new RestRequestBuilder(URI.create("d2://HistoryService/")).build();
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    streamRequest = getRequest("d2://HistoryService/");
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
-    checkRewrite(wrappedClient, restRequest, restCallback, "http://test.linkedin.com:9876/test/");
+    checkRewrite(wrappedClient, streamRequest, restCallback, "http://test.linkedin.com:9876/test/");
 
-    restRequest = new RestRequestBuilder(URI.create("d2://HistoryService//")).build();
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    streamRequest = getRequest("d2://HistoryService//");
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
-    checkRewrite(wrappedClient, restRequest, restCallback, "http://test.linkedin.com:9876/test//");
+    checkRewrite(wrappedClient, streamRequest, restCallback, "http://test.linkedin.com:9876/test//");
 
-    restRequest = new RestRequestBuilder(URI.create("d2://HistoryService/foo")).build();
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    streamRequest = getRequest("d2://HistoryService/foo");
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
-    checkRewrite(wrappedClient, restRequest, restCallback, "http://test.linkedin.com:9876/test/foo");
+    checkRewrite(wrappedClient, streamRequest, restCallback, "http://test.linkedin.com:9876/test/foo");
 
-    restRequest = new RestRequestBuilder(URI.create("d2://HistoryService/foo/")).build();
-    client.restRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    streamRequest = getRequest("d2://HistoryService/foo/");
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
-    checkRewrite(wrappedClient, restRequest, restCallback, "http://test.linkedin.com:9876/test/foo/");
+    checkRewrite(wrappedClient, streamRequest, restCallback, "http://test.linkedin.com:9876/test/foo/");
   }
 
   private void checkRewrite(TestClient wrappedClient,
-                            RestRequest restRequest,
-                            TestTransportCallback<RestResponse> restCallback,
+                            StreamRequest streamRequest,
+                            TestTransportCallback<StreamResponse> restCallback,
                             String expectedURI)
   {
     assertFalse(restCallback.response.hasError());
-    assertEquals(wrappedClient.restRequest.getHeaders(), restRequest.getHeaders());
-    assertEquals(wrappedClient.restRequest.getEntity(), restRequest.getEntity());
-    assertEquals(wrappedClient.restRequest.getMethod(), restRequest.getMethod());
-    assertEquals(wrappedClient.restRequest.getURI(), URI.create(expectedURI));
+    assertEquals(wrappedClient.streamRequest.getHeaders(), streamRequest.getHeaders());
+    assertEquals(wrappedClient.streamRequest.getMethod(), streamRequest.getMethod());
+    assertEquals(wrappedClient.streamRequest.getURI(), URI.create(expectedURI));
+  }
+
+  private static StreamRequest getRequest(String uri)
+  {
+    return new StreamRequestBuilder(URI.create(uri)).build(EntityStreams.emptyStream());
   }
 }
