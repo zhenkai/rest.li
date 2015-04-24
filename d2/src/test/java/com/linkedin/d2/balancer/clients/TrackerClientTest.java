@@ -21,13 +21,18 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.d2.balancer.properties.PartitionData;
 import com.linkedin.d2.balancer.util.partitions.DefaultPartitionAccessor;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.ByteStringWriter;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -44,6 +49,7 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 
 public class TrackerClientTest
 {
@@ -52,7 +58,7 @@ public class TrackerClientTest
   {
     URI uri = URI.create("http://test.qa.com:1234/foo");
     double weight = 3d;
-    TestClient wrappedClient = new TestClient();
+    TestClient wrappedClient = new TestClient(true);
     Clock clock = new SettableClock();
     Map<Integer, PartitionData> partitionDataMap = new HashMap<Integer, PartitionData>(2);
     partitionDataMap.put(DefaultPartitionAccessor.DEFAULT_PARTITION_ID, new PartitionData(3d));
@@ -63,15 +69,15 @@ public class TrackerClientTest
     assertEquals(clientWeight, weight);
     assertEquals(client.getWrappedClient(), wrappedClient);
 
-    RestRequest restRequest = new RestRequestBuilder(uri).build();
+    StreamRequest streamRequest = new StreamRequestBuilder(uri).build(EntityStreams.emptyStream());
     Map<String, String> restWireAttrs = new HashMap<String, String>();
     TestTransportCallback<StreamResponse> restCallback =
         new TestTransportCallback<StreamResponse>();
 
-    client.streamRequest(restRequest, new RequestContext(), restWireAttrs, restCallback);
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
 
     assertFalse(restCallback.response.hasError());
-    assertEquals(wrappedClient.streamRequest, restRequest);
+    assertSame(wrappedClient.streamRequest, streamRequest);
     assertEquals(wrappedClient.restWireAttrs, restWireAttrs);
   }
 
@@ -83,6 +89,14 @@ public class TrackerClientTest
     public TransportCallback<StreamResponse> streamCallback;
 
     public boolean                         shutdownCalled;
+    private final boolean _emptyResponse;
+
+    public TestClient() { this(true);}
+
+    public TestClient(boolean emptyResponse)
+    {
+      _emptyResponse = emptyResponse;
+    }
 
     @Override
     public void streamRequest(StreamRequest request,
@@ -95,7 +109,10 @@ public class TrackerClientTest
       restWireAttrs = wireAttrs;
       streamCallback = callback;
 
-      callback.onResponse(TransportResponseImpl.<StreamResponse> success(new RestResponseBuilder().build(), wireAttrs));
+      StreamResponseBuilder builder = new StreamResponseBuilder();
+      StreamResponse response = _emptyResponse ? builder.build(EntityStreams.emptyStream())
+          : builder.build(EntityStreams.newEntityStream(new ByteStringWriter(ByteString.copy("This is not empty".getBytes()))));
+      callback.onResponse(TransportResponseImpl.success(response, wireAttrs));
     }
 
     @Override
