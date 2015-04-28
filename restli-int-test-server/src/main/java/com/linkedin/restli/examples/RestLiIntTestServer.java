@@ -24,6 +24,7 @@ import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import com.linkedin.restli.docgen.DefaultDocumentationRequestHandler;
@@ -127,7 +128,7 @@ public class RestLiIntTestServer
                                                   HttpServerFactory.DEFAULT_CONTEXT_PATH,
                                                   HttpServerFactory.DEFAULT_THREAD_POOL_SIZE,
                                                   dispatcher,
-                                                  useAsyncServletApi,
+                                                  useAsyncServletApi ? HttpJettyServer.ServletType.ASYNC_EVENT : HttpJettyServer.ServletType.RAP,
                                                   asyncTimeOut);
   }
 

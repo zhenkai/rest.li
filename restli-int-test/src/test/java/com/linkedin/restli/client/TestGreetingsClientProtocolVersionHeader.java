@@ -26,6 +26,8 @@ import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.AbstractClient;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.TransportClientFactory;
@@ -103,9 +105,9 @@ public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationT
     }
 
     @Override
-    public void restRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
+    public void streamRequest(StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
     {
-      __client.restRequest(request, requestContext, callback);
+      __client.streamRequest(request, requestContext, callback);
     }
 
     @Override
