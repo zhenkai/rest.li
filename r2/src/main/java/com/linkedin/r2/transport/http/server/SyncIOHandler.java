@@ -30,8 +30,6 @@ public class SyncIOHandler implements Writer, Reader
   private ReadHandle _rh;
   private boolean _requestReadFinished = false;
   private boolean _responseWriteFinished = false;
-  private boolean _requestBodyEmpty = false;
-  private int _firstByte;
 
   public SyncIOHandler(ServletInputStream is, ServletOutputStream os, int bufferCapacity)
   {
@@ -39,18 +37,6 @@ public class SyncIOHandler implements Writer, Reader
     _os = os;
     _bufferCapacity = bufferCapacity;
     _eventQueue = new LinkedBlockingDeque<Event>();
-  }
-
-  // a hack because users may not put a reader to the entitystream if it's a GET request
-  // this must be called before SyncIOHandler is used
-  public void initialize() throws IOException
-  {
-    _firstByte = _is.read();
-    if (_firstByte < 0)
-    {
-      _requestBodyEmpty = true;
-      _requestReadFinished = true;
-    }
   }
 
   @Override
@@ -62,14 +48,7 @@ public class SyncIOHandler implements Writer, Reader
   @Override
   public void onWritePossible()
   {
-    if (_requestBodyEmpty)
-    {
-      _wh.done();
-    }
-    else
-    {
-      _eventQueue.add(Event.WriteRequestPossibleEvent);
-    }
+    _eventQueue.add(Event.WriteRequestPossibleEvent);
   }
 
   @Override
@@ -128,18 +107,7 @@ public class SyncIOHandler implements Writer, Reader
           while (_wh.remaining() > 0)
           {
             int len = Math.min(buf.length, _wh.remaining());
-            int actualLen;
-
-            // _firstByte was read in our hack above
-            if (_firstByte >= 0)
-            {
-              actualLen = _is.read(buf, 1, len - 1) + 1;
-              buf[0] = (byte) _firstByte;
-              _firstByte = -1;
-            } else
-            {
-              actualLen = _is.read(buf, 0, len);
-            }
+            int actualLen = _is.read(buf, 0, len);
 
             if (actualLen < 0)
             {
