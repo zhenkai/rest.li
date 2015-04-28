@@ -1,15 +1,12 @@
 package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.MessageBuilder;
-import com.linkedin.r2.message.streaming.EntityStream;
-import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.util.ArgumentUtil;
 
 /**
  * @author Zhenkai Zhu
  */
-public final class RestResponseBuilder extends BaseResponseBuilder<RestResponseBuilder> implements MessageBuilder<RestResponseBuilder>
+public final class RestResponseBuilder extends BaseResponseBuilder<RestResponseBuilder> implements RestMessageBuilder<RestResponseBuilder>
 {
   private ByteString _entity = ByteString.empty();
 

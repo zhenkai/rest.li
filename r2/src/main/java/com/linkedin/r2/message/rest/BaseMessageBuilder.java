@@ -29,13 +29,13 @@ import java.util.TreeMap;
 
 
 /**
- * Abstract base class for {@link RestMessage} builders.
+ * Abstract base class for {@link MessageHeaders} builders.
  *
  * @author Chris Pettitt
  * @version $Revision$
  */
-/* package private */ abstract class BaseRestMessageBuilder<B extends BaseRestMessageBuilder<B>>
-    implements RestMessageBuilder<B>
+/* package private */ abstract class BaseMessageBuilder<B extends BaseMessageBuilder<B>>
+    implements MessageHeadersBuilder<B>
 {
   private static final String CANONICAL_REGEX = "[ \t\n\r]+";
 
@@ -48,7 +48,7 @@ import java.util.TreeMap;
   /**
    * Constructs a new builder with no initial values.
    */
-  public BaseRestMessageBuilder()
+  public BaseMessageBuilder()
   {
     setHeaders(Collections.<String, String>emptyMap());
     setCookies(Collections.<String>emptyList());
@@ -60,7 +60,7 @@ import java.util.TreeMap;
    *
    * @param message the message to copy
    */
-  public BaseRestMessageBuilder(RestMessage message)
+  public BaseMessageBuilder(MessageHeaders message)
   {
     setHeaders(message.getHeaders());
     setCookies(message.getCookies());

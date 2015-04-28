@@ -27,7 +27,7 @@ import com.linkedin.data.template.DataTemplate;
 import com.linkedin.data.template.DataTemplateUtil;
 import com.linkedin.data.template.JacksonDataTemplateCodec;
 import com.linkedin.data.template.RecordTemplate;
-import com.linkedin.r2.message.rest.RestMessage;
+import com.linkedin.r2.message.rest.MessageHeaders;
 import com.linkedin.restli.common.CollectionResponse;
 import com.linkedin.restli.common.HttpStatus;
 import com.linkedin.restli.common.RestConstants;
@@ -88,13 +88,13 @@ public class DataMapUtils
   }
 
   /**
-   * Read {@link DataMap} from a {@link RestMessage}, using the message's headers to determine the
+   * Read {@link DataMap} from a {@link com.linkedin.r2.message.rest.MessageHeaders}, using the message's headers to determine the
    * correct encoding type.
    *
-   * @param message {@link RestMessage}
+   * @param message {@link com.linkedin.r2.message.rest.MessageHeaders}
    * @return {@link DataMap}
    */
-  public static DataMap readMap(final RestMessage message)
+  public static DataMap readMap(final MessageHeaders message)
   {
     try
     {
@@ -107,12 +107,12 @@ public class DataMapUtils
   }
 
   /**
-   * Similar to {@link #readMap(com.linkedin.r2.message.rest.RestMessage)}, but will throw an
+   * Similar to {@link #readMap(com.linkedin.r2.message.rest.MessageHeaders)}, but will throw an
    * {@link IOException} instead of a {@link RestLiInternalException}
    *
    * @throws IOException if the message entity cannot be parsed.
    */
-  private static DataMap readMapWithExceptions(final RestMessage message) throws IOException
+  private static DataMap readMapWithExceptions(final MessageHeaders message) throws IOException
   {
     String header = message.getHeader(RestConstants.HEADER_CONTENT_TYPE);
     if (header == null)
@@ -212,16 +212,16 @@ public class DataMapUtils
   }
 
   /**
-   * Effectively a combination of {@link #readMap(com.linkedin.r2.message.rest.RestMessage)} and
+   * Effectively a combination of {@link #readMap(com.linkedin.r2.message.rest.MessageHeaders)} and
    * {@link #convert(DataMap, Class)}.
    *
-   * @param message {@link RestMessage}
+   * @param message {@link com.linkedin.r2.message.rest.MessageHeaders}
    * @param recordClass class of the requested type
    * @param <T> requested object type
    * @return a new object of the requested type constructed with DataMap read from message entity
    * @throws IOException on error reading input stream
    */
-  public static <T extends RecordTemplate> T read(final RestMessage message,
+  public static <T extends RecordTemplate> T read(final MessageHeaders message,
                                                   final Class<T> recordClass)
     throws IOException
   {
@@ -268,12 +268,12 @@ public class DataMapUtils
    * A combination of {@link #readMap(java.io.InputStream)} and
    * {@link #convert(com.linkedin.data.DataMap, Class)} for collection responses.
    *
-   * @param message {@link RestMessage}
+   * @param message {@link com.linkedin.r2.message.rest.MessageHeaders}
    * @param recordClass class of the requested type
    * @param <T> requested object type
    * @return a new object of the requested type constructed with DataMap read from message entity
    */
-  public static <T extends RecordTemplate> CollectionResponse<T> readCollectionResponse(final RestMessage message,
+  public static <T extends RecordTemplate> CollectionResponse<T> readCollectionResponse(final MessageHeaders message,
                                                                                         final Class<T> recordClass)
   {
     DataMap dataMap = readMap(message);

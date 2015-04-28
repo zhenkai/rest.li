@@ -1,6 +1,5 @@
 package com.linkedin.r2.message.rest;
 
-import com.linkedin.r2.message.StreamMessageBuilder;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 import java.net.URI;

@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * @author Zhenkai Zhu
  */
-/* package private */ abstract class BaseResponse extends BaseRestMessage implements Response
+/* package private */ abstract class BaseResponse extends BaseMessage implements Response
 {
   private final int _status;
 

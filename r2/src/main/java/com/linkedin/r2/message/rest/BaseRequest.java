@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * @author Zhenkai Zhu
  */
-/* package private */ abstract class BaseRequest extends BaseRestMessage implements Request
+/* package private */ abstract class BaseRequest extends BaseMessage implements Request
 {
   private final URI _uri;
   private final String _method;

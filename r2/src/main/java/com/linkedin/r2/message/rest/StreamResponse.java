@@ -17,8 +17,6 @@
 /* $Id$ */
 package com.linkedin.r2.message.rest;
 
-import com.linkedin.r2.message.StreamMessage;
-
 /**
  * An object that contains details of a REST response.<p/>
  *
