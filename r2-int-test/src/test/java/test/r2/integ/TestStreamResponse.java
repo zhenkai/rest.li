@@ -9,6 +9,7 @@ import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.DrainReader;
 import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.WriteHandle;
@@ -182,6 +183,7 @@ public class TestStreamResponse extends AbstractStreamTest
     @Override
     public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
+      request.getEntityStream().setReader(new DrainReader());
       _writer = createWriter(_bytesNum, _b);
       StreamResponse response = new StreamResponseBuilder().build(EntityStreams.newEntityStream(_writer));
       callback.onSuccess(response);

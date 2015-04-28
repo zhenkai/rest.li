@@ -12,6 +12,7 @@ import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.DrainReader;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.RestRequestHandler;
@@ -130,6 +131,7 @@ public class TestMixUseOfStreamAndNonStream
     @Override
     public void handleRequest(StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
     {
+      request.getEntityStream().setReader(new DrainReader());
       RestResponseBuilder builder = new RestResponseBuilder();
       builder.setStatus(RestStatus.OK);
       builder.setEntity(STREAM_MESSAGE.getBytes());

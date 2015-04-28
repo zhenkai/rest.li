@@ -241,35 +241,42 @@ public class TrackerClient implements LoadBalancerClient
       {
         EntityStream entityStream = response.getResponse().getEntityStream();
 
-        // this is a hack for to deal with user code that does not read empty stream (e.g. just check status code)
-        if (EntityStreams.isEmptyStream(entityStream))
+        /**
+         * Because D2 use call tracking to evaluate the health of the servers, we cannot use the finish time of the
+         * response streaming as the stop time. Otherwise, the server's health would be considered bad even if the
+         * problem is on the client side due to the back pressure feature. Use D2 proxy as an example.
+         * Client A -> D2 proxy -> Server B. If Client A has congested network connection, D2 proxy would observe
+         * longer call duration due to back pressure from A. However, if D2 proxy now prematurely downgrade
+         * Server B's health, when another Client C calls the same service, D2 proxy would probably exclude Server B
+         * due to the "bad" health.
+         *
+         * Hence, D2 would record the stop time as the time when the first part of the response arrives.
+         * However, the streaming process may fail or timeout; so D2 would wait until the streaming finishes, and
+         * update the latency if it's successful, or update the error count if it's not successful.
+         * In this way, D2 still monitors the responsiveness of a server without the interference from the client
+         * side events, and error counting still works as before.
+         */
+        _callCompletion.record();
+        Observer observer = new Observer()
         {
-          _callCompletion.endCall();
-        }
-        else
-        {
-          _callCompletion.record();
-          Observer observer = new Observer()
+          @Override
+          public void onDataAvailable(ByteString data)
           {
-            @Override
-            public void onDataAvailable(ByteString data)
-            {
-            }
+          }
 
-            @Override
-            public void onDone()
-            {
-              _callCompletion.endCall();
-            }
+          @Override
+          public void onDone()
+          {
+            _callCompletion.endCall();
+          }
 
-            @Override
-            public void onError(Throwable e)
-            {
-              handleError(_callCompletion, e);
-            }
-          };
-          entityStream.addObserver(observer);
-        }
+          @Override
+          public void onError(Throwable e)
+          {
+            handleError(_callCompletion, e);
+          }
+        };
+        entityStream.addObserver(observer);
       }
 
       _wrappedCallback.onResponse(response);
