@@ -18,7 +18,6 @@
 package test.r2.message;
 
 
-import com.linkedin.r2.message.Message;
 import com.linkedin.r2.message.rest.RestMethod;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;

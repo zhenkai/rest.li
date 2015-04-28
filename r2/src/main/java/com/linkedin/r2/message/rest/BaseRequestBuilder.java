@@ -29,8 +29,8 @@ import java.net.URI;
  * @version $Revision$
  */
 /* package private */ abstract class BaseRequestBuilder<B extends BaseRequestBuilder<B>>
-        extends BaseRestMessageBuilder<B>
-        implements RestMessageBuilder<B>
+        extends BaseMessageBuilder<B>
+        implements MessageHeadersBuilder<B>
 {
   private URI _uri;
 

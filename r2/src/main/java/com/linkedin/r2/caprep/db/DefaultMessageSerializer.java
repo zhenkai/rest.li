@@ -18,11 +18,11 @@
 package com.linkedin.r2.caprep.db;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.Message;
+import com.linkedin.r2.message.rest.MessageHeaders;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
+import com.linkedin.r2.message.rest.MessageHeadersBuilder;
 import com.linkedin.r2.message.rest.RestMessage;
-import com.linkedin.r2.message.rest.RestMessageBuilder;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -150,7 +150,7 @@ public class DefaultMessageSerializer implements MessageSerializer
     readIgnoreLine(in);
   }
 
-  private void readHeaders(RestMessageBuilder<?> builder, InputStream in, String cookieHeader) throws IOException
+  private void readHeaders(MessageHeadersBuilder<?> builder, InputStream in, String cookieHeader) throws IOException
   {
     String line = readLine(in);
     while (!line.isEmpty())
@@ -295,7 +295,7 @@ public class DefaultMessageSerializer implements MessageSerializer
     }
   }
 
-  private void writeHeaders(OutputStream out, RestMessage msg, String cookieHeader) throws IOException
+  private void writeHeaders(OutputStream out, MessageHeaders msg, String cookieHeader) throws IOException
   {
     for (Map.Entry<String, String> hdr : msg.getHeaders().entrySet())
     {
@@ -385,7 +385,7 @@ public class DefaultMessageSerializer implements MessageSerializer
     return readUntil(LF_CHAR, in).replaceAll(CR, "");
   }
 
-  private void writeEntity(OutputStream out, Message res) throws IOException
+  private void writeEntity(OutputStream out, RestMessage res) throws IOException
   {
     res.getEntity().write(out);
 

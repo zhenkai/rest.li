@@ -24,8 +24,8 @@ import com.linkedin.r2.transport.http.common.HttpConstants;
  * @version $Revision$
  */
 /* package private */ abstract class BaseResponseBuilder<B extends BaseResponseBuilder<B>>
-        extends BaseRestMessageBuilder<B>
-        implements RestMessageBuilder<B>
+        extends BaseMessageBuilder<B>
+        implements MessageHeadersBuilder<B>
 {
   private int _status = RestStatus.OK;
 

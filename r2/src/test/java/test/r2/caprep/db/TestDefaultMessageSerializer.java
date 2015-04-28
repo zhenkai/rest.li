@@ -21,7 +21,7 @@ package test.r2.caprep.db;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.caprep.db.DefaultMessageSerializer;
 import com.linkedin.r2.caprep.db.MessageSerializer;
-import com.linkedin.r2.message.Message;
+import com.linkedin.r2.message.rest.RestMessage;
 import com.linkedin.r2.message.rest.RestMethod;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
@@ -424,7 +424,7 @@ public class TestDefaultMessageSerializer
     return _serializer.readRestResponse(new ByteArrayInputStream(bytes));
   }
 
-  private void assertMsgEquals(Message expected, Message actual)
+  private void assertMsgEquals(RestMessage expected, RestMessage actual)
   {
     Assert.assertEquals(actual.builder().buildCanonical(), expected.builder().buildCanonical());
   }

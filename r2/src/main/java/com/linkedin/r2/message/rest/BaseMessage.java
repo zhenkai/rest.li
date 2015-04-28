@@ -26,13 +26,13 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-/* package private */ abstract class BaseRestMessage implements RestMessage
+/* package private */ abstract class BaseMessage implements MessageHeaders
 {
   private final Map<String, String> _headers;
 
   private final List<String> _cookies;
 
-  protected BaseRestMessage(Map<String, String> headers, List<String> cookies)
+  protected BaseMessage(Map<String, String> headers, List<String> cookies)
   {
     assert headers != null;
     assert cookies != null;
@@ -76,12 +76,12 @@ import java.util.Map;
     {
       return true;
     }
-    if (!(o instanceof BaseRestMessage))
+    if (!(o instanceof BaseMessage))
     {
       return false;
     }
 
-    BaseRestMessage that = (BaseRestMessage) o;
+    BaseMessage that = (BaseMessage) o;
     return _headers.equals(that._headers) && _cookies.equals(that._cookies);
   }
 
