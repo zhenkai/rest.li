@@ -69,7 +69,6 @@ public abstract class AbstractR2Servlet extends HttpServlet
           throws ServletException, IOException
   {
     final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 1024 * 16);
-    ioHandler.initialize();
 
     RequestContext requestContext = readRequestContext(req);
 
