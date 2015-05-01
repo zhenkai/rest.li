@@ -37,7 +37,7 @@ import java.util.Arrays;
 
     while(_wh.remaining() >  0 && _written < _total && !_error)
     {
-      int bytesNum = (int)Math.min(_wh.remaining(), _total - _written);
+      int bytesNum = (int)Math.min(4096, _total - _written);
       _wh.write(generate(bytesNum));
       _written += bytesNum;
       afterWrite(_wh, _written);

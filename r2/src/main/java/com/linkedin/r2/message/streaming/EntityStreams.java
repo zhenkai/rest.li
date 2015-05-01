@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A class consists exclusively of static methods to deal with EntityStream {@link com.linkedin.r2.message.streaming.EntityStream}
@@ -39,6 +41,12 @@ public final class EntityStreams
     return new EntityStreamImpl(writer);
   }
 
+  private enum State
+  {
+    UNINITIALIZED,
+    ACTIVE,
+    FINISHED,
+  }
 
   private static class EntityStreamImpl implements EntityStream
   {
@@ -46,19 +54,18 @@ public final class EntityStreams
     private final Object _lock;
     private List<Observer> _observers;
     private Reader _reader;
-    private boolean _initialized;
-    // maintains the allowed capacity which is controlled by reader
-    private int _capacity;
+    private int _remaining;
     private boolean _notifyWritePossible;
+    private AtomicReference<State> _state;
 
     EntityStreamImpl(Writer writer)
     {
       _writer = writer;
       _lock = new Object();
       _observers = new ArrayList<Observer>();
-      _initialized = false;
-      _capacity = 0;
+      _remaining = 0;
       _notifyWritePossible = true;
+      _state = new AtomicReference<State>(State.UNINITIALIZED);
     }
 
     public void addObserver(Observer o)
@@ -75,8 +82,8 @@ public final class EntityStreams
       synchronized (_lock)
       {
         checkInit();
+        _state.set(State.ACTIVE);
         _reader = r;
-        _initialized = true;
         _observers = Collections.unmodifiableList(_observers);
       }
 
@@ -89,41 +96,34 @@ public final class EntityStreams
 
     private class WriteHandleImpl implements WriteHandle
     {
-      private final AtomicBoolean _finished = new AtomicBoolean(false);
-
       @Override
       public void write(final ByteString data)
       {
-        if (_finished.compareAndSet(false, false))
+        synchronized (_lock)
         {
-          int dataLen = data.length();
-
-          // Writer tries to try when the reader didn't request more data
-          synchronized (_lock)
+          if (_state.get() == State.FINISHED)
           {
-            if (_capacity < dataLen)
-            {
-              throw new IllegalArgumentException("Data size " + dataLen + " is larger than remaining capacity.");
-            }
-            _capacity -= dataLen;
+            throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
           }
 
-          for (Observer observer : _observers)
+
+          if (--_remaining < 0)
           {
-            observer.onDataAvailable(data);
+            throw new IllegalArgumentException("Attempt to write when remaining is 0");
           }
-          _reader.onDataAvailable(data);
         }
-        else
+
+        for (Observer observer : _observers)
         {
-          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
+          observer.onDataAvailable(data);
         }
+        _reader.onDataAvailable(data);
       }
 
       @Override
       public void done()
       {
-        if (_finished.compareAndSet(false, true))
+        if (_state.compareAndSet(State.ACTIVE, State.FINISHED))
         {
           for (Observer observer : _observers)
           {
@@ -136,7 +136,7 @@ public final class EntityStreams
       @Override
       public void error(final Throwable e)
       {
-        if (_finished.compareAndSet(false, true))
+        if (_state.compareAndSet(State.ACTIVE, State.FINISHED))
         {
           for (Observer observer : _observers)
           {
@@ -151,11 +151,11 @@ public final class EntityStreams
       {
         synchronized (_lock)
         {
-          if (_capacity == 0)
+          if (_remaining == 0)
           {
             _notifyWritePossible = true;
           }
-          return _capacity;
+          return _remaining;
         }
       }
     }
@@ -163,12 +163,17 @@ public final class EntityStreams
     private class ReadHandleImpl implements ReadHandle
     {
       @Override
-      public void read(final int chunkNum)
+      public void request(final int chunkNum)
       {
         boolean needNotify = false;
         synchronized (_lock)
         {
-          _capacity += chunkNum;
+          _remaining += chunkNum;
+          // overflow
+          if (_remaining < 0)
+          {
+            _remaining = Integer.MAX_VALUE;
+          }
 
           // notify the writer if needed
           if (_notifyWritePossible)
@@ -187,7 +192,7 @@ public final class EntityStreams
 
     private void checkInit()
     {
-      if (_initialized)
+      if (_state.get() != State.UNINITIALIZED)
       {
         throw new IllegalStateException("EntityStream had already been initialized and can no longer accept Observers or Reader");
       }

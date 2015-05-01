@@ -8,9 +8,9 @@ package com.linkedin.r2.message.streaming;
 public interface ReadHandle
 {
   /**
-   * This method signals the writer of the EntityStream that it can write more data. This method does not block.
+   * This method signals the writer of the EntityStream that it can write more data.
    *
-   * @param byteNum the additional number of bytes that the writer is permitted to write
+   * @param n the additional number of data chunks that the writer is permitted to write
    */
-  void read(final int byteNum);
+  void request(int n);
 }

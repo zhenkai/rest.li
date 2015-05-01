@@ -20,14 +20,10 @@ import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
-import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -219,7 +215,7 @@ public class TestStreamRequest extends AbstractStreamTest
         int count = 0;
 
         @Override
-        public void requestMore(final ReadHandle rh, final int processedDataLen)
+        public void requestMore(final ReadHandle rh)
         {
           count++;
           if (count % 16 == 0)
@@ -229,13 +225,13 @@ public class TestStreamRequest extends AbstractStreamTest
               @Override
               public void run()
               {
-                rh.read(processedDataLen);
+                rh.request(1);
               }
             },_interval, TimeUnit.MILLISECONDS);
           }
           else
           {
-            rh.read(processedDataLen);
+            rh.request(1);
           }
         }
       };

@@ -11,8 +11,8 @@ public interface Reader extends Observer
   /**
    * This is called when the reader is set to the EntityStream
    *
-   * @param rh the ReadHandle {@link com.linkedin.r2.message.streaming.ReadHandle} provided to this reader.
+   * @param rh the ReadHandle {@link ReadHandle} provided to this reader.
    */
-  void onInit(final ReadHandle rh);
+  void onInit(ReadHandle rh);
 
 }

@@ -31,8 +31,8 @@ import java.util.Map;
 /** package private */class RAPRequestEncoder extends ChannelDuplexHandler
 {
 
-  private static final int MAX_BUFFER_SIZE = 1024 * 128;
   private BufferedReader _currentReader;
+  private static final int MAX_BUFFERED_CHUNKS = 3;
 
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
@@ -112,6 +112,8 @@ import java.util.Map;
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
+      // signal the Writer that we can accept _bufferSize chunks
+      _readHandle.request(_bufferSize);
     }
 
     public void onDataAvailable(final ByteString data)
@@ -170,7 +172,8 @@ import java.util.Map;
           public void operationComplete(ChannelFuture future)
               throws Exception
           {
-            _readHandle.read(bytesWritten);
+            // data have been written out, we can tell the writer that we can accept one more data chunk
+            _readHandle.request(1);
           }
         });
         _buffer = Unpooled.compositeBuffer(1024);
