@@ -130,19 +130,26 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
     TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
     {
       @Override
-      public void onResponse(TransportResponse<StreamResponse> response)
+      public void onResponse(final TransportResponse<StreamResponse> response)
       {
-        try
+        ctx.start(new Runnable()
         {
-          ioHandler.startWritingResponse();
-          StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
-          streamResponse.getEntityStream().setReader(ioHandler);
-          ioHandler.loop();
-        }
-        catch (Exception e)
-        {
-          throw new RuntimeException(e);
-        }
+          @Override
+          public void run()
+          {
+            try
+            {
+              ioHandler.startWritingResponse();
+              StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
+              streamResponse.getEntityStream().setReader(ioHandler);
+              ioHandler.loop();
+            }
+            catch (Exception e)
+            {
+              throw new RuntimeException(e);
+            }
+          }
+        });
       }
     };
 

@@ -215,7 +215,7 @@ public class TestStreamResponse extends AbstractStreamTest
       if (written > _total)
       {
         _total = _total * 2 + 1;
-        wh.error(new RuntimeException());
+        wh.error(new RuntimeException("Error for testing"));
         markError();
       }
     }

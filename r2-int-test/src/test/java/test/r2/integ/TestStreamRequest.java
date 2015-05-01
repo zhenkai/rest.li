@@ -298,7 +298,7 @@ public class TestStreamRequest extends AbstractStreamTest
       if (written > _total)
       {
         _total = _total * 2;
-        wh.error(new RuntimeException());
+        wh.error(new RuntimeException("Error for testing"));
       }
     }
   }
