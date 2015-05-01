@@ -14,9 +14,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
- * This example writer deals with Synchronous IO, which is the case for Servlet API 3.0 & Jetty 8
+ * This writer deals with Synchronous IO, which is the case for Servlet API 3.0 & Jetty 8
  *
- * This Writer reads from ServletOutputStream and writes to the EntityStream of a RestRequest.
+ * This Writer reads from ServletInputStream and writes to the EntityStream of a request; and reads from
+ * the EntityStream of a response and writes into ServletOutputStream.
  *
  * @author Zhenkai Zhu
  */
@@ -28,15 +29,17 @@ public class SyncIOHandler implements Writer, Reader
   final private BlockingQueue<Event> _eventQueue;
   private WriteHandle _wh;
   private ReadHandle _rh;
-  private boolean _requestReadFinished = false;
-  private boolean _responseWriteFinished = false;
+  private boolean _requestReadFinished;
+  private boolean _responseWriteFinished;
 
-  public SyncIOHandler(ServletInputStream is, ServletOutputStream os, int bufferCapacity)
+  public SyncIOHandler(ServletInputStream is, ServletOutputStream os, int maxBufferedChunks)
   {
     _is = is;
     _os = os;
-    _maxBufferedChunks = bufferCapacity;
+    _maxBufferedChunks = maxBufferedChunks;
     _eventQueue = new LinkedBlockingDeque<Event>();
+    _requestReadFinished = false;
+    _responseWriteFinished = false;
   }
 
   @Override
@@ -155,7 +158,6 @@ public class SyncIOHandler implements Writer, Reader
     FullResponseReceived,
     ResponseDataAvailable,
     ResponseDataError,
-    ReadFirstByteOfRequest
   }
 
   private static class Event
