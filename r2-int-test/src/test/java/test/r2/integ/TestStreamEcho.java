@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TestStreamEcho extends AbstractStreamTest
 {
   private static final URI ECHO_URI = URI.create("/echo");
+  private static final URI ASYNC_ECHO_URI = URI.create("/async-echo");
 
   @Override
   protected TransportDispatcher getTransportDispatcher()
@@ -44,6 +46,7 @@ public class TestStreamEcho extends AbstractStreamTest
   {
     Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
     handlers.put(ECHO_URI, new SteamEchoHandler());
+    handlers.put(ASYNC_ECHO_URI, new SteamAsyncEchoHandler(_scheduler));
     return handlers;
   }
 
@@ -58,7 +61,7 @@ public class TestStreamEcho extends AbstractStreamTest
   @Test
   public void testNormalEchoSmall() throws Exception
   {
-    testNormalEcho(SMALL_BYTES_NUM);
+    testNormalEcho(SMALL_BYTES_NUM, ECHO_URI);
   }
 
   @Test
@@ -73,14 +76,31 @@ public class TestStreamEcho extends AbstractStreamTest
 
      Update 3/27/2015: for some reason, after the work to support Jetty 8, this test stops failing for Jetty 9;
      or at least not easy to produce the failure (no failure after 10ish runs)
+
+     Update 4/x/2015: it appears consistently when running ligradle r2-int-test:test
+
+     Update 5/1/2015: after the changes to take advantage of the new Writer/ReadHandle API to get rid of locks,
+     it disappeared
      */
-    testNormalEcho(LARGE_BYTES_NUM);
+    testNormalEcho(LARGE_BYTES_NUM, ECHO_URI);
   }
 
-  private void testNormalEcho(long bytesNum) throws Exception
+  @Test
+  public void testNormalAsyncEchoSmall() throws Exception
+  {
+    testNormalEcho(SMALL_BYTES_NUM, ASYNC_ECHO_URI);
+  }
+
+  @Test
+  public void testNormalAsyncEchoLarge() throws Exception
+  {
+    testNormalEcho(LARGE_BYTES_NUM, ASYNC_ECHO_URI);
+  }
+
+  private void testNormalEcho(long bytesNum, URI uri) throws Exception
   {
     BytesWriter writer = new BytesWriter(bytesNum, BYTE);
-    StreamRequest request = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, ECHO_URI))
+    StreamRequest request = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, uri))
         .build(EntityStreams.newEntityStream(writer));
 
     final AtomicInteger status = new AtomicInteger(-1);
@@ -163,6 +183,30 @@ public class TestStreamEcho extends AbstractStreamTest
     {
       StreamResponseBuilder builder = new StreamResponseBuilder();
       callback.onSuccess(builder.build(request.getEntityStream()));
+    }
+  }
+
+  private static class SteamAsyncEchoHandler implements StreamRequestHandler
+  {
+    private final ScheduledExecutorService _scheduler;
+
+    SteamAsyncEchoHandler(ScheduledExecutorService scheduler)
+    {
+      _scheduler = scheduler;
+    }
+
+    @Override
+    public void handleRequest(final StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
+    {
+      _scheduler.schedule(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          StreamResponseBuilder builder = new StreamResponseBuilder();
+          callback.onSuccess(builder.build(request.getEntityStream()));
+        }
+      }, 10, TimeUnit.MILLISECONDS);
     }
   }
 

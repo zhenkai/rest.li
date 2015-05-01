@@ -46,10 +46,14 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import static org.testng.Assert.fail;
 
 /**
  * @author Steven Ihde
@@ -61,14 +65,15 @@ public class TestHttpServer
   private static final int PORT = 8088;
 
   private HttpServer _server;
+  private final ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
 
   @BeforeTest
   public void setup() throws IOException
   {
     final TransportDispatcher dispatcher = new TransportDispatcherBuilder()
             .addRestHandler(URI.create("/error"), new ErrorHandler())
-            .addRestHandler(URI.create("/foobar"), new FoobarHandler())
             .addRestHandler(URI.create("/headerEcho"), new HeaderEchoHandler())
+            .addRestHandler(URI.create("/foobar"), new FoobarHandler(_scheduler))
             .build();
 
     _server = getServerFactory().createServer(PORT, dispatcher);
@@ -81,6 +86,7 @@ public class TestHttpServer
     if (_server != null) {
       _server.stop();
     }
+    _scheduler.shutdown();
   }
 
   protected HttpServerFactory getServerFactory()
@@ -189,14 +195,26 @@ public class TestHttpServer
 
   private static class FoobarHandler implements RestRequestHandler
   {
+    ScheduledExecutorService _scheduler;
+    FoobarHandler(ScheduledExecutorService scheduler)
+    {
+      _scheduler = scheduler;
+    }
     @Override
-    public void handleRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
+    public void handleRequest(RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
     {
       RestResponseBuilder builder = new RestResponseBuilder();
       builder.setStatus(RestStatus.OK);
       builder.setEntity("Hello, world!".getBytes());
-      RestResponse response = builder.build();
-      callback.onSuccess(response);
+      final RestResponse response = builder.build();
+      _scheduler.schedule(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          callback.onSuccess(response);
+        }
+      }, 5, TimeUnit.MILLISECONDS);
     }
   }
 
