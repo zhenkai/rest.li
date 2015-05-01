@@ -63,7 +63,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
   private static final Logger _log = LoggerFactory.getLogger(AbstractR2Servlet.class);
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
   private static final long   serialVersionUID = 0L;
-  private static final int MAX_BUFFER_SIZE = 16 * 1024;
+  private static final int MAX_BUFFERED_CHUNKS = 3;
 
   private final long _timeout;
 
@@ -193,7 +193,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
       }
 
       ServletOutputStream os = resp.getOutputStream();
-      AsyncIOResponseHandler handler = new AsyncIOResponseHandler(MAX_BUFFER_SIZE, os, ctx.getCtx(), ctx.getOtherDirectionFinished());
+      AsyncIOResponseHandler handler = new AsyncIOResponseHandler(MAX_BUFFERED_CHUNKS, os, ctx.getCtx(), ctx.getOtherDirectionFinished());
       EntityStream responseStream = streamResponse.getEntityStream();
       responseStream.setReader(handler);
     }
@@ -248,8 +248,6 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
     is.setReadListener(handler);
     EntityStream entityStream = EntityStreams.newEntityStream(handler);
     return builder.build(entityStream);
-    // TODO [ZZ]: figure out what to do with QueryTunnelUtil
-    // return QueryTunnelUtil.decode(rb.build(), requestContext);
   }
 
   /**

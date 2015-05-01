@@ -87,8 +87,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     {
       while (_is.isReady() && _wh.remaining() > 0)
       {
-        int maxLen = Math.min(buf.length, _wh.remaining());
-        int bytesRead = _is.read(buf, 0, maxLen);
+        int bytesRead = _is.read(buf);
         _count += bytesRead;
         if (bytesRead < 0)
         {

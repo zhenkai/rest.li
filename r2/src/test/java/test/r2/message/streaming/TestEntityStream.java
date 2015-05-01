@@ -42,7 +42,7 @@ public class TestEntityStream
       {
         while(_wh.remaining() > 0 && _count < _total )
         {
-          byte[] bytes = new byte[Math.min(4096, _wh.remaining())];
+          byte[] bytes = new byte[(int)Math.min(4096, _total - _count)];
           _wh.write(ByteString.copy(bytes));
           _count += bytes.length;
         }
@@ -60,13 +60,13 @@ public class TestEntityStream
       public void onInit(ReadHandle rh)
       {
         _rh = rh;
-        _rh.read(4096);
+        _rh.request(1);
       }
 
       @Override
       public void onDataAvailable(ByteString data)
       {
-        _rh.read(data.length());
+        _rh.request(1);
       }
 
       @Override

@@ -67,7 +67,7 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
     final AsyncContext ctx = req.startAsync(req, resp);
     ctx.setTimeout(_timeout);
 
-    final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 1024 * 16);
+    final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 3);
 
     RequestContext requestContext = readRequestContext(req);
 

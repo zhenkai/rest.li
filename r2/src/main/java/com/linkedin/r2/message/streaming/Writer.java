@@ -18,7 +18,7 @@ public interface Writer
    * Invoked when it it possible to write data.
    *
    * This method will be invoked the first time as soon as data can be written to the WriteHandle.
-   * Subsequent invocations will only occur if a call to WriteHandle.remainingCapacity() has returned 0
+   * Subsequent invocations will only occur if a call to WriteHandle.remaining() has returned 0
    * and it has since become possible to write data.
    *
    * This invocation pattern is identical to WriteListener.onWritePossible in Servlet API 3.1 and

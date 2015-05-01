@@ -44,7 +44,6 @@ import javax.net.ssl.SSLParameters;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.StreamResponse;
-
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import org.testng.Assert;
@@ -59,7 +58,6 @@ import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
-import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 
@@ -224,7 +222,7 @@ public class TestHttpNettyClient
         @Override
         public void onInit(ReadHandle rh)
         {
-          rh.read(Integer.MAX_VALUE);
+          rh.request(Integer.MAX_VALUE);
         }
 
         @Override
