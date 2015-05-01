@@ -11,29 +11,30 @@ import com.linkedin.data.ByteString;
 public interface WriteHandle
 {
   /**
-   * This writes data into the EntityStream. This method does not block.
+   * This writes data into the EntityStream.
    *
-   * @param data the data to be written
-   * @throws java.lang.IllegalArgumentException if the length of the data exceeds remaining capacity
+   * @param data the data chunk to be written
+   * @throws java.lang.IllegalStateException if remaining capacity is 0, or done() or error() has been called
    */
   void write(final ByteString data);
 
   /**
-   * Signals that Writer has finished writing. This method does not block.
+   * Signals that Writer has finished writing.
+   *
    */
   void done();
 
   /**
-   * Signals that the Writer has encountered an error. This method does not block.
+   * Signals that the Writer has encountered an error.
    *
    * @param throwable the cause of the error.
    */
   void error(final Throwable throwable);
 
   /**
-   * Returns the remaining capacity in number of bytes.
+   * Returns the remaining capacity in number of data chunks
    *
-   * @return the remaining capacity in number of bytes
+   * @return the remaining capacity in number of data chunks
    */
   int remaining();
 }

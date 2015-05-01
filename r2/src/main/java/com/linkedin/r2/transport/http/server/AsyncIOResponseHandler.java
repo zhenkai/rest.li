@@ -5,11 +5,12 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -17,7 +18,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 /* package private */class AsyncIOResponseHandler implements WriteListener, Reader
 {
-  private final ByteBuffer _buffer;
   private final Object _lock = new Object();
   private final ServletOutputStream _os;
   private final AsyncContext _ctx;
@@ -26,23 +26,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
   private final AtomicBoolean _writeCouldStart = new AtomicBoolean(false);
   private final AtomicBoolean _completed = new AtomicBoolean(false);
   private final AtomicBoolean _otherDirectionFinished;
+  private final int _maxBufferedChunks;
+  private final List<ByteString> _buffer = new LinkedList<ByteString>();
 
   // for debug
   private int _count = 0;
 
-  AsyncIOResponseHandler(int bufferSize, ServletOutputStream os, AsyncContext ctx, AtomicBoolean otherDirectionFinished)
+  AsyncIOResponseHandler(int maxBufferedChunks, ServletOutputStream os, AsyncContext ctx, AtomicBoolean otherDirectionFinished)
   {
-    _buffer = ByteBuffer.allocate(bufferSize);
     _os = os;
     _ctx = ctx;
     _otherDirectionFinished = otherDirectionFinished;
+    _maxBufferedChunks = maxBufferedChunks;
   }
 
   public void onWritePossible() throws IOException
   {
     if (_writeCouldStart.compareAndSet(false, true))
     {
-      _rh.read(_buffer.capacity());
+      _rh.request(_maxBufferedChunks);
     }
     synchronized (_lock)
     {
@@ -59,9 +61,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
   {
     synchronized (_lock)
     {
-      byte[] tmpBuf = data.copyBytes();
-      // TODO [ZZ]: there was buffer overflow thrown here, how's that possible?
-      _buffer.put(tmpBuf);
+      _buffer.add(data);
       try
       {
         doWrite();
@@ -97,17 +97,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
   private void doWrite() throws IOException
   {
-    _buffer.flip();
-    byte[] tmpBuf = new byte[4096];
     int totalWritten = 0;
-    while(_os.isReady() && _buffer.hasRemaining())
+    while(_os.isReady() && !_buffer.isEmpty())
     {
-      int bytesNum = Math.min(tmpBuf.length, _buffer.remaining());
-      _buffer.get(tmpBuf, 0, bytesNum);
-      _os.write(tmpBuf, 0, bytesNum);
-      totalWritten += bytesNum;
+      ByteString data = _buffer.remove(0);
+      data.write(_os);
+      totalWritten += data.length();
+      _rh.request(1);
     }
-    if (_allDataRead && _os.isReady() && !_buffer.hasRemaining())
+    if (_allDataRead && _os.isReady() && _buffer.isEmpty())
     {
       if (_completed.compareAndSet(false, true))
       {
@@ -118,9 +116,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
         }
       }
     }
-    _buffer.compact();
     _count += totalWritten;
-    _rh.read(totalWritten);
 
   }
 

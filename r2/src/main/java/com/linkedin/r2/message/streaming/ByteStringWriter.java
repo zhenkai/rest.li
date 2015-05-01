@@ -33,7 +33,7 @@ public class ByteStringWriter implements Writer
         _wh.done();
         break;
       }
-      int bytesToWrite = Math.min(_wh.remaining(), _content.length() - _offset);
+      int bytesToWrite = Math.min(4096, _content.length() - _offset);
       _wh.write(_content.slice(_offset, bytesToWrite));
       _offset += bytesToWrite;
     }

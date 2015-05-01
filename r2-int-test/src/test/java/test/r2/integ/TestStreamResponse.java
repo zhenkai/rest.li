@@ -3,7 +3,6 @@ package test.r2.integ;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
@@ -134,7 +133,7 @@ public class TestStreamResponse extends AbstractStreamTest
       int count = 0;
 
       @Override
-      protected void requestMore(final ReadHandle rh, final int processedDataLen)
+      protected void requestMore(final ReadHandle rh)
       {
         count ++;
         if (count % 16 == 0)
@@ -144,13 +143,13 @@ public class TestStreamResponse extends AbstractStreamTest
             @Override
             public void run()
             {
-              rh.read(processedDataLen);
+              rh.request(1);
             }
           }, INTERVAL, TimeUnit.MILLISECONDS);
         }
         else
         {
-          rh.read(processedDataLen);
+          rh.request(1);
         }
       }
     };

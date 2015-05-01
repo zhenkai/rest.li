@@ -3,8 +3,6 @@ package test.r2.integ;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.rest.RestException;
-import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 
@@ -31,7 +29,7 @@ class BytesReader implements Reader
   public void onInit(ReadHandle rh)
   {
     _rh = rh;
-    _rh.read(16 * 1024);
+    _rh.request(3);
   }
 
   @Override
@@ -46,7 +44,7 @@ class BytesReader implements Reader
         _bytesCorrect = false;
       }
     }
-    requestMore(_rh, data.length());
+    requestMore(_rh);
   }
 
   @Override
@@ -71,8 +69,8 @@ class BytesReader implements Reader
     return _bytesCorrect;
   }
 
-  protected void requestMore(ReadHandle rh, int processedDataLen)
+  protected void requestMore(ReadHandle rh)
   {
-    rh.read(processedDataLen);
+    rh.request(1);
   }
 }

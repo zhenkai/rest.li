@@ -26,7 +26,7 @@ public final class FullEntityReader implements Reader
   public void onInit(ReadHandle rh)
   {
     _rh = rh;
-    _rh.read(Integer.MAX_VALUE);
+    _rh.request(Integer.MAX_VALUE);
   }
 
   public void onDataAvailable(ByteString data)
@@ -34,7 +34,7 @@ public final class FullEntityReader implements Reader
     try
     {
       data.write(_outputStream);
-      _rh.read(data.length());
+      _rh.request(1);
     } catch (Exception ex)
     {
       _callback.onError(ex);

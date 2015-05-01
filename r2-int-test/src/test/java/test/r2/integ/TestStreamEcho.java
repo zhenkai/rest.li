@@ -119,7 +119,7 @@ public class TestStreamEcho extends AbstractStreamTest
       int count = 0;
 
       @Override
-      protected void requestMore(final ReadHandle rh, final int processedDataLen)
+      protected void requestMore(final ReadHandle rh)
       {
         count ++;
         if (count % 16 == 0)
@@ -129,13 +129,13 @@ public class TestStreamEcho extends AbstractStreamTest
             @Override
             public void run()
             {
-              rh.read(processedDataLen);
+              rh.request(1);
             }
           }, INTERVAL, TimeUnit.MILLISECONDS);
         }
         else
         {
-          rh.read(processedDataLen);
+          rh.request(1);
         }
       }
     };

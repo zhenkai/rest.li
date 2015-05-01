@@ -24,7 +24,7 @@ public class SyncIOHandler implements Writer, Reader
 {
   final private ServletInputStream _is;
   final private ServletOutputStream _os;
-  final private int _bufferCapacity;
+  final private int _maxBufferedChunks;
   final private BlockingQueue<Event> _eventQueue;
   private WriteHandle _wh;
   private ReadHandle _rh;
@@ -35,7 +35,7 @@ public class SyncIOHandler implements Writer, Reader
   {
     _is = is;
     _os = os;
-    _bufferCapacity = bufferCapacity;
+    _maxBufferedChunks = bufferCapacity;
     _eventQueue = new LinkedBlockingDeque<Event>();
   }
 
@@ -55,7 +55,7 @@ public class SyncIOHandler implements Writer, Reader
   public void onInit(ReadHandle rh)
   {
     _rh = rh;
-    _rh.read(_bufferCapacity);
+    _rh.request(_maxBufferedChunks);
   }
 
   @Override
@@ -98,7 +98,7 @@ public class SyncIOHandler implements Writer, Reader
         {
           ByteString data =  (ByteString) event.getData();
           data.write(_os);
-          _rh.read(data.length());
+          _rh.request(1);
           break;
         }
         case WriteRequestPossible:
@@ -106,8 +106,7 @@ public class SyncIOHandler implements Writer, Reader
           byte[] buf = new byte[4096];
           while (_wh.remaining() > 0)
           {
-            int len = Math.min(buf.length, _wh.remaining());
-            int actualLen = _is.read(buf, 0, len);
+            int actualLen = _is.read(buf);
 
             if (actualLen < 0)
             {
