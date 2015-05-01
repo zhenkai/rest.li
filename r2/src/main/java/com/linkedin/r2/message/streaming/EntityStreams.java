@@ -54,7 +54,9 @@ public final class EntityStreams
     private final Object _lock;
     private List<Observer> _observers;
     private Reader _reader;
-    private int _remaining;
+    //private int _remaining;
+
+    private final AtomicInteger _remaining;
     private boolean _notifyWritePossible;
     private AtomicReference<State> _state;
 
@@ -63,7 +65,7 @@ public final class EntityStreams
       _writer = writer;
       _lock = new Object();
       _observers = new ArrayList<Observer>();
-      _remaining = 0;
+      _remaining = new AtomicInteger(0);
       _notifyWritePossible = true;
       _state = new AtomicReference<State>(State.UNINITIALIZED);
     }
@@ -99,18 +101,27 @@ public final class EntityStreams
       @Override
       public void write(final ByteString data)
       {
-        synchronized (_lock)
+//        synchronized (_lock)
+//        {
+//          if (_state.get() == State.FINISHED)
+//          {
+//            throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
+//          }
+//
+//
+//          if (--_remaining < 0)
+//          {
+//            throw new IllegalArgumentException("Attempt to write when remaining is 0");
+//          }
+//        }
+        if (_state.get() == State.FINISHED)
         {
-          if (_state.get() == State.FINISHED)
-          {
-            throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
-          }
+          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
+        }
 
-
-          if (--_remaining < 0)
-          {
-            throw new IllegalArgumentException("Attempt to write when remaining is 0");
-          }
+        if (_remaining.decrementAndGet() < 0)
+        {
+          throw new IllegalStateException("Attempt to write when remaining is 0");
         }
 
         for (Observer observer : _observers)
@@ -151,11 +162,12 @@ public final class EntityStreams
       {
         synchronized (_lock)
         {
-          if (_remaining == 0)
+          int remaining = _remaining.get();
+          if (remaining == 0)
           {
             _notifyWritePossible = true;
           }
-          return _remaining;
+          return remaining;
         }
       }
     }
@@ -168,11 +180,11 @@ public final class EntityStreams
         boolean needNotify = false;
         synchronized (_lock)
         {
-          _remaining += chunkNum;
+          _remaining.addAndGet(chunkNum);
           // overflow
-          if (_remaining < 0)
+          if (_remaining.get() < 0)
           {
-            _remaining = Integer.MAX_VALUE;
+            _remaining.set(Integer.MAX_VALUE);
           }
 
           // notify the writer if needed
