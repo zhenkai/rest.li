@@ -30,6 +30,7 @@ import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 
 import java.net.URI;
@@ -67,7 +68,8 @@ public class Bootstrap
   public static Server createHttpsServer(int sslPort, String keyStore, String keyStorePassword, FilterChain filters)
   {
     return new HttpServerFactory(filters)
-        .createHttpsServer(HTTP_PORT, sslPort, keyStore, keyStorePassword, createDispatcher());
+        .createHttpsServer(HTTP_PORT, sslPort, keyStore, keyStorePassword, createDispatcher(),
+            HttpServerFactory.DEFAULT_SERVLET_TYPE);
   }
 
   public static Client createHttpClient(FilterChain filters)

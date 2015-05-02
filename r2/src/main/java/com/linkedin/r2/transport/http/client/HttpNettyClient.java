@@ -130,7 +130,7 @@ import org.slf4j.LoggerFactory;
                          long requestTimeout,
                          long idleTimeout,
                          long shutdownTimeout,
-                         int maxResponseSize,
+                         long maxResponseSize,
                          SSLContext sslContext,
                          SSLParameters sslParameters,
                          ExecutorService callbackExecutors,
