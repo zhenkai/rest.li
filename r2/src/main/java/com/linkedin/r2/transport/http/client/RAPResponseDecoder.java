@@ -318,6 +318,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
                 _wh.done();
                 // free
                 _buffer.release();
+                return;
               }
               break;
             }
@@ -331,6 +332,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
                 // resume reading from socket
                 _ctx.channel().config().setAutoRead(true);
               }
+              _totalBytesWritten += data.length();
             }
           }
           else
@@ -347,7 +349,6 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         // free
         _buffer.release();
       }
-      _buffer.discardReadBytes();
     }
   }
 }

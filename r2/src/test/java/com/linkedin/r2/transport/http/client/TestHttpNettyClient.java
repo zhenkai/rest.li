@@ -337,7 +337,6 @@ public class TestHttpNettyClient
     catch (ExecutionException e)
     {
       verifyCauseChain(e, RemoteInvocationException.class, IllegalArgumentException.class);
-      Assert.fail("Unexpected ExecutionException");
     }
     testServer.shutdown();
   }

@@ -57,6 +57,7 @@ public final class FullEntityReader implements Reader
     catch (IOException ex)
     {
       _callback.onError(ex);
+      return;
     }
 
     _callback.onSuccess(entity);

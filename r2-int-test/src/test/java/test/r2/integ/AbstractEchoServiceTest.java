@@ -91,7 +91,7 @@ public abstract class AbstractEchoServiceTest
     _server.start();
   }
 
-  @AfterClass
+  @AfterMethod
   protected void tearDown() throws Exception
   {
     final FutureCallback<None> callback = new FutureCallback<None>();
