@@ -116,7 +116,8 @@ public abstract class AbstractEchoServiceTest
     final FutureCallback<String> callback = new FutureCallback<String>();
     client.echo(msg, callback);
 
-    Assert.assertEquals(callback.get(), msg);
+    String actual = callback.get();
+    Assert.assertEquals(actual, msg);
     Assert.assertEquals(_clientLengthFilter.getRequestEntityLength(), msg.length());
     Assert.assertEquals(_clientLengthFilter.getResponseEntityLength(), msg.length());
     Assert.assertEquals(_serverLengthFilter.getRequestEntityLength(), msg.length());
