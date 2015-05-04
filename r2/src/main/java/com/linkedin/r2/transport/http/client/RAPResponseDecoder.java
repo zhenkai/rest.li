@@ -11,6 +11,7 @@ import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.util.Timeout;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
@@ -30,6 +31,8 @@ import io.netty.handler.codec.http.LastHttpContent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.ClosedChannelException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -178,17 +181,16 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
    */
   private class TimeoutBufferedWriter implements Writer
   {
-    private final CompositeByteBuf _buffer = Unpooled.compositeBuffer(1024);
     private final ChannelHandlerContext _ctx;
     private final long _maxContentLength;
     private final int _highWaterMark;
     private final int _lowWaterMark;
-    private final Object _lock;
     private WriteHandle _wh;
     private Timeout<Runnable> _timeout;
     private volatile boolean _lastChunkReceived = false;
     private int _totalBytesWritten = 0;
-    private final byte[] _bytes;
+    private int _bufferedBytes = 0;
+    private final List<ByteString> _buffer = new LinkedList<ByteString>();
     private final ScheduledExecutorService _scheduler;
     private final long _requestTimeout;
 
@@ -200,8 +202,6 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       _maxContentLength = maxContentLength;
       _highWaterMark = highWaterMark;
       _lowWaterMark = lowWaterMark;
-      _lock = new Object();
-      _bytes = new byte[4096];
 
       // schedule a timeout to close the channel and inform use
       Runnable timeoutTask = new Runnable()
@@ -231,126 +231,113 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     @Override
     public void onWritePossible()
     {
-      // we need synchronized because doWrite may be invoked by EntityStream's event thread or
-      // netty thread
-      synchronized (_lock)
+      if (_ctx.executor().inEventLoop())
       {
         doWrite();
+      }
+      else
+      {
+        _ctx.executor().execute(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            doWrite();
+          }
+        });
       }
     }
 
     public void processHttpChunk(HttpContent chunk) throws TooLongFrameException
     {
-      synchronized (_lock)
-      {
-        Runnable timeoutTask = _timeout.getItem();
+      Runnable timeoutTask = _timeout.getItem();
 
-        // we need synchronized because doWrite may be invoked by EntityStream's event thread or
-        // netty thread
-        //synchronized (_lock)
-        //{
-        if (!chunk.getDecoderResult().isSuccess())
+      if (!chunk.getDecoderResult().isSuccess())
+      {
+        fail(chunk.getDecoderResult().cause());
+        _chunkedMessageWriter = null;
+      }
+      else if (chunk.content().readableBytes() + _totalBytesWritten > _maxContentLength)
+      {
+        TooLongFrameException ex = new TooLongFrameException("HTTP content length exceeded " + _maxContentLength +
+            " bytes.");
+        fail(ex);
+        _chunkedMessageWriter = null;
+        throw ex;
+      }
+      else
+      {
+        if (chunk.content().isReadable())
         {
-          fail(chunk.getDecoderResult().cause());
-          _chunkedMessageWriter = null;
-        }
-        else if (chunk.content().readableBytes() + _totalBytesWritten > _maxContentLength)
-        {
-          TooLongFrameException ex = new TooLongFrameException("HTTP content length exceeded " + _maxContentLength +
-              " bytes.");
-          fail(ex);
-          _chunkedMessageWriter = null;
-          throw ex;
-        }
-        else
-        {
-          if (chunk.content().isReadable())
+          ByteBuf rawData = chunk.content();
+          InputStream is = new ByteBufInputStream(rawData);
+          final ByteString data;
+          try
           {
-            chunk.retain();
-            _buffer.addComponent(chunk.content());
-            _buffer.writerIndex(_buffer.writerIndex() + chunk.content().readableBytes());
-            if (_buffer.readableBytes() > _highWaterMark && _ctx.channel().config().isAutoRead())
-            {
-              // stop reading from socket because we buffered too much
-              _ctx.channel().config().setAutoRead(false);
-            }
+            data = ByteString.read(is, rawData.readableBytes());
           }
-          if (chunk instanceof LastHttpContent)
+          catch (IOException ex)
           {
-            _lastChunkReceived = true;
+            fail(ex);
+            return;
           }
-          if (_wh != null)
+          _buffer.add(data);
+          _bufferedBytes += data.length();
+          if (_bufferedBytes > _highWaterMark && _ctx.channel().config().isAutoRead())
           {
-            doWrite();
+            // stop reading from socket because we buffered too much
+            _ctx.channel().config().setAutoRead(false);
           }
         }
-        //}
-        if (!_lastChunkReceived)
+        if (chunk instanceof LastHttpContent)
         {
-          _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
-          _timeout.addTimeoutTask(timeoutTask);
+          _lastChunkReceived = true;
+        }
+        if (_wh != null)
+        {
+          doWrite();
         }
       }
-  }
+      if (!_lastChunkReceived)
+      {
+        _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+        _timeout.addTimeoutTask(timeoutTask);
+      }
+    }
 
     public void fail(Throwable ex)
     {
       _timeout.getItem();
-      _buffer.release();
       if (_wh != null)
       {
         _wh.error(new RemoteInvocationException(ex));
       }
     }
 
-    // this method does not block
     private void doWrite()
     {
-      try
+      while(_wh.remaining() > 0)
       {
-        for (;;)
+        if (!_buffer.isEmpty())
         {
-          int remaining = _wh.remaining();
-          if (remaining > 0)
+          ByteString data = _buffer.remove(0);
+          _wh.write(data);
+          _bufferedBytes -= data.length();
+          _totalBytesWritten += data.length();
+          if (!_ctx.channel().config().isAutoRead() && _bufferedBytes < _lowWaterMark)
           {
-            int dataLen = Math.min(remaining, _buffer.readableBytes());
-            if (dataLen == 0)
-            {
-              if (_lastChunkReceived)
-              {
-                _wh.done();
-                // free
-                _buffer.release();
-                return;
-              }
-              break;
-            }
-            else
-            {
-              InputStream is = new ByteBufInputStream(_buffer);
-              ByteString data = ByteString.read(is, dataLen);
-              _wh.write(data);
-              if (!_ctx.channel().config().isAutoRead() && _buffer.readableBytes() < _lowWaterMark)
-              {
-                // resume reading from socket
-                _ctx.channel().config().setAutoRead(true);
-              }
-              _totalBytesWritten += data.length();
-            }
-          }
-          else
-          { // remaining <= 0
-            break;
+            // resume reading from socket
+            _ctx.channel().config().setAutoRead(true);
           }
         }
-        // free up ByteBufs which are read.
-        _buffer.discardReadComponents();
-      }
-      catch (IOException ex)
-      {
-        _wh.error(ex);
-        // free
-        _buffer.release();
+        else
+        {
+          if (_lastChunkReceived)
+          {
+            _wh.done();
+          }
+          break;
+        }
       }
     }
   }
