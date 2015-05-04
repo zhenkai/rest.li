@@ -54,4 +54,10 @@ class RAPClientCodec extends ChannelDuplexHandler
   {
     _encoder.write(ctx, msg, promise);
   }
+
+  @Override
+  public void flush(ChannelHandlerContext ctx) throws Exception
+  {
+    _encoder.flush(ctx);
+  }
 }
