@@ -60,7 +60,7 @@ import java.util.Map;
     nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
 
     ctx.write(nettyRequest);
-    _currentReader = new BufferedReader(ctx, MAX_BUFFER_SIZE);
+    _currentReader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS);
     request.getEntityStream().setReader(_currentReader);
   }
 
@@ -112,8 +112,6 @@ import java.util.Map;
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
-      // signal the Writer that we can accept _bufferSize chunks
-      _readHandle.request(_bufferSize);
     }
 
     public void onDataAvailable(final ByteString data)
@@ -150,7 +148,7 @@ import java.util.Map;
     //!!! following methods must be called within _ctx#executor()
     private void flush()
     {
-      _readHandle.read(_bufferSize);
+      _readHandle.request(_bufferSize);
     }
 
     private void appendData(ByteString data)
@@ -162,7 +160,7 @@ import java.util.Map;
 
     private void writeIfPossible()
     {
-      while (_buffer.readableBytes() > 0 && _ctx.channel().isWritable())
+      while (_buffer.readableBytes() > 0)
       {
         final int bytesWritten = _buffer.readableBytes();
         HttpContent content = new DefaultHttpContent(_buffer);
