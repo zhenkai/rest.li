@@ -241,12 +241,14 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
     public void processHttpChunk(HttpContent chunk) throws TooLongFrameException
     {
-      Runnable timeoutTask = _timeout.getItem();
-
-      // we need synchronized because doWrite may be invoked by EntityStream's event thread or
-      // netty thread
       synchronized (_lock)
       {
+        Runnable timeoutTask = _timeout.getItem();
+
+        // we need synchronized because doWrite may be invoked by EntityStream's event thread or
+        // netty thread
+        //synchronized (_lock)
+        //{
         if (!chunk.getDecoderResult().isSuccess())
         {
           fail(chunk.getDecoderResult().cause());
@@ -282,11 +284,12 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
             doWrite();
           }
         }
-      }
-      if (!_lastChunkReceived)
-      {
-        _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
-        _timeout.addTimeoutTask(timeoutTask);
+        //}
+        if (!_lastChunkReceived)
+        {
+          _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+          _timeout.addTimeoutTask(timeoutTask);
+        }
       }
   }
 

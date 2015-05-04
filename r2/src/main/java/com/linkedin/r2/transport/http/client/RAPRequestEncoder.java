@@ -74,6 +74,7 @@ import java.util.Map;
     }
     else
     {
+      nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
       ctx.write(nettyRequest);
       _currentReader = new BufferedReader(ctx, MAX_BUFFER_SIZE);
       request.getEntityStream().setReader(_currentReader);
@@ -81,7 +82,8 @@ import java.util.Map;
   }
 
   @Override
-  public void flush(ChannelHandlerContext ctx) throws Exception
+  public void flush(ChannelHandlerContext ctx)
+      throws Exception
   {
     if (_currentReader != null)
     {
@@ -98,10 +100,11 @@ import java.util.Map;
   {
     if (_currentReader != null)
     {
-      _currentReader.writeIfPossible();
+      _currentReader.doWrite();
     }
     ctx.fireChannelWritabilityChanged();
   }
+
 
 
   /**
@@ -122,9 +125,8 @@ import java.util.Map;
 
     BufferedReader(ChannelHandlerContext ctx, int bufferSize)
     {
-      //_bufferSize = bufferSize;
+      _bufferSize = bufferSize;
       _ctx = ctx;
-      _bufferSize = ctx.channel().config().getWriteBufferHighWaterMark();
     }
 
     public void onInit(ReadHandle rh)
@@ -142,7 +144,7 @@ import java.util.Map;
       _buffer.addComponent(channelBuffer);
       _buffer.writerIndex(_buffer.writerIndex() + channelBuffer.readableBytes());
 
-      writeIfPossible();
+      doWrite();
     }
 
     public void onDone()
@@ -159,6 +161,25 @@ import java.util.Map;
     {
       // signal the Writer that we can accept _bufferSize bytes
       _readHandle.read(_bufferSize);
+    }
+
+    public void doWrite()
+    {
+      if (_ctx.executor().inEventLoop())
+      {
+        writeIfPossible();
+      }
+      else
+      {
+        _ctx.executor().execute(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            writeIfPossible();
+          }
+        });
+      }
     }
 
     public void writeIfPossible()
