@@ -1,7 +1,6 @@
 package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
@@ -11,6 +10,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpContent;
@@ -48,62 +49,41 @@ import java.util.Map;
       path = "/";
     }
 
-    HttpRequest nettyRequest =
-        new DefaultHttpRequest(HttpVersion.HTTP_1_1, nettyMethod, path);
+    HttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, nettyMethod, path);
 
-    nettyRequest.headers().set(HttpHeaders.Names.HOST, url.getAuthority());
     for (Map.Entry<String, String> entry : request.getHeaders().entrySet())
     {
       nettyRequest.headers().set(entry.getKey(), entry.getValue());
     }
-
+    nettyRequest.headers().set(HttpHeaders.Names.HOST, url.getAuthority());
     nettyRequest.headers().set(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
+    nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
 
-    if (request instanceof RestRequest)
-    {
-      // this is small optimization for RestRequest so that we don't chunk over the wire because we
-      // don't really gain anything for chunking in such case, but slightly increase the transmitting overhead
-      final ByteString entity = ((RestRequest) request).getEntity();
-      ByteBuf buf = Unpooled.wrappedBuffer(entity.asByteBuffer());
-      HttpContent content = new DefaultHttpContent(buf);
-
-      nettyRequest.headers().set(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
-      ctx.write(nettyRequest);
-      ctx.write(content);
-      ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
-    }
-    else
-    {
-      nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
-      ctx.write(nettyRequest);
-      _currentReader = new BufferedReader(ctx, MAX_BUFFER_SIZE);
-      request.getEntityStream().setReader(_currentReader);
-    }
+    ctx.write(nettyRequest);
+    _currentReader = new BufferedReader(ctx, MAX_BUFFER_SIZE);
+    request.getEntityStream().setReader(_currentReader);
   }
 
   @Override
   public void flush(ChannelHandlerContext ctx)
       throws Exception
   {
-    if (_currentReader != null)
+    if (_currentReader == null)
     {
-      _currentReader.flush();
+      throw new IllegalStateException("_currentReader is null");
     }
-    else
-    {
-      ctx.flush();
-    }
+    _currentReader.flush();
   }
 
-  @Override
-  public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception
-  {
-    if (_currentReader != null)
-    {
-      _currentReader.doWrite();
-    }
-    ctx.fireChannelWritabilityChanged();
-  }
+//  @Override
+//  public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception
+//  {
+//    if (_currentReader != null)
+//    {
+//      _currentReader.writeIfPossible();
+//    }
+//    ctx.fireChannelWritabilityChanged();
+//  }
 
 
 
@@ -134,17 +114,25 @@ import java.util.Map;
       _readHandle = rh;
     }
 
-    public void onDataAvailable(ByteString data)
+    public void onDataAvailable(final ByteString data)
     {
-      // No need to do smaller chunking here as that won't buy us anything
-      // jetty buffer size by default is 8k, and it's parsing is smarter enought so that it
-      // won't wait to buffer the whole chunk if the chunk is larger than 8k, so the memory consumption
-      // won't not be affected by the chunk size here.
-      ByteBuf channelBuffer = Unpooled.wrappedBuffer(data.asByteBuffer());
-      _buffer.addComponent(channelBuffer);
-      _buffer.writerIndex(_buffer.writerIndex() + channelBuffer.readableBytes());
-
-      doWrite();
+      if (_ctx.executor().inEventLoop())
+      {
+        appendData(data);
+        writeIfPossible();
+      }
+      else
+      {
+        _ctx.executor().execute(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            appendData(data);
+            writeIfPossible();
+          }
+        });
+      }
     }
 
     public void onDone()
@@ -157,39 +145,35 @@ import java.util.Map;
       _ctx.fireExceptionCaught(e);
     }
 
-    public void flush()
+    //!!! following methods must be called within _ctx#executor()
+    private void flush()
     {
-      // signal the Writer that we can accept _bufferSize bytes
       _readHandle.read(_bufferSize);
     }
 
-    public void doWrite()
+    private void appendData(ByteString data)
     {
-      if (_ctx.executor().inEventLoop())
-      {
-        writeIfPossible();
-      }
-      else
-      {
-        _ctx.executor().execute(new Runnable()
-        {
-          @Override
-          public void run()
-          {
-            writeIfPossible();
-          }
-        });
-      }
+      ByteBuf channelBuffer = Unpooled.wrappedBuffer(data.asByteBuffer());
+      _buffer.addComponent(channelBuffer);
+      _buffer.writerIndex(_buffer.writerIndex() + channelBuffer.readableBytes());
     }
 
-    public void writeIfPossible()
+    private void writeIfPossible()
     {
-      if (_ctx.channel().isWritable())
+      while (_buffer.readableBytes() > 0 && _ctx.channel().isWritable())
       {
+        final int bytesWritten = _buffer.readableBytes();
         HttpContent content = new DefaultHttpContent(_buffer);
-        _ctx.writeAndFlush(content);
+        _ctx.writeAndFlush(content).addListener(new ChannelFutureListener()
+        {
+          @Override
+          public void operationComplete(ChannelFuture future)
+              throws Exception
+          {
+            _readHandle.read(bytesWritten);
+          }
+        });
         _buffer = Unpooled.compositeBuffer(1024);
-        _readHandle.read(_bufferSize);
       }
     }
   }
