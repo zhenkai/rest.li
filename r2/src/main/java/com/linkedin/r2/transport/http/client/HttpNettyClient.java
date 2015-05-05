@@ -520,7 +520,8 @@ import org.slf4j.LoggerFactory;
     protected void initChannel(NioSocketChannel ch) throws Exception
     {
       ch.pipeline().addLast("codec", new HttpClientCodec(4096, _maxHeaderSize, _maxChunkSize));
-      ch.pipeline().addLast("rapiCodec", new RAPClientCodec(_scheduler, _requestTimeout, _maxResponseSize));
+      ch.pipeline().addLast("rapEncoder", new RAPRequestEncoder());
+      ch.pipeline().addLast("rapDecoder", new RAPResponseDecoder(_requestTimeout, _maxResponseSize));
       ch.pipeline().addLast("responseHandler", _responseHandler);
       if (_sslContext != null)
       {

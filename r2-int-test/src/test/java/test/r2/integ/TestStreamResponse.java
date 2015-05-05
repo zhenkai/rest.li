@@ -171,7 +171,7 @@ public class TestStreamResponse extends AbstractStreamTest
   {
     private final byte _b;
     private final long _bytesNum;
-    private TimedBytesWriter _writer;
+    private volatile TimedBytesWriter _writer;
 
     BytesWriterRequestHandler(byte b, long bytesNUm)
     {
