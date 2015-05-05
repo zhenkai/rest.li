@@ -6,12 +6,9 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
+import com.linkedin.r2.util.LinkedDeque;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpContent;
@@ -24,6 +21,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import java.net.URL;
 import java.util.Map;
+import java.util.Queue;
 
 /**
 * @author Zhenkai Zhu
@@ -75,15 +73,19 @@ import java.util.Map;
     _currentReader.flush();
   }
 
-//  @Override
-//  public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception
-//  {
-//    if (_currentReader != null)
-//    {
-//      _currentReader.writeIfPossible();
-//    }
-//    ctx.fireChannelWritabilityChanged();
-//  }
+  @Override
+  public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception
+  {
+    if (!ctx.channel().isWritable())
+    {
+      ctx.flush();
+    }
+    else
+    {
+      _currentReader.writeIfPossible();
+    }
+    ctx.fireChannelWritabilityChanged();
+  }
 
 
 
@@ -97,16 +99,17 @@ import java.util.Map;
    */
   private static class BufferedReader implements Reader
   {
-    final private int _bufferSize;
-    final private ChannelHandlerContext _ctx;
+    private final int _bufferSize;
+    private final ChannelHandlerContext _ctx;
     private ReadHandle _readHandle;
-    private CompositeByteBuf _buffer = Unpooled.compositeBuffer(1024);
+    private final Queue<ByteString> _buffers;
 
 
     BufferedReader(ChannelHandlerContext ctx, int bufferSize)
     {
       _bufferSize = bufferSize;
       _ctx = ctx;
+      _buffers = new LinkedDeque<ByteString>();
     }
 
     public void onInit(ReadHandle rh)
@@ -153,28 +156,17 @@ import java.util.Map;
 
     private void appendData(ByteString data)
     {
-      ByteBuf channelBuffer = Unpooled.wrappedBuffer(data.asByteBuffer());
-      _buffer.addComponent(channelBuffer);
-      _buffer.writerIndex(_buffer.writerIndex() + channelBuffer.readableBytes());
+      _buffers.add(data);
     }
 
     private void writeIfPossible()
     {
-      while (_buffer.readableBytes() > 0)
+      while (_buffers.size() > 0 && _ctx.channel().isWritable())
       {
-        final int bytesWritten = _buffer.readableBytes();
-        HttpContent content = new DefaultHttpContent(_buffer);
-        _ctx.writeAndFlush(content).addListener(new ChannelFutureListener()
-        {
-          @Override
-          public void operationComplete(ChannelFuture future)
-              throws Exception
-          {
-            // data have been written out, we can tell the writer that we can accept one more data chunk
-            _readHandle.request(1);
-          }
-        });
-        _buffer = Unpooled.compositeBuffer(1024);
+        ByteString buf = _buffers.poll();
+        HttpContent content = new DefaultHttpContent(Unpooled.wrappedBuffer(buf.asByteBuffer()));
+        _ctx.write(content);
+        _readHandle.request(1);
       }
     }
   }
