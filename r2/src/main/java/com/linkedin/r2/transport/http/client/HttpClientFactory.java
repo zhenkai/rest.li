@@ -131,6 +131,8 @@ public class HttpClientFactory implements TransportClientFactory
   /** Request compression config for each http service. */
   private final Map<String, CompressionConfig> _requestCompressionConfigs;
   private final boolean                    _useClientCompression;
+  // flag to enable/disable Nagle's algorithm
+  private final boolean                    _tcpNoDelay;
 
   // All fields below protected by _mutex
   private final Object                     _mutex               = new Object();
@@ -286,6 +288,24 @@ public class HttpClientFactory implements TransportClientFactory
                            Map<String, CompressionConfig> requestCompressionConfigs,
                            boolean useClientCompression)
   {
+    this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup,
+        shutdownCallbackExecutor, jmxManager, requestCompressionThresholdDefault, requestCompressionConfigs,
+        useClientCompression, true);
+  }
+
+  public HttpClientFactory(FilterChain filters,
+                           NioEventLoopGroup eventLoopGroup,
+                           boolean shutdownFactory,
+                           ScheduledExecutorService executor,
+                           boolean shutdownExecutor,
+                           ExecutorService callbackExecutorGroup,
+                           boolean shutdownCallbackExecutor,
+                           AbstractJmxManager jmxManager,
+                           int requestCompressionThresholdDefault,
+                           Map<String, CompressionConfig> requestCompressionConfigs,
+                           boolean useClientCompression,
+                           boolean tcpNoDelay)
+  {
     _filters = filters;
     _eventLoopGroup = eventLoopGroup;
     _shutdownFactory = shutdownFactory;
@@ -305,6 +325,7 @@ public class HttpClientFactory implements TransportClientFactory
     }
     _requestCompressionConfigs = Collections.unmodifiableMap(requestCompressionConfigs);
     _useClientCompression = useClientCompression;
+    _tcpNoDelay = tcpNoDelay;
   }
 
   @Override
@@ -474,7 +495,7 @@ public class HttpClientFactory implements TransportClientFactory
     {
       // These properties can be safely cast to String before converting them to Integers as we expect Integer values
       // for all these properties.
-      return Integer.parseInt((String)properties.get(propertyKey));
+      return Integer.parseInt((String) properties.get(propertyKey));
     }
     else
     {
@@ -570,7 +591,8 @@ public class HttpClientFactory implements TransportClientFactory
                                strategy,
                                poolMinSize,
                                maxHeaderSize,
-                               maxChunkSize);
+                               maxChunkSize,
+                               _tcpNoDelay);
   }
 
   /**
