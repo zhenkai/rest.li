@@ -12,6 +12,7 @@ import com.linkedin.r2.message.streaming.DrainReader;
 import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.WriteHandle;
+import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
@@ -184,7 +185,7 @@ public class TestStreamResponse extends AbstractStreamTest
     {
       request.getEntityStream().setReader(new DrainReader());
       _writer = createWriter(_bytesNum, _b);
-      StreamResponse response = new StreamResponseBuilder().build(EntityStreams.newEntityStream(_writer));
+      StreamResponse response = buildResponse(_writer);
       callback.onSuccess(response);
     }
 
@@ -196,6 +197,11 @@ public class TestStreamResponse extends AbstractStreamTest
     protected TimedBytesWriter createWriter(long bytesNum, byte b)
     {
       return new TimedBytesWriter(_bytesNum, _b);
+    }
+
+    StreamResponse buildResponse(Writer writer)
+    {
+      return new StreamResponseBuilder().build(EntityStreams.newEntityStream(writer));
     }
   }
 
@@ -226,6 +232,16 @@ public class TestStreamResponse extends AbstractStreamTest
     ErrorRequestHandler(byte b, long bytesNum)
     {
       super(b, bytesNum);
+    }
+
+    @Override
+    StreamResponse buildResponse(Writer writer)
+    {
+      return new StreamResponseBuilder()
+                  // set the content-length to Integer.MAX_VALUE so that receiver knows there
+                  // is an error at the end of the stream.
+                  .setHeader("Content-Length", Integer.toString(Integer.MAX_VALUE))
+                  .build(EntityStreams.newEntityStream(writer));
     }
 
     @Override
