@@ -50,6 +50,7 @@ class HttpClientBuilder
   private int _poolWaiterSize = Integer.MAX_VALUE;
   private AsyncPoolImpl.Strategy _strategy = AsyncPoolImpl.Strategy.MRU;
   private AbstractJmxManager _jmxManager = AbstractJmxManager.NULL_JMX_MANAGER;
+  private boolean _tcpNoDelay = true;
 
 
   public HttpClientBuilder(NioEventLoopGroup eventLoopGroup, ScheduledExecutorService scheduler)
@@ -148,6 +149,12 @@ class HttpClientBuilder
     return this;
   }
 
+  public HttpClientBuilder setTcpNoDelay(boolean tcpNoDelay)
+  {
+    _tcpNoDelay = tcpNoDelay;
+    return this;
+  }
+
   public HttpNettyClient build()
   {
     return new HttpNettyClient(_eventLoopGroup,
@@ -166,7 +173,8 @@ class HttpClientBuilder
                                _strategy,
                                _minPoolSize,
                                _maxHeaderSize,
-                               _maxChunkSize);
+                               _maxChunkSize,
+                               _tcpNoDelay);
 
   }
 

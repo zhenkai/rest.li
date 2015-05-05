@@ -33,7 +33,7 @@ import java.util.Queue;
   private static final int MAX_BUFFERED_CHUNKS = 10;
   // this threshold is to mitigate the effect of the inter-play of Nagle's algorithm & Delayed ACK
   // when sending requests with small entity
-  private static final int FLUSH_THRESHOLD = 2048;
+  private static final int FLUSH_THRESHOLD = 8092;
 
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception

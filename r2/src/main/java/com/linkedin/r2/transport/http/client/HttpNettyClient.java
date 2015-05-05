@@ -140,7 +140,8 @@ import org.slf4j.LoggerFactory;
                          AsyncPoolImpl.Strategy strategy,
                          int minPoolSize,
                          int maxHeaderSize,
-                         int maxChunkSize)
+                         int maxChunkSize,
+                         boolean tcpNoDelay)
   {
     Bootstrap bootstrap = new Bootstrap().group(eventLoopGroup)
                                 .channel(NioSocketChannel.class)
@@ -152,7 +153,7 @@ import org.slf4j.LoggerFactory;
             idleTimeout,
             poolWaiterSize,
             strategy,
-            minPoolSize),
+            minPoolSize, tcpNoDelay),
         name + ChannelPoolManager.BASE_NAME);
 
     _maxResponseSize = maxResponseSize;
@@ -539,13 +540,15 @@ import org.slf4j.LoggerFactory;
     private final int _maxPoolWaiterSize;
     private final AsyncPoolImpl.Strategy _strategy;
     private final int _minPoolSize;
+    private final boolean _tcpNoDelay;
 
     private ChannelPoolFactoryImpl(Bootstrap bootstrap,
                                    int maxPoolSize,
                                    long idleTimeout,
                                    int maxPoolWaiterSize,
                                    AsyncPoolImpl.Strategy strategy,
-                                   int minPoolSize)
+                                   int minPoolSize,
+                                   boolean tcpNoDelay)
     {
       _bootstrap = bootstrap;
       _maxPoolSize = maxPoolSize;
@@ -553,6 +556,7 @@ import org.slf4j.LoggerFactory;
       _maxPoolWaiterSize = maxPoolWaiterSize;
       _strategy = strategy;
       _minPoolSize = minPoolSize;
+      _tcpNoDelay = tcpNoDelay;
     }
 
     @Override
@@ -561,7 +565,8 @@ import org.slf4j.LoggerFactory;
       return new AsyncPoolImpl<Channel>(address.toString() + " HTTP connection pool",
                                         new ChannelPoolLifecycle(address,
                                                                  _bootstrap,
-                                                                 _allChannels),
+                                                                 _allChannels,
+                                                                 _tcpNoDelay),
                                         _maxPoolSize,
                                         _idleTimeout,
                                         _scheduler,
