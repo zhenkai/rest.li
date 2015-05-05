@@ -53,13 +53,11 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
   private final long _maxContentLength;
   private final long _requestTimeout;
-  private final ScheduledExecutorService _scheduler;
 
   private TimeoutBufferedWriter _chunkedMessageWriter;
 
-  RAPResponseDecoder(ScheduledExecutorService scheduler, long requestTimeout, long maxContentLength)
+  RAPResponseDecoder(long requestTimeout, long maxContentLength)
   {
-    _scheduler = scheduler;
     _requestTimeout = requestTimeout;
     _maxContentLength = maxContentLength;
   }
@@ -96,7 +94,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         removeTransferEncodingChunked(m);
       }
       final TimeoutBufferedWriter writer = new TimeoutBufferedWriter(ctx, _maxContentLength,
-          BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK, _scheduler, _requestTimeout);
+          BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK, _requestTimeout);
       EntityStream entityStream = EntityStreams.newEntityStream(writer);
       _chunkedMessageWriter = writer;
       StreamResponseBuilder builder = new StreamResponseBuilder();
@@ -191,11 +189,10 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     private int _totalBytesWritten = 0;
     private int _bufferedBytes = 0;
     private final List<ByteString> _buffer = new LinkedList<ByteString>();
-    private final ScheduledExecutorService _scheduler;
     private final long _requestTimeout;
 
     TimeoutBufferedWriter(final ChannelHandlerContext ctx, long maxContentLength,
-                          int highWaterMark, int lowWaterMark, ScheduledExecutorService scheduler,
+                          int highWaterMark, int lowWaterMark,
                           final long requestTimeout)
     {
       _ctx = ctx;
@@ -216,9 +213,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
           _chunkedMessageWriter = null;
         }
       };
-      _timeout = new Timeout<Runnable>(scheduler, requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+      _timeout = new Timeout<Runnable>(ctx.executor(), requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
       _timeout.addTimeoutTask(timeoutTask);
-      _scheduler = scheduler;
       _requestTimeout = requestTimeout;
     }
 
@@ -300,7 +296,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       }
       if (!_lastChunkReceived)
       {
-        _timeout = new Timeout<Runnable>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+        _timeout = new Timeout<Runnable>(_ctx.executor(), _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
         _timeout.addTimeoutTask(timeoutTask);
       }
     }
