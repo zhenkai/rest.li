@@ -31,6 +31,9 @@ import java.util.Queue;
 /** package private */class RAPRequestEncoder extends ChannelDuplexHandler
 {
   private static final int MAX_BUFFERED_CHUNKS = 10;
+  // this threshold is to mitigate the effect of the inter-play of Nagle's algorithm & Delayed ACK
+  // when sending requests with small entity
+  private static final int FLUSH_THRESHOLD = 2048;
 
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
@@ -58,7 +61,7 @@ import java.util.Queue;
     nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
 
     ctx.write(nettyRequest);
-    Reader reader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS);
+    Reader reader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS, FLUSH_THRESHOLD);
     request.getEntityStream().setReader(reader);
   }
 
@@ -76,34 +79,50 @@ import java.util.Queue;
    */
   private static class BufferedReader implements Reader
   {
-    private final int _bufferSize;
+    private final int _maxBufferedChunks;
+    private final int _flushThreshold;
     private final ChannelHandlerContext _ctx;
     private volatile ReadHandle _readHandle;
+    private int _notFlushedBytes;
+    private int _notFlushedChunks;
 
-    BufferedReader(ChannelHandlerContext ctx, int bufferSize)
+    BufferedReader(ChannelHandlerContext ctx, int maxBufferedChunks, int flushThreshold)
     {
-      _bufferSize = bufferSize;
+      _maxBufferedChunks = maxBufferedChunks;
+      _flushThreshold = flushThreshold;
       _ctx = ctx;
+      _notFlushedBytes = 0;
+      _notFlushedChunks = 0;
     }
 
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
-      _readHandle.request(_bufferSize);
+      _readHandle.request(_maxBufferedChunks);
     }
 
     public void onDataAvailable(final ByteString data)
     {
       HttpContent content = new DefaultHttpContent(Unpooled.wrappedBuffer(data.asByteBuffer()));
-      _ctx.writeAndFlush(content).addListener(new ChannelFutureListener()
+      _ctx.write(content).addListener(new ChannelFutureListener()
       {
         @Override
         public void operationComplete(ChannelFuture future)
             throws Exception
         {
+          // this will not be invoked until flush() is called and the data is actually written to socket
           _readHandle.request(1);
         }
       });
+
+      _notFlushedBytes += data.length();
+      _notFlushedChunks++;
+      if (_notFlushedBytes >= _flushThreshold || _notFlushedChunks == _maxBufferedChunks)
+      {
+        _ctx.flush();
+        _notFlushedBytes = 0;
+        _notFlushedChunks = 0;
+      }
     }
 
     public void onDone()
