@@ -30,8 +30,6 @@ import java.util.Queue;
 */
 /** package private */class RAPRequestEncoder extends ChannelDuplexHandler
 {
-
-  private BufferedReader _currentReader;
   private static final int MAX_BUFFERED_CHUNKS = 10;
 
   @Override
@@ -60,28 +58,19 @@ import java.util.Queue;
     nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
 
     ctx.write(nettyRequest);
-    _currentReader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS);
-    request.getEntityStream().setReader(_currentReader);
+    Reader reader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS);
+    request.getEntityStream().setReader(reader);
   }
 
   @Override
   public void flush(ChannelHandlerContext ctx)
       throws Exception
   {
-    if (_currentReader == null)
-    {
-      throw new IllegalStateException("_currentReader is null");
-    }
-    _currentReader.flush();
+    // do nothing, we control when to flush
   }
-
-
 
   /**
    * A reader that has pipelining/buffered reading
-   *
-   * The bufferSize = the permitted size that the writer can still write + the size of data that has been provided
-   * by writer but not yet written to socket
    *
    * Buffering is actually done by Netty; we just enforce the upper bound of the buffering
    */
@@ -90,84 +79,41 @@ import java.util.Queue;
     private final int _bufferSize;
     private final ChannelHandlerContext _ctx;
     private volatile ReadHandle _readHandle;
-    private final Queue<ByteString> _buffers;
-
 
     BufferedReader(ChannelHandlerContext ctx, int bufferSize)
     {
       _bufferSize = bufferSize;
       _ctx = ctx;
-      _buffers = new LinkedDeque<ByteString>();
     }
 
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
+      _readHandle.request(_bufferSize);
     }
 
     public void onDataAvailable(final ByteString data)
     {
-      if (_ctx.executor().inEventLoop())
+      HttpContent content = new DefaultHttpContent(Unpooled.wrappedBuffer(data.asByteBuffer()));
+      _ctx.writeAndFlush(content).addListener(new ChannelFutureListener()
       {
-        appendData(data);
-        writeIfPossible();
-      }
-      else
-      {
-        _ctx.executor().execute(new Runnable()
+        @Override
+        public void operationComplete(ChannelFuture future)
+            throws Exception
         {
-          @Override
-          public void run()
-          {
-            appendData(data);
-            writeIfPossible();
-          }
-        });
-      }
+          _readHandle.request(1);
+        }
+      });
     }
 
     public void onDone()
     {
-      _readHandle = null;
       _ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
     }
 
     public void onError(Throwable e)
     {
-      _readHandle = null;
       _ctx.fireExceptionCaught(e);
-    }
-
-    //!!! following methods must be called within _ctx#executor()
-    private void flush()
-    {
-      _readHandle.request(_bufferSize);
-    }
-
-    private void appendData(ByteString data)
-    {
-      _buffers.add(data);
-    }
-
-    private void writeIfPossible()
-    {
-      while (_buffers.size() > 0)
-      {
-        ByteString buf = _buffers.poll();
-        HttpContent content = new DefaultHttpContent(Unpooled.wrappedBuffer(buf.asByteBuffer()));
-        _ctx.writeAndFlush(content).addListener(new ChannelFutureListener()
-        {
-          @Override
-          public void operationComplete(ChannelFuture future)
-              throws Exception
-          {
-            if (_readHandle != null)
-            {
-              _readHandle.request(1);
-            }
-          }
-        });
-      }
     }
   }
 }
