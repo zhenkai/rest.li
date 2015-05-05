@@ -9,6 +9,8 @@ import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.util.LinkedDeque;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpContent;
@@ -30,7 +32,7 @@ import java.util.Queue;
 {
 
   private BufferedReader _currentReader;
-  private static final int MAX_BUFFERED_CHUNKS = 3;
+  private static final int MAX_BUFFERED_CHUNKS = 10;
 
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
@@ -73,20 +75,6 @@ import java.util.Queue;
     _currentReader.flush();
   }
 
-  @Override
-  public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception
-  {
-    if (!ctx.channel().isWritable())
-    {
-      ctx.flush();
-    }
-    else
-    {
-      _currentReader.writeIfPossible();
-    }
-    ctx.fireChannelWritabilityChanged();
-  }
-
 
 
   /**
@@ -101,7 +89,7 @@ import java.util.Queue;
   {
     private final int _bufferSize;
     private final ChannelHandlerContext _ctx;
-    private ReadHandle _readHandle;
+    private volatile ReadHandle _readHandle;
     private final Queue<ByteString> _buffers;
 
 
@@ -140,11 +128,13 @@ import java.util.Queue;
 
     public void onDone()
     {
+      _readHandle = null;
       _ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
     }
 
     public void onError(Throwable e)
     {
+      _readHandle = null;
       _ctx.fireExceptionCaught(e);
     }
 
@@ -161,12 +151,22 @@ import java.util.Queue;
 
     private void writeIfPossible()
     {
-      while (_buffers.size() > 0 && _ctx.channel().isWritable())
+      while (_buffers.size() > 0)
       {
         ByteString buf = _buffers.poll();
         HttpContent content = new DefaultHttpContent(Unpooled.wrappedBuffer(buf.asByteBuffer()));
-        _ctx.write(content);
-        _readHandle.request(1);
+        _ctx.writeAndFlush(content).addListener(new ChannelFutureListener()
+        {
+          @Override
+          public void operationComplete(ChannelFuture future)
+              throws Exception
+          {
+            if (_readHandle != null)
+            {
+              _readHandle.request(1);
+            }
+          }
+        });
       }
     }
   }
