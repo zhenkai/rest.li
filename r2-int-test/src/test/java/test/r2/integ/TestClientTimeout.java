@@ -5,10 +5,12 @@ import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.DrainReader;
 import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.sample.Bootstrap;
@@ -23,12 +25,14 @@ import org.testng.annotations.Test;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Zhenkai Zhu
@@ -37,6 +41,7 @@ public class TestClientTimeout extends AbstractStreamTest
 {
   private static final URI TIMEOUT_BEFORE_RESPONSE_URI = URI.create("/timeout-before-response");
   private static final URI TIMEOUT_DURING_RESPONSE_URI = URI.create("/timeout-during-response");
+  private static final URI NORMAL_URI = URI.create("/normal");
 
   @Override
   protected TransportDispatcher getTransportDispatcher()
@@ -45,6 +50,7 @@ public class TestClientTimeout extends AbstractStreamTest
     return new TransportDispatcherBuilder()
         .addStreamHandler(TIMEOUT_BEFORE_RESPONSE_URI, new DelayBeforeResponseHandler())
         .addStreamHandler(TIMEOUT_DURING_RESPONSE_URI, new DelayDuringResponseHandler())
+        .addStreamHandler(NORMAL_URI, new NormalHandler())
         .build();
   }
 
@@ -94,6 +100,52 @@ public class TestClientTimeout extends AbstractStreamTest
     }
   }
 
+  @Test
+  public void testReadAfterTimeout() throws Exception
+  {
+    StreamRequest request = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, NORMAL_URI)).build(EntityStreams.emptyStream());
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AtomicReference<StreamResponse> response = new AtomicReference<StreamResponse>();
+    _client.streamRequest(request, new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        latch.countDown();
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        response.set(result);
+        latch.countDown();
+      }
+    });
+    latch.await(500, TimeUnit.MILLISECONDS);
+    Assert.assertNotNull(response.get());
+
+    // let it timeout before we read
+    Thread.sleep(600);
+
+    final AtomicReference<Throwable> throwable = new AtomicReference<Throwable>();
+    final CountDownLatch errorLatch = new CountDownLatch(1);
+    Reader reader = new DrainReader()
+    {
+      @Override
+      public void onError(Throwable ex)
+      {
+        throwable.set(ex);
+        errorLatch.countDown();
+      }
+    };
+    response.get().getEntityStream().setReader(reader);
+    errorLatch.await(500, TimeUnit.MILLISECONDS);
+    Assert.assertNotNull(throwable.get());
+    Throwable rootCause = ExceptionUtils.getRootCause(throwable.get());
+    Assert.assertTrue(rootCause instanceof TimeoutException);
+    Assert.assertEquals(rootCause.getMessage(), "Timeout while receiving the response entity.");
+  }
+
   private class DelayBeforeResponseHandler implements StreamRequestHandler
   {
     @Override
@@ -138,6 +190,17 @@ public class TestClientTimeout extends AbstractStreamTest
         }
       };
       callback.onSuccess(new StreamResponseBuilder().build(EntityStreams.newEntityStream(writer)));
+    }
+  }
+
+
+  private class NormalHandler implements StreamRequestHandler
+  {
+    @Override
+    public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
+    {
+      request.getEntityStream().setReader(new DrainReader());
+      callback.onSuccess(new StreamResponseBuilder().build(EntityStreams.emptyStream()));
     }
   }
 

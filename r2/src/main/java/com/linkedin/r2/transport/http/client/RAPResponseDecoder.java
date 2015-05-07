@@ -193,6 +193,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     private int _bufferedBytes = 0;
     private final List<ByteString> _buffer = new LinkedList<ByteString>();
     private final Timeout<None> _timeout;
+    private volatile Throwable _failureBeforeInit;
 
     TimeoutBufferedWriter(final ChannelHandlerContext ctx, long maxContentLength,
                           int highWaterMark, int lowWaterMark,
@@ -202,6 +203,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       _maxContentLength = maxContentLength;
       _highWaterMark = highWaterMark;
       _lowWaterMark = lowWaterMark;
+      _failureBeforeInit = null;
 
       // schedule a timeout to close the channel and inform use
       Runnable timeoutTask = new Runnable()
@@ -234,6 +236,12 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     @Override
     public void onWritePossible()
     {
+      if (_failureBeforeInit != null)
+      {
+        fail(_failureBeforeInit);
+        return;
+      }
+
       if (_ctx.executor().inEventLoop())
       {
         doWrite();
@@ -302,6 +310,10 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       if (_wh != null)
       {
         _wh.error(new RemoteInvocationException(ex));
+      }
+      else
+      {
+        _failureBeforeInit = ex;
       }
     }
 
