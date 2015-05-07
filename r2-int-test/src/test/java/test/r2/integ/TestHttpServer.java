@@ -67,6 +67,8 @@ public class TestHttpServer
 
   private HttpServer _server;
   private final ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
+  private static final String MULTI_VALUE_HEADER_NAME = "MultiValuedHeader";
+  private static final String MULTI_VALUE_HEADER_COUNT_HEADER = "MultiValuedHeaderCount";
 
   @BeforeTest
   public void setup() throws IOException
@@ -145,18 +147,22 @@ public class TestHttpServer
   @Test
   public void testMultiValuedHeaderEcho() throws Exception
   {
-    final String header = "MultiValuedHeader";
     final List<String> values = Arrays.asList(new String[]{ "foo", "bar", "baz", "qux" });
     HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/headerEcho").openConnection();
     for (String v : values)
     {
-      c.addRequestProperty(header, v);
+      c.addRequestProperty(MULTI_VALUE_HEADER_NAME, v);
     }
+
+    // check the number of header values received at the server side
+    String valueCount = c.getHeaderField(MULTI_VALUE_HEADER_COUNT_HEADER);
+    assertEquals(Integer.parseInt(valueCount), values.size());
+
+
+    // check the number of header values received at client side
     // we know the headers are going to be folded into one line its way back.
-    List<String> echoValues = RestUtil.getHeaderValues(c.getHeaderField(header));
+    List<String> echoValues = RestUtil.getHeaderValues(c.getHeaderField(MULTI_VALUE_HEADER_NAME));
     assertEquals(new HashSet<String>(echoValues), new HashSet<String>(values));
-    //assertEquals(echoValues.size(), values.size());
-    //assertTrue(echoValues.containsAll(values));
   }
 
   @Test
@@ -183,8 +189,6 @@ public class TestHttpServer
     }
     List<String> cookiesEcho = c.getHeaderFields().get(HttpConstants.RESPONSE_COOKIE_HEADER_NAME);
     assertEquals(new HashSet<String>(cookiesEcho), new HashSet<String>(cookies));
-    //assertEquals(cookiesEcho.size(), cookies.size());
-    //assertTrue(cookiesEcho.containsAll(cookies));
   }
 
   private static class ErrorHandler implements RestRequestHandler
@@ -226,13 +230,19 @@ public class TestHttpServer
     @Override
     public void handleRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
     {
-      final RestResponse response = new RestResponseBuilder()
+      final RestResponseBuilder builder = new RestResponseBuilder()
         .setStatus(RestStatus.OK)
         .setEntity("Hello World".getBytes())
         .setHeaders(request.getHeaders())
-        .setCookies(request.getCookies())
-        .build();
-      callback.onSuccess(response);
+        .setCookies(request.getCookies());
+
+
+      List<String> multiValuedHeaders = request.getHeaderValues(MULTI_VALUE_HEADER_NAME);
+      if (multiValuedHeaders != null)
+      {
+        builder.setHeader(MULTI_VALUE_HEADER_COUNT_HEADER, String.valueOf(multiValuedHeaders.size()));
+      }
+      callback.onSuccess(builder.build());
     }
   }
 }
