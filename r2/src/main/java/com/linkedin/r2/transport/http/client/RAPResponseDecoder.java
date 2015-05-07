@@ -45,7 +45,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
 /* package private */ class RAPResponseDecoder extends SimpleChannelInboundHandler<HttpObject>
 {
-  public static final AttributeKey<Timeout<None>> TIMEOUT_EXECUTOR_ATTR_KEY
+  public static final AttributeKey<Timeout<None>> TIMEOUT_ATTR_KEY
       = AttributeKey.valueOf("TimeoutExecutor");
   private static final FullHttpResponse CONTINUE =
       new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER);
@@ -94,7 +94,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         removeTransferEncodingChunked(m);
       }
 
-      Timeout<None> timeout = ctx.channel().attr(TIMEOUT_EXECUTOR_ATTR_KEY).getAndRemove();
+      Timeout<None> timeout = ctx.channel().attr(TIMEOUT_ATTR_KEY).getAndRemove();
       if (timeout == null)
       {
         ctx.fireExceptionCaught(new IllegalStateException("Missing timeout attribute in RAPResponseDecoder."));
@@ -188,7 +188,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     private final int _highWaterMark;
     private final int _lowWaterMark;
     private WriteHandle _wh;
-    private volatile boolean _lastChunkReceived = false;
+    private boolean _lastChunkReceived = false;
     private int _totalBytesWritten = 0;
     private int _bufferedBytes = 0;
     private final List<ByteString> _buffer = new LinkedList<ByteString>();
@@ -209,13 +209,16 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         @Override
         public void run()
         {
-          if (_chunkedMessageWriter != null)
+          _ctx.executor().execute(new Runnable()
           {
-            _chunkedMessageWriter = null;
-            final Exception ex = new TimeoutException("Timeout while receiving the response entity.");
-            fail(ex);
-            ctx.fireExceptionCaught(ex);
-          }
+            @Override
+            public void run()
+            {
+              final Exception ex = new TimeoutException("Timeout while receiving the response entity.");
+              fail(ex);
+              ctx.fireExceptionCaught(ex);
+            }
+          });
         }
       };
       _timeout = timeout;
