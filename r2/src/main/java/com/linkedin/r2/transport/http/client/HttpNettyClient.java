@@ -33,6 +33,7 @@ import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.http.common.HttpBridge;
 import com.linkedin.r2.util.Cancellable;
+import com.linkedin.r2.util.Timeout;
 import com.linkedin.r2.util.TimeoutRunnable;
 
 import io.netty.bootstrap.Bootstrap;
@@ -362,7 +363,8 @@ import org.slf4j.LoggerFactory;
 
         // This handler invokes the callback with the response once it arrives.
         channel.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).set(callback);
-        channel.attr(RAPResponseDecoder.TIMEOUT_EXECUTOR_ATTR_KEY).set(callback);
+        channel.attr(RAPResponseDecoder.TIMEOUT_ATTR_KEY)
+            .set(new Timeout<None>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, None.none()));
 
         final State state = _state.get();
         if (state == State.REQUESTS_STOPPING || state == State.SHUTDOWN)

@@ -20,16 +20,15 @@
 
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.common.util.None;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.util.Timeout;
+import com.linkedin.r2.util.TimeoutExecutor;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A TransportCallback wrapper with associated timeout.  If the TimeoutTransportCallback's
@@ -41,11 +40,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @version $Revision: $
  */
 
-public class TimeoutTransportCallback<T> extends Timeout<None> implements TransportCallback<T>
+public class TimeoutTransportCallback<T> implements TransportCallback<T>, TimeoutExecutor
 {
-  private final TransportCallback<T> _callback;
-  // make sure callback is only invoked once
-  private final AtomicBoolean _callbackInvoked = new AtomicBoolean(false);
+  private final Timeout<TransportCallback<T>> _timeout;
 
   /**
    * Construct a new instance using the specified parameters.
@@ -63,17 +60,13 @@ public class TimeoutTransportCallback<T> extends Timeout<None> implements Transp
                                   final TransportCallback<T> callback,
                                   final String timeoutMessage)
   {
-    super(scheduler, timeout, timeoutUnit, None.none());
-    _callback = callback;
-    super.addTimeoutTask(new Runnable()
+    _timeout = new Timeout<TransportCallback<T>>(scheduler, timeout, timeoutUnit, callback);
+    _timeout.addTimeoutTask(new Runnable()
     {
       @Override
       public void run()
       {
-        if (_callbackInvoked.compareAndSet(false, true))
-        {
-          callback.onResponse(TransportResponseImpl.<T>error(new TimeoutException(timeoutMessage)));
-        }
+        callback.onResponse(TransportResponseImpl.<T>error(new TimeoutException(timeoutMessage)));
       }
     });
   }
@@ -81,9 +74,16 @@ public class TimeoutTransportCallback<T> extends Timeout<None> implements Transp
   @Override
   public void onResponse(TransportResponse<T> response)
   {
-    if (_callbackInvoked.compareAndSet(false, true))
+    TransportCallback<T> callback = _timeout.getItem();
+    if (callback != null)
     {
-      _callback.onResponse(response);
+      callback.onResponse(response);
     }
+  }
+
+  @Override
+  public void addTimeoutTask(Runnable task)
+  {
+    _timeout.addTimeoutTask(task);
   }
 }
