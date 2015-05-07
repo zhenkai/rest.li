@@ -34,6 +34,7 @@ import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -62,7 +63,7 @@ import static org.testng.Assert.fail;
 
 public class TestHttpServer
 {
-  private static final int PORT = 8088;
+  private static final int PORT = 18088;
 
   private HttpServer _server;
   private final ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -153,8 +154,9 @@ public class TestHttpServer
     }
     // we know the headers are going to be folded into one line its way back.
     List<String> echoValues = RestUtil.getHeaderValues(c.getHeaderField(header));
-    assertEquals(echoValues.size(), values.size());
-    assertTrue(echoValues.containsAll(values));
+    assertEquals(new HashSet<String>(echoValues), new HashSet<String>(values));
+    //assertEquals(echoValues.size(), values.size());
+    //assertTrue(echoValues.containsAll(values));
   }
 
   @Test
@@ -180,8 +182,9 @@ public class TestHttpServer
       c.addRequestProperty(HttpConstants.REQUEST_COOKIE_HEADER_NAME, cookie);
     }
     List<String> cookiesEcho = c.getHeaderFields().get(HttpConstants.RESPONSE_COOKIE_HEADER_NAME);
-    assertEquals(cookiesEcho.size(), cookies.size());
-    assertTrue(cookiesEcho.containsAll(cookies));
+    assertEquals(new HashSet<String>(cookiesEcho), new HashSet<String>(cookies));
+    //assertEquals(cookiesEcho.size(), cookies.size());
+    //assertTrue(cookiesEcho.containsAll(cookies));
   }
 
   private static class ErrorHandler implements RestRequestHandler

@@ -61,7 +61,7 @@ public class TestStreamResponse extends AbstractStreamTest
   {
     Map<String, String> clientProperties = new HashMap<String, String>();
     clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
-    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "500");
+    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "30000");
     return clientProperties;
   }
 
