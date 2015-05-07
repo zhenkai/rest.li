@@ -55,7 +55,7 @@ class RAPResponseHandler extends SimpleChannelInboundHandler<StreamResponse>
   private static Logger LOG = LoggerFactory.getLogger(RAPResponseHandler.class);
 
   public static final AttributeKey<TransportCallback<StreamResponse>> CALLBACK_ATTR_KEY
-      = AttributeKey.valueOf("Callback");
+    = AttributeKey.valueOf("Callback");
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, StreamResponse response) throws Exception

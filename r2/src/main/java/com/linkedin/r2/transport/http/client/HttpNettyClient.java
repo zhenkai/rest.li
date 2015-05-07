@@ -325,31 +325,6 @@ import org.slf4j.LoggerFactory;
     final StreamRequest newRequest = request.builder()
                                              .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
                                              .build(request.getEntityStream());
-    // TODO [ZZ]: figure out what to do with QueryTunnelUtil. we can support request with no body easily, but for
-    // request without body, it seems not working with streaming
-//    try
-//    {
-//      newRequest= QueryTunnelUtil.encode(new RestRequestBuilder(request)
-//                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
-//                                             .build(),
-//                                         requestContext,
-//                                         _queryPostThreshold);
-//    }
-//    catch (IOException e)
-//    {
-//      errorResponse(callback, e);
-//      return;
-//    }
-//    catch (URISyntaxException e)
-//    {
-//      errorResponse(callback, e);
-//      return;
-//    }
-//    catch (MessagingException e)
-//    {
-//      errorResponse(callback, e);
-//      return;
-//    }
 
     // TODO investigate DNS resolution and timing
     SocketAddress address = new InetSocketAddress(host, port);
@@ -387,6 +362,7 @@ import org.slf4j.LoggerFactory;
 
         // This handler invokes the callback with the response once it arrives.
         channel.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).set(callback);
+        channel.attr(RAPResponseDecoder.TIMEOUT_EXECUTOR_ATTR_KEY).set(callback);
 
         final State state = _state.get();
         if (state == State.REQUESTS_STOPPING || state == State.SHUTDOWN)
@@ -522,7 +498,7 @@ import org.slf4j.LoggerFactory;
     {
       ch.pipeline().addLast("codec", new HttpClientCodec(4096, _maxHeaderSize, _maxChunkSize));
       ch.pipeline().addLast("rapEncoder", new RAPRequestEncoder());
-      ch.pipeline().addLast("rapDecoder", new RAPResponseDecoder(_requestTimeout, _maxResponseSize));
+      ch.pipeline().addLast("rapDecoder", new RAPResponseDecoder(_maxResponseSize));
       ch.pipeline().addLast("responseHandler", _responseHandler);
       if (_sslContext != null)
       {

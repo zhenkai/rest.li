@@ -20,10 +20,14 @@ import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
+import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,6 +58,14 @@ public class TestStreamRequest extends AbstractStreamTest
         .addStreamHandler(LARGE_URI, _checkRequestHandler)
         .addStreamHandler(RATE_LIMITED_URI, _rateLimitedRequestHandler)
         .build();
+  }
+
+  @Override
+  protected Map<String, String> getClientProperties()
+  {
+    Map<String, String> clientProperties = new HashMap<String, String>();
+    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "30000");
+    return clientProperties;
   }
 
   @Test

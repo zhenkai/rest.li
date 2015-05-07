@@ -1,6 +1,7 @@
 package com.linkedin.r2.transport.http.client;
 
 
+import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
@@ -13,7 +14,6 @@ import com.linkedin.r2.util.Timeout;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -28,14 +28,14 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.util.AttributeKey;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.ClosedChannelException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.netty.handler.codec.http.HttpHeaders.is100ContinueExpected;
@@ -45,6 +45,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
 /* package private */ class RAPResponseDecoder extends SimpleChannelInboundHandler<HttpObject>
 {
+  public static final AttributeKey<Timeout<None>> TIMEOUT_EXECUTOR_ATTR_KEY
+      = AttributeKey.valueOf("TimeoutExecutor");
   private static final FullHttpResponse CONTINUE =
       new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER);
 
@@ -52,13 +54,11 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   private static final int BUFFER_LOW_WATER_MARK = 8 * 1024;
 
   private final long _maxContentLength;
-  private final long _requestTimeout;
 
   private TimeoutBufferedWriter _chunkedMessageWriter;
 
-  RAPResponseDecoder(long requestTimeout, long maxContentLength)
+  RAPResponseDecoder(long maxContentLength)
   {
-    _requestTimeout = requestTimeout;
     _maxContentLength = maxContentLength;
   }
 
@@ -93,8 +93,16 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       {
         removeTransferEncodingChunked(m);
       }
+
+      Timeout<None> timeout = ctx.channel().attr(TIMEOUT_EXECUTOR_ATTR_KEY).getAndRemove();
+      if (timeout == null)
+      {
+        ctx.fireExceptionCaught(new IllegalStateException("Missing timeout attribute in RAPResponseDecoder."));
+        return;
+      }
+
       final TimeoutBufferedWriter writer = new TimeoutBufferedWriter(ctx, _maxContentLength,
-          BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK, _requestTimeout);
+          BUFFER_HIGH_WATER_MARK, BUFFER_LOW_WATER_MARK, timeout);
       EntityStream entityStream = EntityStreams.newEntityStream(writer);
       _chunkedMessageWriter = writer;
       StreamResponseBuilder builder = new StreamResponseBuilder();
@@ -126,16 +134,12 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
                 " without " + HttpResponse.class.getSimpleName());
       }
 
-      final boolean last;
       if (!chunk.getDecoderResult().isSuccess())
       {
-        last = true;
+        this.exceptionCaught(ctx, chunk.getDecoderResult().cause());
       }
-      else
-      {
-        last = chunk instanceof LastHttpContent;
-      }
-      if (last)
+
+      if (chunk instanceof LastHttpContent)
       {
         _chunkedMessageWriter = null;
         ctx.fireChannelRead(ChannelPoolHandler.CHANNEL_RELEASE_SIGNAL);
@@ -184,16 +188,15 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     private final int _highWaterMark;
     private final int _lowWaterMark;
     private WriteHandle _wh;
-    private Timeout<Runnable> _timeout;
     private volatile boolean _lastChunkReceived = false;
     private int _totalBytesWritten = 0;
     private int _bufferedBytes = 0;
     private final List<ByteString> _buffer = new LinkedList<ByteString>();
-    private final long _requestTimeout;
+    private final Timeout<None> _timeout;
 
     TimeoutBufferedWriter(final ChannelHandlerContext ctx, long maxContentLength,
                           int highWaterMark, int lowWaterMark,
-                          final long requestTimeout)
+                          Timeout<None> timeout)
     {
       _ctx = ctx;
       _maxContentLength = maxContentLength;
@@ -206,16 +209,17 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         @Override
         public void run()
         {
-          Exception ex = new TimeoutException("Not receiving any chunk after timeout of " + requestTimeout + "ms");
-          ctx.fireExceptionCaught(ex);
-          fail(ex);
-
-          _chunkedMessageWriter = null;
+          if (_chunkedMessageWriter != null)
+          {
+            _chunkedMessageWriter = null;
+            final Exception ex = new TimeoutException("Timeout while receiving the response entity.");
+            fail(ex);
+            ctx.fireExceptionCaught(ex);
+          }
         }
       };
-      _timeout = new Timeout<Runnable>(ctx.executor(), requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
+      _timeout = timeout;
       _timeout.addTimeoutTask(timeoutTask);
-      _requestTimeout = requestTimeout;
     }
 
     @Override
@@ -246,14 +250,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
     public void processHttpChunk(HttpContent chunk) throws TooLongFrameException
     {
-      Runnable timeoutTask = _timeout.getItem();
-
-      if (!chunk.getDecoderResult().isSuccess())
-      {
-        fail(chunk.getDecoderResult().cause());
-        _chunkedMessageWriter = null;
-      }
-      else if (chunk.content().readableBytes() + _totalBytesWritten > _maxContentLength)
+      if (chunk.content().readableBytes() + _totalBytesWritten > _maxContentLength)
       {
         TooLongFrameException ex = new TooLongFrameException("HTTP content length exceeded " + _maxContentLength +
             " bytes.");
@@ -294,11 +291,6 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
           doWrite();
         }
       }
-      if (!_lastChunkReceived)
-      {
-        _timeout = new Timeout<Runnable>(_ctx.executor(), _requestTimeout, TimeUnit.MILLISECONDS, timeoutTask);
-        _timeout.addTimeoutTask(timeoutTask);
-      }
     }
 
     public void fail(Throwable ex)
@@ -330,6 +322,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         {
           if (_lastChunkReceived)
           {
+            _timeout.getItem();
             _wh.done();
           }
           break;
