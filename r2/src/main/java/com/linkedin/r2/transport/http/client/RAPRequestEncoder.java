@@ -35,6 +35,7 @@ import java.util.Queue;
   // this threshold is to mitigate the effect of the inter-play of Nagle's algorithm & Delayed ACK
   // when sending requests with small entity
   private static final int FLUSH_THRESHOLD = 8092;
+  private volatile BufferedReader _currentReader;
 
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
@@ -62,15 +63,22 @@ import java.util.Queue;
     nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
 
     ctx.write(nettyRequest);
-    Reader reader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS, FLUSH_THRESHOLD);
-    request.getEntityStream().setReader(reader);
+    _currentReader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS, FLUSH_THRESHOLD);
+    request.getEntityStream().setReader(_currentReader);
   }
 
   @Override
   public void flush(ChannelHandlerContext ctx)
       throws Exception
   {
-    // do nothing, we control when to flush
+    if (_currentReader != null)
+    {
+      _currentReader.flush();
+    }
+    else
+    {
+      ctx.flush();
+    }
   }
 
   /**
@@ -78,7 +86,7 @@ import java.util.Queue;
    *
    * Buffering is actually done by Netty; we just enforce the upper bound of the buffering
    */
-  private static class BufferedReader implements Reader
+  private class BufferedReader implements Reader
   {
     private final int _maxBufferedChunks;
     private final int _flushThreshold;
@@ -99,7 +107,6 @@ import java.util.Queue;
     public void onInit(ReadHandle rh)
     {
       _readHandle = rh;
-      _readHandle.request(_maxBufferedChunks);
     }
 
     public void onDataAvailable(final ByteString data)
@@ -128,12 +135,19 @@ import java.util.Queue;
 
     public void onDone()
     {
+      _currentReader = null;
       _ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
     }
 
     public void onError(Throwable e)
     {
+      _currentReader = null;
       _ctx.fireExceptionCaught(e);
+    }
+
+    private void flush()
+    {
+      _readHandle.request(_maxBufferedChunks);
     }
   }
 }
