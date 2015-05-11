@@ -45,7 +45,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
 /* package private */ class RAPResponseDecoder extends SimpleChannelInboundHandler<HttpObject>
 {
-  public static final AttributeKey<Timeout<None>> TIMEOUT_ATTR_KEY
+  public static final AttributeKey<Timeout<String>> TIMEOUT_ATTR_KEY
       = AttributeKey.valueOf("TimeoutExecutor");
   private static final FullHttpResponse CONTINUE =
       new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER);
@@ -94,7 +94,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         removeTransferEncodingChunked(m);
       }
 
-      Timeout<None> timeout = ctx.channel().attr(TIMEOUT_ATTR_KEY).getAndRemove();
+      Timeout<String> timeout = ctx.channel().attr(TIMEOUT_ATTR_KEY).getAndRemove();
       if (timeout == null)
       {
         ctx.fireExceptionCaught(new IllegalStateException("Missing timeout attribute in RAPResponseDecoder."));
@@ -192,12 +192,12 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     private int _totalBytesWritten = 0;
     private int _bufferedBytes = 0;
     private final List<ByteString> _buffer = new LinkedList<ByteString>();
-    private final Timeout<None> _timeout;
+    private final Timeout<String> _timeout;
     private volatile Throwable _failureBeforeInit;
 
     TimeoutBufferedWriter(final ChannelHandlerContext ctx, long maxContentLength,
                           int highWaterMark, int lowWaterMark,
-                          Timeout<None> timeout)
+                          Timeout<String> timeout)
     {
       _ctx = ctx;
       _maxContentLength = maxContentLength;
