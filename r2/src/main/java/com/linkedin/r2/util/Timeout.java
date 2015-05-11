@@ -61,6 +61,7 @@ public class Timeout<T> implements TimeoutExecutor
       throw new NullPointerException();
     }
     _item = new AtomicReference<T>(item);
+    final String itemStr = item.toString();
     _future = executor.schedule(new Runnable()
     {
       @Override
@@ -72,7 +73,7 @@ public class Timeout<T> implements TimeoutExecutor
           List<Runnable> actions = _queue.close();
           if (actions.isEmpty())
           {
-            LOG.warn("Timeout elapsed but no action was specified");
+            LOG.warn("Timeout elapsed but no action was specified: " + itemStr);
           }
           for (Runnable action : actions)
           {
