@@ -1,6 +1,8 @@
 package com.linkedin.r2.message.streaming;
 
 import com.linkedin.data.ByteString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +18,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class EntityStreams
 {
+  private static final Logger LOG = LoggerFactory.getLogger(EntityStreams.class);
+
   private EntityStreams() {}
 
   public static EntityStream emptyStream()
@@ -34,6 +38,12 @@ public final class EntityStreams
       public void onWritePossible()
       {
         _wh.done();
+      }
+
+      @Override
+      public void onAbort(Throwable e)
+      {
+        // do nothing
       }
     });
   }
@@ -54,6 +64,7 @@ public final class EntityStreams
     UNINITIALIZED,
     ACTIVE,
     FINISHED,
+    ABORTED
   }
 
   private static class EntityStreamImpl implements EntityStream
@@ -62,7 +73,6 @@ public final class EntityStreams
     private final Object _lock;
     private List<Observer> _observers;
     private Reader _reader;
-    //private int _remaining;
 
     private final AtomicInteger _remaining;
     private boolean _notifyWritePossible;
@@ -109,22 +119,14 @@ public final class EntityStreams
       @Override
       public void write(final ByteString data)
       {
-//        synchronized (_lock)
-//        {
-//          if (_state.get() == State.FINISHED)
-//          {
-//            throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
-//          }
-//
-//
-//          if (--_remaining < 0)
-//          {
-//            throw new IllegalArgumentException("Attempt to write when remaining is 0");
-//          }
-//        }
         if (_state.get() == State.FINISHED)
         {
           throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
+        }
+
+        if (_state.get() == State.ABORTED)
+        {
+          return;
         }
 
         if (_remaining.decrementAndGet() < 0)
@@ -134,9 +136,25 @@ public final class EntityStreams
 
         for (Observer observer : _observers)
         {
-          observer.onDataAvailable(data);
+          try
+          {
+            observer.onDataAvailable(data);
+          }
+          catch (Exception ex)
+          {
+            LOG.warn("Observer throws exception at onDataAvailable", ex);
+          }
         }
-        _reader.onDataAvailable(data);
+
+        try
+        {
+          _reader.onDataAvailable(data);
+        }
+        catch (Exception ex)
+        {
+          doError(ex);
+          ensureAbort(ex);
+        }
       }
 
       @Override
@@ -146,9 +164,25 @@ public final class EntityStreams
         {
           for (Observer observer : _observers)
           {
-            observer.onDone();
+            try
+            {
+              observer.onDone();
+            }
+            catch (Exception ex)
+            {
+              LOG.warn("Observer throws exception at onDone, ignored.", ex);
+            }
           }
-          _reader.onDone();
+
+          try
+          {
+            _reader.onDone();
+          }
+          catch (Exception ex)
+          {
+            // LOG.error("Reader throws exception at onDone", ex);
+            ensureAbort(ex);
+          }
         }
       }
 
@@ -157,11 +191,7 @@ public final class EntityStreams
       {
         if (_state.compareAndSet(State.ACTIVE, State.FINISHED))
         {
-          for (Observer observer : _observers)
-          {
-            observer.onError(e);
-          }
-          _reader.onError(e);
+          doError(e);
         }
       }
 
@@ -170,6 +200,11 @@ public final class EntityStreams
       {
         synchronized (_lock)
         {
+          if (_state.get() != State.ACTIVE)
+          {
+            return 0;
+          }
+
           int remaining = _remaining.get();
           if (remaining == 0)
           {
@@ -215,6 +250,40 @@ public final class EntityStreams
       if (_state.get() != State.UNINITIALIZED)
       {
         throw new IllegalStateException("EntityStream had already been initialized and can no longer accept Observers or Reader");
+      }
+    }
+
+    private void ensureAbort(Throwable e)
+    {
+      if (_state.get() != State.ABORTED)
+      {
+        _state.set(State.ABORTED);
+        _writer.onAbort(e);
+      }
+    }
+
+    private void doError(Throwable e)
+    {
+      for (Observer observer : _observers)
+      {
+        try
+        {
+          observer.onError(e);
+        }
+        catch (Exception ex)
+        {
+          LOG.warn("Observer throws exception at onError, ignored.", ex);
+        }
+      }
+
+      try
+      {
+        _reader.onError(e);
+      }
+      catch (Exception ex)
+      {
+        // LOG.error("Reader throws exception at onError", ex);
+        ensureAbort(ex);
       }
     }
   }

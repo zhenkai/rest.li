@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     _otherDirectionFinished = otherDirectionFinished;
   }
 
+  @Override
   public void onDataAvailable() throws IOException
   {
     synchronized (_lock)
@@ -42,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     }
   }
 
+  @Override
   public void onAllDataRead() throws IOException
   {
     synchronized (_lock)
@@ -58,11 +60,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
     }
   }
 
+  @Override
   public void onError(Throwable t)
   {
     _wh.error(t);
   }
 
+  @Override
   public void onInit(final WriteHandle wh)
   {
     synchronized (_lock)
@@ -72,12 +76,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
     //_is.setReadListener(this);
   }
 
+  @Override
   public void onWritePossible()
   {
     synchronized (_lock)
     {
       writeIfPossible();
     }
+  }
+
+  @Override
+  public void onAbort(Throwable ex)
+  {
+    throw new IllegalStateException("Exception thrown by request processing code", ex);
   }
 
   private void writeIfPossible()

@@ -35,7 +35,6 @@ public class StreamRequestHandlerAdapter implements StreamRequestHandler
       @Override
       public void onError(Throwable e)
       {
-        // this mostly likely would not happen as we'd fail already before reaching here
         RestResponse restResponse =
             RestStatus.responseForStatus(RestStatus.INTERNAL_SERVER_ERROR, e.toString());
 
