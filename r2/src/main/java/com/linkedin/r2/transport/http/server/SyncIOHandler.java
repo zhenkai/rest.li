@@ -55,6 +55,12 @@ public class SyncIOHandler implements Writer, Reader
   }
 
   @Override
+  public void onAbort(Throwable ex)
+  {
+    throw new IllegalStateException("Exception thrown by request stream processing code", ex);
+  }
+
+  @Override
   public void onInit(ReadHandle rh)
   {
     _rh = rh;

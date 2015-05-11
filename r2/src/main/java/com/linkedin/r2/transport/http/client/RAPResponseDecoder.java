@@ -259,6 +259,13 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       }
     }
 
+    @Override
+    public void onAbort(Throwable ex)
+    {
+      _timeout.getItem();
+      _ctx.fireExceptionCaught(ex);
+    }
+
     public void processHttpChunk(HttpContent chunk) throws TooLongFrameException
     {
       if (chunk.content().readableBytes() + _totalBytesWritten > _maxContentLength)

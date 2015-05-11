@@ -19,11 +19,13 @@ public class ByteStringWriter implements Writer
     _offset = 0;
   }
 
+  @Override
   public void onInit(WriteHandle wh)
   {
     _wh = wh;
   }
 
+  @Override
   public void onWritePossible()
   {
     while(_wh.remaining() > 0 && _offset <= _content.length())
@@ -37,5 +39,11 @@ public class ByteStringWriter implements Writer
       _wh.write(_content.slice(_offset, bytesToWrite));
       _offset += bytesToWrite;
     }
+  }
+
+  @Override
+  public void onAbort(Throwable ex)
+  {
+    // do nothing
   }
 }
