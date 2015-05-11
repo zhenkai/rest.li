@@ -18,6 +18,7 @@ import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.client.TimeoutCallback;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -107,8 +108,10 @@ public class TestStreamResponse extends AbstractStreamTest
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
 
     final Callback<None> readerCallback = getReaderCallback(latch, error);
+    final Callback<None> timeoutReaderCallback =
+        new TimeoutCallback<None>(_scheduler, 1000, TimeUnit.MILLISECONDS, readerCallback, "Timeout");
     final BytesReader reader = new BytesReader(BYTE, readerCallback);
-    Callback<StreamResponse> callback = getCallback(status, readerCallback, reader);
+    Callback<StreamResponse> callback = getCallback(status, timeoutReaderCallback, reader);
 
     _client.streamRequest(request, callback);
     latch.await(60000, TimeUnit.MILLISECONDS);
