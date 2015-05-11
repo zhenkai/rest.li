@@ -80,6 +80,7 @@ public class TestEntityStream
   {
     private WriteHandle _wh;
     private volatile int _count = 0;
+    private volatile boolean _aborted = false;
 
     public int getWritePossibleCount()
     {
@@ -96,6 +97,11 @@ public class TestEntityStream
       _wh.write(ByteString.empty());
     }
 
+    public boolean isAborted()
+    {
+      return _aborted;
+    }
+
     @Override
     public void onInit(WriteHandle wh)
     {
@@ -106,6 +112,12 @@ public class TestEntityStream
     public void onWritePossible()
     {
       _count++;
+    }
+
+    @Override
+    public void onAbort(Throwable ex)
+    {
+      _aborted = true;
     }
 
   }
@@ -181,6 +193,12 @@ public class TestEntityStream
         {
           _wh.done();
         }
+      }
+
+      @Override
+      public void onAbort(Throwable ex)
+      {
+        // do nothing
       }
     };
 

@@ -26,4 +26,10 @@ public interface Writer
    * but the use pattern is the same (used together with Channel.isWritable).
    */
   void onWritePossible();
+
+  /**
+   * Invoked when the entity stream is aborted
+   * @param e the throwable that caused the entity stream to abort
+   */
+  void onAbort(Throwable e);
 }
