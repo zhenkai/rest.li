@@ -20,14 +20,22 @@ public final class EntityStreams
 
   public static EntityStream emptyStream()
   {
-    return new EmptyStreamImpl();
-  }
+    return newEntityStream(new Writer()
+    {
+      private WriteHandle _wh;
 
-  // this is a work around to deal with case where user code doesn't read the empty stream (e.g. just check the
-  // response code and does not read the response EntityStream
-  public static boolean isEmptyStream(EntityStream entityStream)
-  {
-    return entityStream instanceof EmptyStreamImpl;
+      @Override
+      public void onInit(WriteHandle wh)
+      {
+        _wh = wh;
+      }
+
+      @Override
+      public void onWritePossible()
+      {
+        _wh.done();
+      }
+    });
   }
 
   /**
@@ -207,30 +215,6 @@ public final class EntityStreams
       if (_state.get() != State.UNINITIALIZED)
       {
         throw new IllegalStateException("EntityStream had already been initialized and can no longer accept Observers or Reader");
-      }
-    }
-  }
-
-  private static class EmptyStreamImpl extends EntityStreamImpl
-  {
-    EmptyStreamImpl()
-    {
-      super(new EmptyWriter());
-    }
-
-    private static class EmptyWriter implements Writer
-    {
-      private WriteHandle _wh;
-      @Override
-      public void onInit(WriteHandle wh)
-      {
-        _wh = wh;
-      }
-
-      @Override
-      public void onWritePossible()
-      {
-        _wh.done();
       }
     }
   }

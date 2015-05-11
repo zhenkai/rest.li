@@ -18,13 +18,6 @@ public class TestEntityStream
 {
 
   @Test
-  public void testIsEmptyStream() throws Exception
-  {
-    EntityStream empty = EntityStreams.emptyStream();
-    Assert.assertTrue(EntityStreams.isEmptyStream(empty));
-  }
-
-  @Test
   public void testEntityStream() throws Exception
   {
     TestWriter writer = new TestWriter();
