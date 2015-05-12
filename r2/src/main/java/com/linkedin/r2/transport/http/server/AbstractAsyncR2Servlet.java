@@ -75,56 +75,44 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 
     try
     {
-      streamRequest = readFromServletRequest(req, requestContext, ioHandler);
+      streamRequest = readFromServletRequest(req, ioHandler);
     }
     catch (URISyntaxException e)
     {
       writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
       return;
     }
-    catch (MessagingException e)
-    {
-      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
-      return;
-    }
 
-//    ctx.addListener(new AsyncListener()
-//    {
-//      @Override
-//      public void onTimeout(AsyncEvent event) throws IOException
-//      {
-////        AsyncContext ctx = event.getAsyncContext();
-////        writeToServletError((HttpServletResponse) ctx.getResponse(),
-////                            RestStatus.INTERNAL_SERVER_ERROR,
-////                            "Server Timeout");
-////        ctx.complete();
-//      }
-//
-//      @Override
-//      public void onStartAsync(AsyncEvent event) throws IOException
-//      {
-//        // Nothing to do here
-//      }
-//
-//      @Override
-//      public void onError(AsyncEvent event) throws IOException
-//      {
-////        writeToServletError((HttpServletResponse) event.getSuppliedResponse(),
-////                            RestStatus.INTERNAL_SERVER_ERROR,
-////                            "Server Error");
-////        ctx.complete();
-//      }
-//
-//      @Override
-//      public void onComplete(AsyncEvent event) throws IOException
-//      {
-//        Object exception = req.getAttribute(TRANSPORT_CALLBACK_IOEXCEPTION);
-//        if (exception != null)
-//        {
-//          throw new IOException((Throwable)exception);
-//        }
-//      }
-//    });
+    ctx.addListener(new AsyncListener()
+    {
+      @Override
+      public void onTimeout(AsyncEvent event) throws IOException
+      {
+        // do nothing
+      }
+
+      @Override
+      public void onStartAsync(AsyncEvent event) throws IOException
+      {
+        // Nothing to do here
+      }
+
+      @Override
+      public void onError(AsyncEvent event) throws IOException
+      {
+        // do nothing
+      }
+
+      @Override
+      public void onComplete(AsyncEvent event) throws IOException
+      {
+        Object exception = req.getAttribute(TRANSPORT_CALLBACK_IOEXCEPTION);
+        if (exception != null)
+        {
+          throw new IOException((Throwable)exception);
+        }
+      }
+    });
 
     TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
     {
@@ -139,13 +127,14 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
             try
             {
               ioHandler.startWritingResponse();
-              StreamResponse streamResponse = writeResponseHeadToServletResponse(response, resp);
+              StreamResponse streamResponse = writeResponseHeadersToServletResponse(response, resp);
               streamResponse.getEntityStream().setReader(ioHandler);
               ioHandler.loop();
             }
             catch (Exception e)
             {
-              throw new RuntimeException(e);
+              req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+              ctx.complete();
             }
           }
         });
