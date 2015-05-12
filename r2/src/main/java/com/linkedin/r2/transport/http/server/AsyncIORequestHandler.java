@@ -88,6 +88,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
   @Override
   public void onAbort(Throwable ex)
   {
+    // TODO [ZZ]: do something smarter?
     throw new IllegalStateException("Exception thrown by request processing code", ex);
   }
 
