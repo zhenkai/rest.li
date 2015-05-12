@@ -57,7 +57,7 @@ public class SyncIOHandler implements Writer, Reader
   @Override
   public void onAbort(Throwable ex)
   {
-    throw new IllegalStateException("Exception thrown by request stream processing code", ex);
+    _eventQueue.add(new Event(EventType.WriteRequestAborted, ex));
   }
 
   @Override
@@ -135,6 +135,15 @@ public class SyncIOHandler implements Writer, Reader
         }
         case ResponseDataError:
         {
+          //throw new ServletException((Throwable)event.getData());
+          _os.close();
+          _responseWriteFinished = true;
+          break;
+
+        }
+        case WriteRequestAborted:
+        {
+          // TODO [ZZ]: do something smarter?
           throw new ServletException((Throwable)event.getData());
         }
         default:
@@ -161,6 +170,7 @@ public class SyncIOHandler implements Writer, Reader
   private static enum  EventType
   {
     WriteRequestPossible,
+    WriteRequestAborted,
     FullResponseReceived,
     ResponseDataAvailable,
     ResponseDataError,
