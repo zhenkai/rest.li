@@ -41,6 +41,8 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -58,15 +60,12 @@ import org.slf4j.LoggerFactory;
  * @author Fatih Emekci
  * @version $Revision$
  */
-public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
+public abstract class AbstractAsyncIOR2Servlet extends AbstractServlet
 {
-  private static final Logger _log = LoggerFactory.getLogger(AbstractR2Servlet.class);
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
   private static final long   serialVersionUID = 0L;
 
   private final long _timeout;
-
-  protected abstract HttpDispatcher getDispatcher();
 
   public AbstractAsyncIOR2Servlet(long timeout)
   {
@@ -82,43 +81,44 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
     final AsyncContext ctx = req.startAsync();
     ctx.setTimeout(_timeout);
 
+    ctx.addListener(new AsyncListener()
+    {
+      @Override
+      public void onTimeout(AsyncEvent event) throws IOException
+      {
+        ctx.complete();
+      }
+
+      @Override
+      public void onStartAsync(AsyncEvent event) throws IOException
+      {
+        // Nothing to do here
+      }
+
+      @Override
+      public void onError(AsyncEvent event) throws IOException
+      {
+        ctx.complete();
+      }
+
+      @Override
+      public void onComplete(AsyncEvent event) throws IOException
+      {
+        Object exception = req.getAttribute(TRANSPORT_CALLBACK_IOEXCEPTION);
+        if (exception != null)
+        {
+          throw new IOException((Throwable)exception);
+        }
+      }
+    });
+
+
     final WrappedAsyncContext wrappedCtx = new WrappedAsyncContext(ctx, new AtomicBoolean(false));
-//    ctx.addListener(new AsyncListener()
-//    {
-//      @Override
-//      public void onComplete(AsyncEvent event) throws IOException
-//      {
-//        // nothing
-//      }
-//
-//      @Override
-//      public void onTimeout(AsyncEvent event) throws IOException
-//      {
-//        AsyncContext ctx = event.getAsyncContext();
-//        writeToServletError((HttpServletResponse) ctx.getResponse(),
-//            RestStatus.INTERNAL_SERVER_ERROR,
-//            "Server Timeout", wrappedCtx);
-//      }
-//
-//      @Override
-//      public void onError(AsyncEvent event) throws IOException
-//      {
-//        writeToServletError((HttpServletResponse) event.getSuppliedResponse(),
-//            RestStatus.INTERNAL_SERVER_ERROR,
-//            "Server Error", wrappedCtx);
-//      }
-//
-//      @Override
-//      public void onStartAsync(AsyncEvent event) throws IOException
-//      {
-//        // nothing
-//      }
-//    });
 
     StreamRequest streamRequest;
     try
     {
-      streamRequest = readFromServletRequest(req, requestContext, wrappedCtx);
+      streamRequest = readFromServletRequest(req, wrappedCtx);
     }
     catch (URISyntaxException e)
     {
@@ -138,6 +138,7 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
         catch (IOException e)
         {
           req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+          ctx.complete();
         }
       }
     };
@@ -147,55 +148,16 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
   }
 
   private void writeToServletResponse(TransportResponse<StreamResponse> response,
-                                        HttpServletResponse resp,
-                                        WrappedAsyncContext ctx)
+                                      HttpServletResponse resp,
+                                      WrappedAsyncContext ctx)
       throws IOException
   {
-    Map<String, String> wireAttrs = response.getWireAttributes();
-    // write response only once
-    if (ctx.getWriteStarted().compareAndSet(false, true))
-    {
-      for (Map.Entry<String, String> e : WireAttributeHelper.toWireAttributes(wireAttrs)
-          .entrySet())
-      {
-        resp.setHeader(e.getKey(), e.getValue());
-      }
+    StreamResponse streamResponse = writeResponseHeadersToServletResponse(response, resp);
 
-      StreamResponse streamResponse = null;
-      if (response.hasError())
-      {
-        Throwable e = response.getError();
-        if (e instanceof StreamException)
-        {
-          streamResponse = ((StreamException) e).getResponse();
-        }
-        if (streamResponse == null)
-        {
-          streamResponse = Messages.toStreamResponse(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e));
-        }
-      } else
-      {
-        streamResponse = response.getResponse();
-      }
-
-      resp.setStatus(streamResponse.getStatus());
-      Map<String, String> headers = streamResponse.getHeaders();
-      for (Map.Entry<String, String> e : headers.entrySet())
-      {
-        // TODO multi-valued headers
-        resp.setHeader(e.getKey(), e.getValue());
-      }
-
-      for (String cookie : streamResponse.getCookies())
-      {
-        resp.addHeader(HttpConstants.RESPONSE_COOKIE_HEADER_NAME, cookie);
-      }
-
-      ServletOutputStream os = resp.getOutputStream();
-      AsyncIOResponseHandler handler = new AsyncIOResponseHandler(os, ctx.getCtx(), ctx.getOtherDirectionFinished());
-      EntityStream responseStream = streamResponse.getEntityStream();
-      responseStream.setReader(handler);
-    }
+    ServletOutputStream os = resp.getOutputStream();
+    AsyncIOResponseHandler handler = new AsyncIOResponseHandler(os, ctx.getCtx(), ctx.getOtherDirectionFinished());
+    EntityStream responseStream = streamResponse.getEntityStream();
+    responseStream.setReader(handler);
   }
 
   private void writeToServletError(HttpServletResponse resp, int statusCode, String message, WrappedAsyncContext ctx) throws IOException
@@ -206,41 +168,12 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
   }
 
   private StreamRequest readFromServletRequest(HttpServletRequest req,
-                                                 RequestContext requestContext,
                                                  WrappedAsyncContext ctx)
       throws IOException,
       ServletException,
       URISyntaxException
   {
-    StringBuilder sb = new StringBuilder();
-    sb.append(extractPathInfo(req));
-    String query = req.getQueryString();
-    if (query != null)
-    {
-      sb.append('?');
-      sb.append(query);
-    }
-
-    URI uri = new URI(sb.toString());
-
-    StreamRequestBuilder builder = new StreamRequestBuilder(uri);
-    builder.setMethod(req.getMethod());
-
-    for (Enumeration<String> headerNames = req.getHeaderNames(); headerNames.hasMoreElements();)
-    {
-      // TODO multi-valued headers
-      String headerName = headerNames.nextElement();
-      String headerValue = req.getHeader(headerName);
-      if (headerName.equalsIgnoreCase(HttpConstants.REQUEST_COOKIE_HEADER_NAME))
-      {
-        builder.addCookie(headerValue);
-      }
-      else
-      {
-        builder.setHeader(headerName, headerValue);
-      }
-    }
-
+    StreamRequestBuilder builder = readStreamRequestHeadersFromServletRequest(req);
 
     ServletInputStream is = req.getInputStream();
     AsyncIORequestHandler handler = new AsyncIORequestHandler(is, ctx.getCtx(), ctx.getOtherDirectionFinished());
@@ -249,92 +182,6 @@ public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
     return builder.build(entityStream);
   }
 
-  /**
-   * Read HTTP-specific properties from the servlet request into the request context. We'll read
-   * properties that many clients might be interested in, such as the caller's IP address.
-   * @param req The HTTP servlet request
-   * @return The request context
-   */
-  private RequestContext readRequestContext(HttpServletRequest req)
-  {
-    RequestContext context = new RequestContext();
-    context.putLocalAttr(R2Constants.REMOTE_ADDR, req.getRemoteAddr());
-    if (req.isSecure())
-    {
-      // attribute name documented in ServletRequest API:
-      // http://docs.oracle.com/javaee/6/api/javax/servlet/ServletRequest.html#getAttribute%28java.lang.String%29
-      Object[] certs = (Object[]) req.getAttribute("javax.servlet.request.X509Certificate");
-      if (certs != null && certs.length > 0)
-      {
-        context.putLocalAttr(R2Constants.CLIENT_CERT, certs[0]);
-      }
-      context.putLocalAttr(R2Constants.IS_SECURE, true);
-    }
-    else
-    {
-      context.putLocalAttr(R2Constants.IS_SECURE, false);
-    }
-    return context;
-  }
-
-  /**
-   * Attempts to return a "non decoded" pathInfo by stripping off the contextPath and servletPath parts of the requestURI.
-   * As a defensive measure, this method will return the "decoded" pathInfo directly by calling req.getPathInfo() if it is
-   * unable to strip off the contextPath or servletPath.
-   * @throws ServletException if resulting pathInfo is empty
-   */
-  private static String extractPathInfo(HttpServletRequest req) throws ServletException
-  {
-    // For "http:hostname:8080/contextPath/servletPath/pathInfo" the RequestURI is "/contextPath/servletPath/pathInfo"
-    // where the contextPath, servletPath and pathInfo parts all contain their leading slash.
-
-    // stripping contextPath and servletPath this way is not fully compatible with the HTTP spec.  If a
-    // request for, say "/%75scp-proxy/reso%75rces" is made (where %75 decodes to 'u')
-    // the stripping off of contextPath and servletPath will fail because the requestUri string will
-    // include the encoded char but the contextPath and servletPath strings will not.
-    String requestUri = req.getRequestURI();
-    String contextPath = req.getContextPath();
-    StringBuilder builder = new StringBuilder();
-    if(contextPath != null)
-    {
-      builder.append(contextPath);
-    }
-
-    String servletPath = req.getServletPath();
-    if(servletPath != null)
-    {
-      builder.append(servletPath);
-    }
-    String prefix = builder.toString();
-    String pathInfo;
-    if(prefix.length() == 0)
-    {
-      pathInfo = requestUri;
-    }
-    else if(requestUri.startsWith(prefix))
-    {
-      pathInfo = requestUri.substring(prefix.length());
-    }
-    else
-    {
-      _log.warn("Unable to extract 'non decoded' pathInfo, returning 'decoded' pathInfo instead.  This may cause issues processing request URIs containing special characters. requestUri=" + requestUri);
-      return req.getPathInfo();
-    }
-
-    if(pathInfo.length() == 0)
-    {
-      // We prefer to keep servlet mapping trivial with R2 and have R2
-      // TransportDispatchers make most of the routing decisions based on the 'pathInfo'
-      // and query parameters in the URI.
-      // If pathInfo is null, it's highly likely that the servlet was mapped to an exact
-      // path or to a file extension, making such R2-based services too reliant on the
-      // servlet container for routing
-      throw new ServletException("R2 servlet should only be mapped via wildcard path mapping e.g. /r2/*. "
-          + "Exact path matching (/r2) and file extension mappings (*.r2) are currently not supported");
-    }
-
-    return pathInfo;
-  }
 
   private static class WrappedAsyncContext
   {

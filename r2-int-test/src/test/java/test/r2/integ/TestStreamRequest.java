@@ -44,6 +44,7 @@ public class TestStreamRequest extends AbstractStreamTest
 {
 
   private static final URI LARGE_URI = URI.create("/large");
+  private static final URI FOOBAR_URI = URI.create("/foobar");
   private static final URI RATE_LIMITED_URI = URI.create("/rated-limited");
   private CheckRequestHandler _checkRequestHandler;
   private RateLimitedRequestHandler _rateLimitedRequestHandler;
@@ -56,6 +57,7 @@ public class TestStreamRequest extends AbstractStreamTest
     _rateLimitedRequestHandler = new RateLimitedRequestHandler(_scheduler, INTERVAL, BYTE);
     return new TransportDispatcherBuilder()
         .addStreamHandler(LARGE_URI, _checkRequestHandler)
+        .addStreamHandler(FOOBAR_URI, new CheckRequestHandler(BYTE))
         .addStreamHandler(RATE_LIMITED_URI, _rateLimitedRequestHandler)
         .build();
   }
@@ -112,7 +114,7 @@ public class TestStreamRequest extends AbstractStreamTest
   {
     final long totalBytes = SMALL_BYTES_NUM;
     EntityStream entityStream = EntityStreams.newEntityStream(new ErrorWriter(totalBytes, BYTE));
-    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, LARGE_URI));
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, FOOBAR_URI));
     StreamRequest request = builder.setMethod("POST").build(entityStream);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
