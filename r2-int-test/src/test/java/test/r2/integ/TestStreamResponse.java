@@ -1,6 +1,7 @@
 package test.r2.integ;
 
 import com.linkedin.common.callback.Callback;
+import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestStatus;
@@ -14,7 +15,10 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.sample.Bootstrap;
+import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.bridge.client.TransportClient;
+import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
@@ -101,6 +105,11 @@ public class TestStreamResponse extends AbstractStreamTest
   @Test
   public void testErrorWhileStreaming() throws Exception
   {
+    HttpClientFactory clientFactory = new HttpClientFactory();
+    Map<String, String> clientProperties = new HashMap<String, String>();
+    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "1000");
+    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
+
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
     StreamRequest request = builder.build(EntityStreams.emptyStream());
     final AtomicInteger status = new AtomicInteger(-1);
@@ -108,18 +117,24 @@ public class TestStreamResponse extends AbstractStreamTest
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
 
     final Callback<None> readerCallback = getReaderCallback(latch, error);
-    final Callback<None> timeoutReaderCallback =
-        new TimeoutCallback<None>(_scheduler, 1000, TimeUnit.MILLISECONDS, readerCallback, "Timeout");
-    final BytesReader reader = new BytesReader(BYTE, readerCallback);
-    Callback<StreamResponse> callback = getCallback(status, timeoutReaderCallback, reader);
 
-    _client.streamRequest(request, callback);
-    latch.await(60000, TimeUnit.MILLISECONDS);
+    final BytesReader reader = new BytesReader(BYTE, readerCallback);
+    Callback<StreamResponse> callback = getCallback(status, readerCallback, reader);
+
+    client.streamRequest(request, callback);
+    latch.await(2000, TimeUnit.MILLISECONDS);
     Assert.assertEquals(status.get(), RestStatus.OK);
     Throwable throwable = error.get();
     Assert.assertNotNull(throwable);
-//    Assert.assertTrue(throwable instanceof TimeoutException);
-//    Assert.assertEquals(throwable.getMessage(), "Not receiving any chunk after timeout of 500ms");
+
+
+    final FutureCallback<None> clientShutdownCallback = new FutureCallback<None>();
+    client.shutdown(clientShutdownCallback);
+    clientShutdownCallback.get();
+
+    final FutureCallback<None> factoryShutdownCallback = new FutureCallback<None>();
+    clientFactory.shutdown(factoryShutdownCallback);
+    factoryShutdownCallback.get();
   }
 
   @Test

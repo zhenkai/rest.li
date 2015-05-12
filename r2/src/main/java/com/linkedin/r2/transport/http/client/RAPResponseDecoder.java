@@ -29,6 +29,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.AttributeKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,6 +47,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
 /* package private */ class RAPResponseDecoder extends SimpleChannelInboundHandler<HttpObject>
 {
+  private static final Logger LOG = LoggerFactory.getLogger(RAPResponseDecoder.class);
+
   public static final AttributeKey<Timeout<None>> TIMEOUT_ATTR_KEY
       = AttributeKey.valueOf("TimeoutExecutor");
   private static final FullHttpResponse CONTINUE =
@@ -97,7 +101,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       Timeout<None> timeout = ctx.channel().attr(TIMEOUT_ATTR_KEY).getAndRemove();
       if (timeout == null)
       {
-        ctx.fireExceptionCaught(new IllegalStateException("Missing timeout attribute in RAPResponseDecoder."));
+        LOG.debug("dropped a response after channel inactive or exception had happened.");
         return;
       }
 
@@ -158,6 +162,11 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception
   {
+    Timeout<None> timeout = ctx.channel().attr(TIMEOUT_ATTR_KEY).getAndRemove();
+    if (timeout != null)
+    {
+      timeout.getItem();
+    }
     if (_chunkedMessageWriter != null)
     {
       _chunkedMessageWriter.fail(new ClosedChannelException());
@@ -169,6 +178,11 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
   {
+    Timeout<None> timeout = ctx.channel().attr(TIMEOUT_ATTR_KEY).getAndRemove();
+    if (timeout != null)
+    {
+      timeout.getItem();
+    }
     if (_chunkedMessageWriter != null)
     {
       _chunkedMessageWriter.fail(cause);

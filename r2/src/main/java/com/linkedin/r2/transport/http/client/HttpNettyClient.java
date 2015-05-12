@@ -380,10 +380,21 @@ import org.slf4j.LoggerFactory;
           }
         });
 
+        final Timeout<None> streamingTimeout =
+            new Timeout<None>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, None.none());
+        callback.addTimeoutTask(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            // stop the timeout for streaming since streaming of response would not happen
+            streamingTimeout.getItem();
+          }
+        });
         // This handler invokes the callback with the response once it arrives.
         channel.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).set(callback);
         channel.attr(RAPResponseDecoder.TIMEOUT_ATTR_KEY)
-            .set(new Timeout<None>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, None.none()));
+            .set(streamingTimeout);
 
         final State state = _state.get();
         if (state == State.REQUESTS_STOPPING || state == State.SHUTDOWN)
