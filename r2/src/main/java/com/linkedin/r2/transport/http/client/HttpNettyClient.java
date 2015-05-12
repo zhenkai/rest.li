@@ -383,7 +383,7 @@ import org.slf4j.LoggerFactory;
         // This handler invokes the callback with the response once it arrives.
         channel.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).set(callback);
         channel.attr(RAPResponseDecoder.TIMEOUT_ATTR_KEY)
-            .set(new Timeout<String>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, newRequest.toString()));
+            .set(new Timeout<None>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, None.none()));
 
         final State state = _state.get();
         if (state == State.REQUESTS_STOPPING || state == State.SHUTDOWN)
