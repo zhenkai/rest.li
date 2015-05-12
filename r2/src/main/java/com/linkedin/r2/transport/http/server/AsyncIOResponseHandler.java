@@ -46,7 +46,9 @@ import java.util.concurrent.locks.ReentrantLock;
   public void onError(final Throwable t)
   {
     // TODO [ZZ]: do something smarter?
-    throw new RuntimeException("Bytes written so far: " + (_count / 1024 / 1024) + " MB", t);
+    // throw new RuntimeException("Bytes written so far: " + (_count / 1024 / 1024) + " MB", t);
+    _allDataRead = true;
+    tryFinish();
   }
 
   public void onDataAvailable(final ByteString data)
