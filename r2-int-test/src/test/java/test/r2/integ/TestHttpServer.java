@@ -36,7 +36,10 @@ import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -70,7 +73,7 @@ public class TestHttpServer
   private static final String MULTI_VALUE_HEADER_NAME = "MultiValuedHeader";
   private static final String MULTI_VALUE_HEADER_COUNT_HEADER = "MultiValuedHeaderCount";
 
-  @BeforeTest
+  @BeforeClass
   public void setup() throws IOException
   {
     final TransportDispatcher dispatcher = new TransportDispatcherBuilder()
@@ -83,7 +86,7 @@ public class TestHttpServer
     _server.start();
   }
 
-  @AfterTest
+  @AfterClass
   public void tearDown() throws IOException
   {
     if (_server != null) {
