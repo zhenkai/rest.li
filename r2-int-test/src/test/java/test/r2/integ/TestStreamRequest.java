@@ -2,6 +2,7 @@ package test.r2.integ;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestException;
@@ -15,6 +16,7 @@ import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
 
 import com.linkedin.r2.message.streaming.ReadHandle;
+import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
@@ -46,6 +48,7 @@ public class TestStreamRequest extends AbstractStreamTest
   private static final URI LARGE_URI = URI.create("/large");
   private static final URI FOOBAR_URI = URI.create("/foobar");
   private static final URI RATE_LIMITED_URI = URI.create("/rated-limited");
+  private static final URI ERROR_RECEIVER_URI = URI.create("/error-receiver");
   private CheckRequestHandler _checkRequestHandler;
   private RateLimitedRequestHandler _rateLimitedRequestHandler;
 
@@ -59,6 +62,7 @@ public class TestStreamRequest extends AbstractStreamTest
         .addStreamHandler(LARGE_URI, _checkRequestHandler)
         .addStreamHandler(FOOBAR_URI, new CheckRequestHandler(BYTE))
         .addStreamHandler(RATE_LIMITED_URI, _rateLimitedRequestHandler)
+        .addStreamHandler(ERROR_RECEIVER_URI, new ThrowWhenReceivingRequestHandler())
         .build();
   }
 
@@ -115,6 +119,35 @@ public class TestStreamRequest extends AbstractStreamTest
     final long totalBytes = SMALL_BYTES_NUM;
     EntityStream entityStream = EntityStreams.newEntityStream(new ErrorWriter(totalBytes, BYTE));
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, FOOBAR_URI));
+    StreamRequest request = builder.setMethod("POST").build(entityStream);
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+    Callback<StreamResponse> callback = new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        error.set(e);
+        latch.countDown();
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        latch.countDown();
+      }
+    };
+    _client.streamRequest(request, callback);
+    latch.await();
+    Assert.assertNotNull(error.get());
+  }
+
+  @Test
+  public void testErrorReceiver() throws Exception
+  {
+    final long totalBytes = SMALL_BYTES_NUM;
+    EntityStream entityStream = EntityStreams.newEntityStream(new BytesWriter(totalBytes, BYTE));
+    StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, ERROR_RECEIVER_URI));
     StreamRequest request = builder.setMethod("POST").build(entityStream);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
@@ -249,6 +282,43 @@ public class TestStreamRequest extends AbstractStreamTest
           }
         }
       };
+    }
+  }
+
+  private static class ThrowWhenReceivingRequestHandler implements StreamRequestHandler
+  {
+    @Override
+    public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
+    {
+      request.getEntityStream().setReader(new Reader()
+      {
+        ReadHandle _rh;
+
+        @Override
+        public void onInit(ReadHandle rh)
+        {
+          _rh = rh;
+          _rh.request(10);
+        }
+
+        @Override
+        public void onDataAvailable(ByteString data)
+        {
+          throw new RuntimeException("some exception throw due to bug");
+        }
+
+        @Override
+        public void onDone()
+        {
+
+        }
+
+        @Override
+        public void onError(Throwable e)
+        {
+
+        }
+      });
     }
   }
 

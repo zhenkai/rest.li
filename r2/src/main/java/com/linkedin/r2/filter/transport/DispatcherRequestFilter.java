@@ -113,6 +113,7 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     private final NextFilter<StreamRequest, StreamResponse> _nextFilter;
     private final RequestContext _requestContext;
     private final Map<String, String> _wireAttrs;
+    private volatile boolean _aborted;
 
     Connector(AtomicBoolean invoked, NextFilter<StreamRequest, StreamResponse> nextFilter,
               RequestContext requestContext, Map<String, String> wireAttrs)
@@ -140,6 +141,13 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     @Override
     public void onDataAvailable(ByteString data)
     {
+      if (_aborted)
+      {
+        // drop the bytes on the floor
+        _rh.request(1);
+        return;
+      }
+
       _outstanding--;
       _wh.write(data);
       int diff = _wh.remaining() - _outstanding;
@@ -172,10 +180,14 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     @Override
     public void onAbort(Throwable e)
     {
+      _aborted = true;
       if (_invoked.compareAndSet(false, true))
       {
         _nextFilter.onError(e, _requestContext, _wireAttrs);
       }
+
+      // drain the bytes in request since our entity stream to reader is aborted
+      _rh.request(Integer.MAX_VALUE);
     }
   }
 }
