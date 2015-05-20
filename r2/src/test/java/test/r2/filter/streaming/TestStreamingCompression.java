@@ -55,8 +55,9 @@ public class TestStreamingCompression
   public void testSnappyCompressor()
       throws IOException, InterruptedException, CompressionException, ExecutionException
   {
-    StreamingCompressor compressor = new SnappyCompressor(_executor);
-    final byte[] origin = new byte[1024*1024];
+    int threshold = 4096;
+    StreamingCompressor compressor = new SnappyCompressor(_executor, threshold);
+    final byte[] origin = new byte[threshold*1024];
     Arrays.fill(origin, (byte)'a');
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -68,14 +69,16 @@ public class TestStreamingCompression
     testCompress(compressor, origin, compressed);
     testDecompress(compressor, origin, compressed);
     testCompressThenDecompress(compressor, origin);
+    testNoCompress(compressor, threshold);
   }
 
   @Test
   public void testGzipCompressor()
       throws IOException, InterruptedException, CompressionException, ExecutionException
   {
-    StreamingCompressor compressor = new GzipCompressor(_executor);
-    final byte[] origin = new byte[1024*1024];
+    int threshold = 4096;
+    StreamingCompressor compressor = new GzipCompressor(_executor, threshold);
+    final byte[] origin = new byte[threshold*1024];
     Arrays.fill(origin, (byte) 'b');
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -87,14 +90,16 @@ public class TestStreamingCompression
     testCompress(compressor, origin, compressed);
     testDecompress(compressor, origin, compressed);
     testCompressThenDecompress(compressor, origin);
+    testNoCompress(compressor, threshold);
   }
 
   @Test
   public void testBzip2Compressor()
       throws IOException, InterruptedException, CompressionException, ExecutionException
   {
-    StreamingCompressor compressor = new Bzip2Compressor(_executor);
-    final byte[] origin = new byte[1024*1024];
+    int threshold = 4096;
+    StreamingCompressor compressor = new Bzip2Compressor(_executor, threshold);
+    final byte[] origin = new byte[threshold*1024];
     Arrays.fill(origin, (byte)'c');
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -106,6 +111,7 @@ public class TestStreamingCompression
     testCompress(compressor, origin, compressed);
     testDecompress(compressor, origin, compressed);
     testCompressThenDecompress(compressor, origin);
+    testNoCompress(compressor, threshold);
   }
 
   private void testCompress(StreamingCompressor compressor, byte[] uncompressed, byte[] compressed)
@@ -120,6 +126,23 @@ public class TestStreamingCompression
 
     byte[] result = callback.get();
     Assert.assertEquals(result, compressed);
+  }
+
+  private void testNoCompress(StreamingCompressor compressor, int threshold)
+      throws CompressionException, ExecutionException, InterruptedException
+  {
+    final byte[] bytes = new byte[threshold-1];
+    Arrays.fill(bytes, (byte)'a');
+    ByteWriter writer = new ByteWriter(bytes);
+
+    EntityStream uncompressedStream = EntityStreams.newEntityStream(writer);
+    EntityStream compressedStream = compressor.deflate(uncompressedStream);
+
+    FutureCallback<byte[]> callback = new FutureCallback<byte[]>();
+    compressedStream.setReader(new ByteReader(callback));
+
+    byte[] result = callback.get();
+    Assert.assertEquals(result, bytes);
   }
 
   private void testDecompress(StreamingCompressor compressor, byte[] uncompressed, byte[] compressed)

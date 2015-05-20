@@ -15,10 +15,12 @@ import org.iq80.snappy.SnappyOutputStream;
 public class SnappyCompressor extends AbstractCompressor
 {
   private final Executor _executor;
+  private final int _threshold;
 
-  public SnappyCompressor(Executor executor)
+  public SnappyCompressor(Executor executor, int threshold)
   {
     _executor = executor;
+    _threshold = threshold;
   }
 
   @Override
@@ -48,7 +50,14 @@ public class SnappyCompressor extends AbstractCompressor
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException
       {
-        return new SnappyOutputStream(out);
+        return new DelayedCompressionOutputStream(out, _threshold)
+        {
+          @Override
+          OutputStream compressionOutputStream(OutputStream outputStream) throws IOException
+          {
+            return new SnappyOutputStream(outputStream);
+          }
+        };
       }
     };
   }

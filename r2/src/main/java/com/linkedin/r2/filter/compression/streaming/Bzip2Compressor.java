@@ -14,10 +14,12 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
 public class Bzip2Compressor extends AbstractCompressor
 {
   private final Executor _executor;
+  private final int _threshold;
 
-  public Bzip2Compressor(Executor executor)
+  public Bzip2Compressor(Executor executor, int threshold)
   {
     _executor = executor;
+    _threshold = threshold;
   }
 
   @Override
@@ -47,7 +49,15 @@ public class Bzip2Compressor extends AbstractCompressor
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException
       {
-        return new BZip2CompressorOutputStream(out);
+        return new DelayedCompressionOutputStream(out, _threshold)
+        {
+          @Override
+          OutputStream compressionOutputStream(OutputStream outputStream)
+              throws IOException
+          {
+            return new BZip2CompressorOutputStream(outputStream);
+          }
+        };
       }
     };
   }
