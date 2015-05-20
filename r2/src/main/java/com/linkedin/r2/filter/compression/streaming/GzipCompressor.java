@@ -15,10 +15,12 @@ import java.util.zip.GZIPOutputStream;
 public class GzipCompressor extends AbstractCompressor
 {
   private final Executor _executor;
+  private final int _threshold;
 
-  public GzipCompressor(Executor executor)
+  public GzipCompressor(Executor executor, int threshold)
   {
     _executor = executor;
+    _threshold = threshold;
   }
 
   @Override
@@ -48,7 +50,15 @@ public class GzipCompressor extends AbstractCompressor
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException
       {
-        return new GZIPOutputStream(out);
+        return new DelayedCompressionOutputStream(out, _threshold)
+        {
+          @Override
+          OutputStream compressionOutputStream(OutputStream outputStream)
+              throws IOException
+          {
+            return new GZIPOutputStream(outputStream);
+          }
+        };
       }
     };
   }
