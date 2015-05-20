@@ -22,9 +22,9 @@ public class AsyncCtxSyncIOHandler extends SyncIOHandler
   private boolean _responseWriteStarted = false;
   private boolean _inLoop = false;
 
-  public AsyncCtxSyncIOHandler(ServletInputStream is, ServletOutputStream os, AsyncContext ctx, int bufferCapacity)
+  public AsyncCtxSyncIOHandler(ServletInputStream is, ServletOutputStream os, AsyncContext ctx, int bufferCapacity, long timeout)
   {
-    super(is, os, bufferCapacity);
+    super(is, os, bufferCapacity, timeout);
     _ctx = ctx;
   }
 

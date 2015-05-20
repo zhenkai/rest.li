@@ -22,6 +22,8 @@ import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.transport.FilterChainDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
+import javax.servlet.http.HttpServlet;
+
 /**
  * @author Chris Pettitt
  * @version $Revision$
@@ -124,5 +126,15 @@ public class HttpServerFactory
                                 dispatcher,
                                 servletType,
                                 asyncTimeOut);
+  }
+
+  public HttpServer createServer(int port, TransportDispatcher transportDispatcher, long ioHandlerTimeout)
+  {
+    final TransportDispatcher filterDispatcher =
+        new FilterChainDispatcher(transportDispatcher,  _filters);
+    final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
+
+    HttpServlet servlet = new RAPServlet(dispatcher, ioHandlerTimeout);
+    return new HttpJettyServer(port, servlet);
   }
 }
