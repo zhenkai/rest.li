@@ -27,5 +27,5 @@ public interface StreamingCompressor
    * @param input EntityStream to be compressed
    * @return Newly created EntityStream of compressed data, or null if error
    * */
-  EntityStream deflate(EntityStream input) throws CompressionException;
+  EntityStream deflate(EntityStream input);
 }
