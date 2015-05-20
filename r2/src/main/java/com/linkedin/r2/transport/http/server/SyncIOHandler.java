@@ -12,6 +12,8 @@ import javax.servlet.ServletOutputStream;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * This writer deals with Synchronous IO, which is the case for Servlet API 3.0 & Jetty 8
@@ -23,16 +25,17 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class SyncIOHandler implements Writer, Reader
 {
-  final private ServletInputStream _is;
-  final private ServletOutputStream _os;
-  final private int _maxBufferedChunks;
-  final private BlockingQueue<Event> _eventQueue;
+  private final ServletInputStream _is;
+  private final ServletOutputStream _os;
+  private final int _maxBufferedChunks;
+  private final BlockingQueue<Event> _eventQueue;
   private WriteHandle _wh;
   private ReadHandle _rh;
   private boolean _requestReadFinished;
   private boolean _responseWriteFinished;
+  private final long _timeout;
 
-  public SyncIOHandler(ServletInputStream is, ServletOutputStream os, int maxBufferedChunks)
+  public SyncIOHandler(ServletInputStream is, ServletOutputStream os, int maxBufferedChunks, long timeout)
   {
     _is = is;
     _os = os;
@@ -40,6 +43,7 @@ public class SyncIOHandler implements Writer, Reader
     _eventQueue = new LinkedBlockingDeque<Event>();
     _requestReadFinished = false;
     _responseWriteFinished = false;
+    _timeout = timeout;
   }
 
   @Override
@@ -87,14 +91,20 @@ public class SyncIOHandler implements Writer, Reader
 
   public void loop() throws ServletException, IOException
   {
-    // TODO [ZZ]: consider adding timeout here, e.g. if no activity in 30 seconds (configurable)
+    final long startTime = System.currentTimeMillis();
+
     while(shouldContinue())
     {
-
       Event event;
       try
       {
-        event = _eventQueue.take();
+        long timeSpent = System.currentTimeMillis() - startTime;
+        long maxWaitTime = timeSpent < _timeout ? _timeout - timeSpent : 0;
+        event = _eventQueue.poll(maxWaitTime, TimeUnit.MILLISECONDS);
+        if (event == null)
+        {
+          throw new TimeoutException("Timeout after " + _timeout + " milliseconds.");
+        }
       }
       catch (Exception ex)
       {

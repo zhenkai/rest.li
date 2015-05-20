@@ -61,11 +61,18 @@ public abstract class AbstractR2Servlet extends AbstractServlet
 {
   private static final long   serialVersionUID = 0L;
 
+  private final long _ioHandlerTimeout;
+
+  public AbstractR2Servlet(long ioHandlerTimeout)
+  {
+    _ioHandlerTimeout = ioHandlerTimeout;
+  }
+
   @Override
   protected void service(final HttpServletRequest req, final HttpServletResponse resp)
           throws ServletException, IOException
   {
-    final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 2);
+    final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 2, _ioHandlerTimeout);
 
     RequestContext requestContext = readRequestContext(req);
 
