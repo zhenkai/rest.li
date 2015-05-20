@@ -52,13 +52,17 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
   // servlet async context timeout in ms.
   private final long _timeout;
 
+  private final long _ioHandlerTimeout;
+
   /**
    * Initialize the servlet, optionally using servlet-api-3.0 async API, if supported
    * by the container. The latter is checked later in init()
    */
-  public AbstractAsyncR2Servlet(long timeout)
+  public AbstractAsyncR2Servlet(long timeout, long ioHandlerTimeout)
   {
+    super(ioHandlerTimeout);
     _timeout = timeout;
+    _ioHandlerTimeout = ioHandlerTimeout;
   }
 
   @Override
@@ -68,7 +72,7 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
     final AsyncContext ctx = req.startAsync(req, resp);
     ctx.setTimeout(_timeout);
 
-    final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 3);
+    final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 3, _ioHandlerTimeout);
 
     RequestContext requestContext = readRequestContext(req);
 

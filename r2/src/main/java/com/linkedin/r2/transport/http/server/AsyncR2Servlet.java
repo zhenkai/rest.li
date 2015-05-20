@@ -30,6 +30,8 @@ import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 public class AsyncR2Servlet extends AbstractAsyncR2Servlet
 {
   private static final long serialVersionUID = 0L;
+  private static final long DEFAULT_IOHANDLER_TIMEOUT = 30000;
+
   private final HttpDispatcher _dispatcher;
 
   /**
@@ -38,7 +40,13 @@ public class AsyncR2Servlet extends AbstractAsyncR2Servlet
   public AsyncR2Servlet(HttpDispatcher dispatcher,
                         long timeout)
   {
-    super(timeout);
+    this(dispatcher, timeout, DEFAULT_IOHANDLER_TIMEOUT);
+  }
+
+  public AsyncR2Servlet(HttpDispatcher dispatcher,
+                        long timeout, long ioHandlerTimeout)
+  {
+    super(timeout, ioHandlerTimeout);
     _dispatcher = dispatcher;
   }
 
@@ -48,7 +56,14 @@ public class AsyncR2Servlet extends AbstractAsyncR2Servlet
   public AsyncR2Servlet(TransportDispatcher dispatcher,
                         long timeout)
   {
-    this(new HttpDispatcher(dispatcher), timeout);
+    this(dispatcher, timeout, DEFAULT_IOHANDLER_TIMEOUT);
+  }
+
+  public AsyncR2Servlet(TransportDispatcher dispatcher,
+                        long timeout, long ioHandlerTimeout)
+  {
+
+    this(new HttpDispatcher(dispatcher), timeout, ioHandlerTimeout);
   }
 
   @Override
