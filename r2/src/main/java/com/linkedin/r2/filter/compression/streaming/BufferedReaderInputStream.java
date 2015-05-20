@@ -21,7 +21,7 @@ public class BufferedReaderInputStream extends InputStream implements Reader
   private static final int CAPACITY = 3;
   private static final ByteString EOF = ByteString.copy(new byte[1]);
 
-  private final BlockingQueue<ByteString> _buffers = new ArrayBlockingQueue<ByteString>(CAPACITY);
+  private final BlockingQueue<ByteString> _buffers = new ArrayBlockingQueue<ByteString>(CAPACITY+1);
 
   private volatile boolean _readFinished = false;
   private volatile Throwable _throwable = null;
