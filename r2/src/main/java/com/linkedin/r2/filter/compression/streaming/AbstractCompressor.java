@@ -1,6 +1,5 @@
 package com.linkedin.r2.filter.compression.streaming;
 
-import com.linkedin.r2.filter.compression.CompressionException;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
 
@@ -20,7 +19,6 @@ public abstract class AbstractCompressor implements StreamingCompressor
 
   @Override
   public EntityStream deflate(EntityStream input)
-      throws CompressionException
   {
     StreamingDeflater deflater = createDeflater();
     input.setReader(deflater);
