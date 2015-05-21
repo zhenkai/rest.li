@@ -5,6 +5,7 @@ import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.compression.CompressionException;
 import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
+import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
 import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
 import com.linkedin.r2.filter.compression.streaming.SnappyCompressor;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.io.IOUtils;
@@ -103,6 +105,27 @@ public class TestStreamingCompression
     BZip2CompressorOutputStream bzip = new BZip2CompressorOutputStream(out);
     IOUtils.write(origin, bzip);
     bzip.close();
+    byte[] compressed = out.toByteArray();
+
+    testCompress(compressor, origin, compressed);
+    testDecompress(compressor, origin, compressed);
+    testCompressThenDecompress(compressor, origin);
+    testNoCompress(compressor, threshold);
+  }
+
+  @Test
+  public void testDeflateCompressor()
+      throws IOException, InterruptedException, CompressionException, ExecutionException
+  {
+    int threshold = 4096;
+    StreamingCompressor compressor = new DeflateCompressor(_executor, threshold);
+    final byte[] origin = new byte[threshold*1024];
+    Arrays.fill(origin, (byte)'c');
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    DeflaterOutputStream zlib = new DeflaterOutputStream(out);
+    IOUtils.write(origin, zlib);
+    zlib.close();
     byte[] compressed = out.toByteArray();
 
     testCompress(compressor, origin, compressed);
