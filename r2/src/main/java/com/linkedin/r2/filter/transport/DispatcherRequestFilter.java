@@ -25,12 +25,9 @@ import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.BaseConnector;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.ReadHandle;
-import com.linkedin.r2.message.streaming.Reader;
-import com.linkedin.r2.message.streaming.WriteHandle;
-import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
@@ -104,11 +101,8 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     };
   }
 
-  private static class Connector implements Reader, Writer
+  private static class Connector extends BaseConnector
   {
-    private WriteHandle _wh;
-    private ReadHandle _rh;
-    private int _outstanding;
     private final AtomicBoolean _invoked;
     private final NextFilter<StreamRequest, StreamResponse> _nextFilter;
     private final RequestContext _requestContext;
@@ -118,7 +112,7 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     Connector(AtomicBoolean invoked, NextFilter<StreamRequest, StreamResponse> nextFilter,
               RequestContext requestContext, Map<String, String> wireAttrs)
     {
-      _outstanding = 0;
+      super();
       _invoked = invoked;
       _nextFilter = nextFilter;
       _requestContext = requestContext;
@@ -126,55 +120,16 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     }
 
     @Override
-    public void onInit(ReadHandle rh)
-    {
-      _rh = rh;
-    }
-
-    @Override
-    public void onInit(final WriteHandle wh)
-    {
-      _wh = wh;
-    }
-
-
-    @Override
     public void onDataAvailable(ByteString data)
     {
       if (_aborted)
       {
         // drop the bytes on the floor
-        _rh.request(1);
+        getReadHandle().request(1);
         return;
       }
 
-      _outstanding--;
-      _wh.write(data);
-      int diff = _wh.remaining() - _outstanding;
-      if (diff > 0)
-      {
-        _rh.request(diff);
-        _outstanding += diff;
-      }
-    }
-
-    @Override
-    public void onDone()
-    {
-      _wh.done();
-    }
-
-    @Override
-    public void onError(Throwable e)
-    {
-      _wh.error(e);
-    }
-
-    @Override
-    public void onWritePossible()
-    {
-      _outstanding = _wh.remaining();
-      _rh.request(_outstanding);
+      super.onDataAvailable(data);
     }
 
     @Override
@@ -187,7 +142,9 @@ public class DispatcherRequestFilter implements StreamRequestFilter
       }
 
       // drain the bytes in request since our entity stream to reader is aborted
-      _rh.request(Integer.MAX_VALUE);
+      getReadHandle().request(Integer.MAX_VALUE);
+
+      super.onAbort(e);
     }
   }
 }
