@@ -37,10 +37,16 @@ import org.iq80.snappy.SnappyOutputStream;
  */
 abstract class StreamingDeflater implements Reader, Writer
 {
+  private final int _threshold;
   private ReadHandle _rh;
   private WriteHandle _wh;
   private OutputStream _out;
   private BufferedWriterOutputStream _writerOutputStream;
+
+  public StreamingDeflater(int threshold)
+  {
+    _threshold = threshold;
+  }
 
   @Override
   public void onInit(ReadHandle rh)
@@ -93,7 +99,23 @@ abstract class StreamingDeflater implements Reader, Writer
     {
       _wh = wh;
       _writerOutputStream = new BufferedWriterOutputStream();
-      _out = createOutputStream(_writerOutputStream);
+
+      if (_threshold > 0)
+      {
+        _out = new DelayedCompressionOutputStream(_writerOutputStream, _threshold)
+        {
+          @Override
+          OutputStream compressionOutputStream(OutputStream out)
+              throws IOException
+          {
+            return createOutputStream(out);
+          }
+        };
+      }
+      else
+      {
+        _out = createOutputStream(_writerOutputStream);
+      }
     }
     catch (IOException e)
     {

@@ -60,20 +60,12 @@ public class GzipCompressor extends AbstractCompressor
   @Override
   protected StreamingDeflater createDeflater()
   {
-    return new StreamingDeflater()
+    return new StreamingDeflater(_threshold)
     {
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException
       {
-        return new DelayedCompressionOutputStream(out, _threshold)
-        {
-          @Override
-          OutputStream compressionOutputStream(OutputStream outputStream)
-              throws IOException
-          {
-            return new GZIPOutputStream(outputStream);
-          }
-        };
+        return new GZIPOutputStream(out);
       }
     };
   }
