@@ -26,7 +26,6 @@ import com.linkedin.r2.util.LinkedDeque;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Deque;
-import org.iq80.snappy.SnappyOutputStream;
 
 /**
  * This class pipes a {@link com.linkedin.r2.message.streaming.EntityStream} to
