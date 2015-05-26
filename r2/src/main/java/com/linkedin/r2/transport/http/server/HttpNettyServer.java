@@ -23,7 +23,9 @@ package com.linkedin.r2.transport.http.server;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 
+import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.StreamResponse;
 
 import com.linkedin.r2.message.rest.RestRequest;
@@ -126,6 +128,23 @@ import org.slf4j.LoggerFactory;
 
   private class Handler extends SimpleChannelInboundHandler<RestRequest>
   {
+    private void writeError(Channel ch, TransportResponse<StreamResponse> response, Throwable ex)
+    {
+      RestResponseBuilder responseBuilder =
+          new RestResponseBuilder(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, ex))
+          .unsafeOverwriteHeaders(WireAttributeHelper.toWireAttributes(response.getWireAttributes()));
+
+      ch.writeAndFlush(responseBuilder.build());
+    }
+
+    private void writeResponse(Channel ch, TransportResponse<StreamResponse> response,  RestResponse restResponse)
+    {
+      RestResponseBuilder responseBuilder = restResponse.builder()
+          .unsafeOverwriteHeaders(WireAttributeHelper.toWireAttributes(response.getWireAttributes()));
+
+      ch.writeAndFlush(responseBuilder.build());
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RestRequest request) throws Exception
     {
@@ -133,9 +152,9 @@ import org.slf4j.LoggerFactory;
       TransportCallback<StreamResponse> writeResponseCallback = new TransportCallback<StreamResponse>()
       {
         @Override
-        public void onResponse(TransportResponse<StreamResponse> response)
+        public void onResponse(final TransportResponse<StreamResponse> response)
         {
-          final RestResponseBuilder responseBuilder;
+
           if (response.hasError())
           {
             // This onError is only getting called in cases where:
@@ -144,19 +163,25 @@ import org.slf4j.LoggerFactory;
             // turning it into a Response, or
             // (2) the HttpBridge-installed callback's onError declined to convert the exception to a
             // response and passed it along to here.
-            responseBuilder =
-                    new RestResponseBuilder(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, response.getError()));
+            writeError(ch, response, response.getError());
           }
           else
           {
-            responseBuilder = new RestResponseBuilder((RestResponse)response.getResponse());
+            Messages.toRestResponse(response.getResponse(), new Callback<RestResponse>()
+            {
+              @Override
+              public void onError(Throwable e)
+              {
+                writeError(ch, response, e);
+              }
+
+              @Override
+              public void onSuccess(RestResponse result)
+              {
+                writeResponse(ch, response, result);
+              }
+            });
           }
-
-          responseBuilder
-            .unsafeOverwriteHeaders(WireAttributeHelper.toWireAttributes(response.getWireAttributes()))
-            .build();
-
-          ch.writeAndFlush(responseBuilder.build());
         }
       };
       try
