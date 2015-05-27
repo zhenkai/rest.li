@@ -83,8 +83,14 @@ public class ReplaceableFilter implements StreamFilter
                             Map<String, String> wireAttrs,
                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    final Filter filter = _filter;
-    ((StreamRequestFilter)filter).onRequest(req, requestContext, wireAttrs, nextFilter);
+    if (_filter instanceof StreamRequestFilter)
+    {
+      ((StreamRequestFilter) _filter).onRequest(req, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onRequest(req, requestContext, wireAttrs);
+    }
   }
 
   @Override
@@ -93,8 +99,14 @@ public class ReplaceableFilter implements StreamFilter
                              Map<String, String> wireAttrs,
                              NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    final Filter filter = _filter;
-    ((StreamResponseFilter) filter).onResponse(res, requestContext, wireAttrs, nextFilter);
+    if (_filter instanceof StreamResponseFilter)
+    {
+      ((StreamResponseFilter) _filter).onResponse(res, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onResponse(res, requestContext, wireAttrs);
+    }
 
   }
 
@@ -104,7 +116,13 @@ public class ReplaceableFilter implements StreamFilter
                           Map<String, String> wireAttrs,
                           NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    final Filter filter = _filter;
-    ((StreamResponseFilter) filter).onError(ex, requestContext, wireAttrs, nextFilter);
+    if (_filter instanceof StreamResponseFilter)
+    {
+      ((StreamResponseFilter) _filter).onError(ex, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onError(ex, requestContext, wireAttrs);
+    }
   }
 }
