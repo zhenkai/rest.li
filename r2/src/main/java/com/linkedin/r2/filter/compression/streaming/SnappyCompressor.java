@@ -16,7 +16,6 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,24 +23,23 @@ import java.util.concurrent.Executor;
 import org.iq80.snappy.SnappyInputStream;
 import org.iq80.snappy.SnappyOutputStream;
 
+
 /**
  * @author Ang Xu
  */
 public class SnappyCompressor extends AbstractCompressor
 {
   private final Executor _executor;
-  private final int _threshold;
 
-  public SnappyCompressor(Executor executor, int threshold)
+  public SnappyCompressor(Executor executor)
   {
     _executor = executor;
-    _threshold = threshold;
   }
 
   @Override
   public String getContentEncodingName()
   {
-    return "snappy-stream";
+    return "x-snappy-framed";
   }
 
   @Override
@@ -58,9 +56,9 @@ public class SnappyCompressor extends AbstractCompressor
   }
 
   @Override
-  protected StreamingDeflater createDeflater()
+  protected StreamingDeflater createDeflater(int threshold)
   {
-    return new StreamingDeflater(_threshold)
+    return new StreamingDeflater(threshold)
     {
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException

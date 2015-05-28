@@ -16,7 +16,6 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
@@ -26,6 +25,7 @@ import com.linkedin.r2.util.LinkedDeque;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Deque;
+
 
 /**
  * This class pipes a {@link com.linkedin.r2.message.streaming.EntityStream} to

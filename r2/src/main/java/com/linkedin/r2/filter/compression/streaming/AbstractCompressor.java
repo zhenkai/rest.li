@@ -16,9 +16,10 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
+import java.util.concurrent.Executor;
+
 
 /**
  * @author Ang Xu
@@ -34,13 +35,13 @@ public abstract class AbstractCompressor implements StreamingCompressor
   }
 
   @Override
-  public EntityStream deflate(EntityStream input)
+  public EntityStream deflate(EntityStream input, int threshold)
   {
-    StreamingDeflater deflater = createDeflater();
+    StreamingDeflater deflater = createDeflater(threshold);
     input.setReader(deflater);
     return EntityStreams.newEntityStream(deflater);
   }
 
   abstract protected StreamingInflater createInflater();
-  abstract protected StreamingDeflater createDeflater();
+  abstract protected StreamingDeflater createDeflater(int threshold);
 }
