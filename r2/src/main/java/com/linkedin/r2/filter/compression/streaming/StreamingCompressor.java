@@ -16,8 +16,9 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import com.linkedin.r2.message.streaming.EntityStream;
+import java.util.concurrent.Executor;
+
 
 /**
  * @author Ang Xu
@@ -31,14 +32,17 @@ public interface StreamingCompressor
   String getContentEncodingName();
 
   /** Decompression function.
-   * @param input EntityStream to be decompressed
+   * @param input     EntityStream to be decompressed
    * @return Newly created EntityStream of decompressed of data, or null if error
    * */
   EntityStream inflate(EntityStream input);
 
   /** Compress function.
-   * @param input EntityStream to be compressed
+   * @param input     EntityStream to be compressed
+   * @param threshold Threshold value to determine whether the input stream needs
+   *                  to be compressed or not. The input stream will be compressed
+   *                  iff its total length exceeds the threshold.
    * @return Newly created EntityStream of compressed data, or null if error
    * */
-  EntityStream deflate(EntityStream input);
+  EntityStream deflate(EntityStream input, int threshold);
 }

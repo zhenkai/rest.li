@@ -16,7 +16,6 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,18 +23,17 @@ import java.util.concurrent.Executor;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+
 /**
  * @author Ang Xu
  */
 public class GzipCompressor extends AbstractCompressor
 {
   private final Executor _executor;
-  private final int _threshold;
 
-  public GzipCompressor(Executor executor, int threshold)
+  public GzipCompressor(Executor executor)
   {
     _executor = executor;
-    _threshold = threshold;
   }
 
   @Override
@@ -58,9 +56,9 @@ public class GzipCompressor extends AbstractCompressor
   }
 
   @Override
-  protected StreamingDeflater createDeflater()
+  protected StreamingDeflater createDeflater(int threshold)
   {
-    return new StreamingDeflater(_threshold)
+    return new StreamingDeflater(threshold)
     {
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException

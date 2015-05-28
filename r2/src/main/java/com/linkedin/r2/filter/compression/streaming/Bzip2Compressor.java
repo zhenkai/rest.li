@@ -16,7 +16,6 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,18 +23,17 @@ import java.util.concurrent.Executor;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 
+
 /**
  * @author Ang Xu
  */
 public class Bzip2Compressor extends AbstractCompressor
 {
   private final Executor _executor;
-  private final int _threshold;
 
-  public Bzip2Compressor(Executor executor, int threshold)
+  public Bzip2Compressor(Executor executor)
   {
     _executor = executor;
-    _threshold = threshold;
   }
 
   @Override
@@ -58,9 +56,9 @@ public class Bzip2Compressor extends AbstractCompressor
   }
 
   @Override
-  protected StreamingDeflater createDeflater()
+  protected StreamingDeflater createDeflater(int threshold)
   {
-    return new StreamingDeflater(_threshold)
+    return new StreamingDeflater(threshold)
     {
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException

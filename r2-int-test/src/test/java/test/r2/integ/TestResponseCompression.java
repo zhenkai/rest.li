@@ -1,0 +1,284 @@
+/*
+   Copyright (c) 2015 LinkedIn Corp.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+package test.r2.integ;
+
+import com.linkedin.common.callback.Callback;
+import com.linkedin.common.callback.FutureCallback;
+import com.linkedin.common.util.None;
+import com.linkedin.r2.filter.FilterChains;
+import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
+import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
+import com.linkedin.r2.filter.compression.streaming.ServerCompressionFilter;
+import com.linkedin.r2.filter.compression.streaming.SnappyCompressor;
+import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
+import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamException;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.DrainReader;
+import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.Writer;
+import com.linkedin.r2.sample.Bootstrap;
+import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
+import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
+import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.transport.http.server.HttpServerFactory;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.Test;
+
+
+/**
+ * @author Ang Xu
+ */
+public class TestResponseCompression extends AbstractStreamTest
+{
+  private static final URI SMALL_URI = URI.create("/small");
+
+  protected final ExecutorService _executor = Executors.newCachedThreadPool();
+  protected final StreamFilter _compressionFilter = new ServerCompressionFilter(EncodingType.values(), _executor);
+
+
+  @AfterClass
+  public void afterClass()
+  {
+    _executor.shutdown();
+  }
+
+  @Override
+  protected HttpServerFactory getServerFactory()
+  {
+    return new HttpServerFactory(FilterChains.create(_compressionFilter));
+  }
+
+  @Override
+  protected TransportDispatcher getTransportDispatcher()
+  {
+    return new TransportDispatcherBuilder()
+        .addStreamHandler(SMALL_URI, new BytesWriterRequestHandler(BYTE, SMALL_BYTES_NUM))
+        .build();
+  }
+
+  @Override
+  protected Map<String, String> getClientProperties()
+  {
+    Map<String, String> clientProperties = new HashMap<String, String>();
+    clientProperties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, String.valueOf(LARGE_BYTES_NUM * 2));
+    clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "60000");
+    return clientProperties;
+  }
+
+  @Test
+  public void testDeflateCompression()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("deflate", new DeflateCompressor(_executor));
+  }
+
+  @Test
+  public void testGzipCompression()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("gzip", new GzipCompressor(_executor));
+  }
+
+  @Test
+  public void testBzip2Compression()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("bzip2", new Bzip2Compressor(_executor));
+  }
+
+  @Test
+  public void testSnappyCompression()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("x-snappy-framed", new SnappyCompressor(_executor));
+  }
+
+  @Test
+  public void testSnappyCompression2()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("x-snappy-framed;q=1, bzip2;q=0.75, gzip;q=0.5, defalte;q=0",
+        new SnappyCompressor(_executor));
+  }
+
+  @Test
+  public void testSnappyCompression3()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("x-snappy-framed, *;q=0",
+        new SnappyCompressor(_executor));
+  }
+
+  @Test
+  public void testNoCompression()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("identity", new NoopCompressor());
+  }
+
+  @Test
+  public void testNoCompression2()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression("", new NoopCompressor());
+  }
+
+  @Test
+  public void testNoCompression3()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression(null, new NoopCompressor());
+  }
+
+  @Test
+  public void testBadEncoding()
+      throws TimeoutException, InterruptedException
+  {
+    testEncodingNotAcceptable("foobar");
+  }
+
+  private void testResponseCompression(String acceptEncoding, final StreamingCompressor compressor)
+      throws InterruptedException, TimeoutException, ExecutionException
+  {
+    StreamRequestBuilder builder = new StreamRequestBuilder((Bootstrap.createHttpURI(PORT, SMALL_URI)));
+    if (acceptEncoding != null)
+    {
+      builder.addHeaderValue(HttpConstants.ACCEPT_ENCODING, acceptEncoding);
+    }
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
+
+    final FutureCallback<StreamResponse> callback = new FutureCallback<StreamResponse>();
+    _client.streamRequest(request, callback);
+
+    final StreamResponse response = callback.get(60, TimeUnit.SECONDS);
+    Assert.assertEquals(response.getStatus(), RestStatus.OK);
+
+    final FutureCallback<None> readerCallback = new FutureCallback<None>();
+    final BytesReader reader = new BytesReader(BYTE, readerCallback);
+    final EntityStream decompressedStream = compressor.inflate(response.getEntityStream());
+    decompressedStream.setReader(reader);
+
+    readerCallback.get(60, TimeUnit.SECONDS);
+    Assert.assertEquals(reader.getTotalBytes(), SMALL_BYTES_NUM);
+    Assert.assertTrue(reader.allBytesCorrect());
+  }
+
+  public void testEncodingNotAcceptable(String acceptEncoding)
+      throws TimeoutException, InterruptedException
+  {
+    StreamRequestBuilder builder = new StreamRequestBuilder((Bootstrap.createHttpURI(PORT, SMALL_URI)));
+    if (acceptEncoding != null)
+    {
+      builder.addHeaderValue(HttpConstants.ACCEPT_ENCODING, acceptEncoding);
+    }
+    StreamRequest request = builder.build(EntityStreams.emptyStream());
+
+    final FutureCallback<StreamResponse> callback = new FutureCallback<StreamResponse>();
+    _client.streamRequest(request, callback);
+    try
+    {
+      final StreamResponse response = callback.get(60, TimeUnit.SECONDS);
+      Assert.fail("Should have thrown exception when encoding is not acceptable");
+    }
+    catch (ExecutionException e)
+    {
+      Throwable t = e.getCause();
+      Assert.assertTrue(t instanceof StreamException);
+      StreamResponse response = ((StreamException) t).getResponse();
+      Assert.assertEquals(response.getStatus(), HttpConstants.NOT_ACCEPTABLE);
+    }
+  }
+
+  private static class BytesWriterRequestHandler implements StreamRequestHandler
+  {
+    private final byte _b;
+    private final long _bytesNum;
+    private volatile TimedBytesWriter _writer;
+
+    BytesWriterRequestHandler(byte b, long bytesNUm)
+    {
+      _b = b;
+      _bytesNum = bytesNUm;
+    }
+
+    @Override
+    public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
+    {
+      request.getEntityStream().setReader(new DrainReader());
+      _writer = createWriter(_bytesNum, _b);
+      StreamResponse response = buildResponse(_writer);
+      callback.onSuccess(response);
+    }
+
+    TimedBytesWriter getWriter()
+    {
+      return _writer;
+    }
+
+    protected TimedBytesWriter createWriter(long bytesNum, byte b)
+    {
+      return new TimedBytesWriter(_bytesNum, _b);
+    }
+
+    StreamResponse buildResponse(Writer writer)
+    {
+      return new StreamResponseBuilder().build(EntityStreams.newEntityStream(writer));
+    }
+  }
+
+  private static class NoopCompressor implements StreamingCompressor
+  {
+
+    @Override
+    public String getContentEncodingName()
+    {
+      return "no-op";
+    }
+
+    @Override
+    public EntityStream inflate(EntityStream input)
+    {
+      return input;
+    }
+
+    @Override
+    public EntityStream deflate(EntityStream input, int threshold)
+    {
+      return input;
+    }
+  }
+}
