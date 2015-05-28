@@ -16,9 +16,9 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import java.io.IOException;
 import java.io.OutputStream;
+
 
 /**
  * An {@link OutputStream} which delays compression until the buffer threshold is reached.

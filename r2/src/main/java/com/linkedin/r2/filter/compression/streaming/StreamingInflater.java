@@ -16,13 +16,13 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
+
 
 /**
  * This class pipes a compressed {@link com.linkedin.r2.message.streaming.EntityStream} to
