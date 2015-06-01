@@ -3,6 +3,10 @@ package com.linkedin.r2.message.rest;
 import java.net.URI;
 
 /**
+ * This interface represents basic contract for request.
+ *
+ * @see com.linkedin.r2.message.rest.RestRequest
+ * @see com.linkedin.r2.message.rest.StreamRequest
  * @author Zhenkai Zhu
  */
 public interface Request extends MessageHeaders

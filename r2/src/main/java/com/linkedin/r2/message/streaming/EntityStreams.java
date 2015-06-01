@@ -180,7 +180,6 @@ public final class EntityStreams
           }
           catch (Exception ex)
           {
-            // LOG.error("Reader throws exception at onDone", ex);
             ensureAbort(ex);
           }
         }
@@ -220,6 +219,11 @@ public final class EntityStreams
       @Override
       public void request(final int chunkNum)
       {
+        if (chunkNum <= 0)
+        {
+          throw new IllegalArgumentException("cannot request non-positive number of data chunks: " + chunkNum);
+        }
+
         boolean needNotify = false;
         synchronized (_lock)
         {

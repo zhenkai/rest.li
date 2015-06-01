@@ -79,8 +79,23 @@ public interface Client
   void restRequest(RestRequest request, RequestContext requestContext,
                    Callback<RestResponse> callback);
 
+  /**
+   * Asynchronously issues the given request. The given callback is invoked when the response is
+   * received.
+   *
+   * @param request the request to issue
+   * @param callback the callback to invoke with the response
+   */
   void streamRequest(StreamRequest request, Callback<StreamResponse> callback);
 
+  /**
+   * Asynchronously issues the given request. The given callback is invoked when the response is
+   * received.
+   *
+   * @param request the request to issue
+   * @param requestContext context for the request
+   * @param callback the callback to invoke with the response
+   */
   void streamRequest(StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback);
 
   /**

@@ -18,7 +18,8 @@
 package com.linkedin.r2.message.rest;
 
 /**
- * An object that contains details of a REST response.<p/>
+ * An object that contains details of a REST stream response.<p/>
+ * StreamResponse contains an EntityStream as its entity, which can only be consumed once.
  *
  * @author Chris Pettitt
  * @author Zhenkai Zhu

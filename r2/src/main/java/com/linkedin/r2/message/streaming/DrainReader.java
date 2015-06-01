@@ -3,6 +3,8 @@ package com.linkedin.r2.message.streaming;
 import com.linkedin.data.ByteString;
 
 /**
+ * This is a convenience reader to drain the bytes in the entity stream and simply discard the bytes.
+ *
  * @author Zhenkai Zhu
  */
 public class DrainReader implements Reader

@@ -36,13 +36,9 @@ import java.util.concurrent.Future;
  * implementations of overloaded convenience methods implemented in terms of the most general
  * versions. Classes extending AbstractClient should implement:
  *
- *   void restRequest(RestRequest request,
- *                    RequestContext requestContext,
- *                    Callback<RestResponse> callback);
- *
- *   void rpcRequest(RpcRequest request,
- *                   RequestContext requestContext,
- *                   Callback<RpcResponse> callback);
+ *   void streamRequest(StreamRequest request,
+ *                      RequestContext requestContext,
+ *                      Callback<StreamResponse> callback);
  *
  *
  * @author Chris Pettitt

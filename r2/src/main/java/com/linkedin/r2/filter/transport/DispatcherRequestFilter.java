@@ -63,9 +63,9 @@ public class DispatcherRequestFilter implements StreamRequestFilter
   {
     try
     {
-      final AtomicBoolean invoked = new AtomicBoolean(false);
-      TransportCallback<StreamResponse> callback = createCallback(requestContext, nextFilter, invoked);
-      Connector connector = new Connector(invoked, nextFilter, requestContext, wireAttrs);
+      final AtomicBoolean responded = new AtomicBoolean(false);
+      TransportCallback<StreamResponse> callback = createCallback(requestContext, nextFilter, responded);
+      Connector connector = new Connector(responded, nextFilter, requestContext, wireAttrs);
       req.getEntityStream().setReader(connector);
       EntityStream newStream = EntityStreams.newEntityStream(connector);
       _dispatcher.handleStreamRequest(req.builder().build(newStream), wireAttrs, requestContext, callback);
@@ -79,14 +79,14 @@ public class DispatcherRequestFilter implements StreamRequestFilter
   private <REQ extends Request, RES extends Response> TransportCallback<RES> createCallback(
           final RequestContext requestContext,
           final NextFilter<REQ, RES> nextFilter,
-          final AtomicBoolean invoked)
+          final AtomicBoolean responded)
   {
     return new TransportCallback<RES>()
     {
       @Override
       public void onResponse(TransportResponse<RES> res)
       {
-        if (invoked.compareAndSet(false, true))
+        if (responded.compareAndSet(false, true))
         {
           final Map<String, String> wireAttrs = res.getWireAttributes();
           if (res.hasError())
@@ -103,17 +103,17 @@ public class DispatcherRequestFilter implements StreamRequestFilter
 
   private static class Connector extends BaseConnector
   {
-    private final AtomicBoolean _invoked;
+    private final AtomicBoolean _responded;
     private final NextFilter<StreamRequest, StreamResponse> _nextFilter;
     private final RequestContext _requestContext;
     private final Map<String, String> _wireAttrs;
     private volatile boolean _aborted;
 
-    Connector(AtomicBoolean invoked, NextFilter<StreamRequest, StreamResponse> nextFilter,
+    Connector(AtomicBoolean responded, NextFilter<StreamRequest, StreamResponse> nextFilter,
               RequestContext requestContext, Map<String, String> wireAttrs)
     {
       super();
-      _invoked = invoked;
+      _responded = responded;
       _nextFilter = nextFilter;
       _requestContext = requestContext;
       _wireAttrs = wireAttrs;
@@ -136,7 +136,7 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     public void onAbort(Throwable e)
     {
       _aborted = true;
-      if (_invoked.compareAndSet(false, true))
+      if (_responded.compareAndSet(false, true))
       {
         _nextFilter.onError(e, _requestContext, _wireAttrs);
       }

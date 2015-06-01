@@ -18,11 +18,10 @@
 package com.linkedin.r2.message.rest;
 
 /**
- * An object that contains details of a REST request.<p/>
+ * An object that contains details of a REST stream request.
+ * StreamRequest contains an EntityStream as its entity, which can only be consumed once.
  *
- * @author Chris Pettitt
  * @author Zhenkai Zhu
- * @version $Revision$
  */
 public interface StreamRequest extends Request, StreamMessage
 {

@@ -20,10 +20,9 @@ package com.linkedin.r2.message.rest;
 import com.linkedin.r2.RemoteInvocationException;
 
 /**
- * A {@link RemoteInvocationException} which contains a {@link RestResponse} message.
+ * A {@link RemoteInvocationException} which contains a {@link StreamResponse} message.
  *
- * @author Chris Pettitt
- * @version $Revision$
+ * @author Zhenkai Zhu
  */
 public class StreamException extends RemoteInvocationException
 {
@@ -34,7 +33,7 @@ public class StreamException extends RemoteInvocationException
   /**
    * Construct a new instance using the specified response message and exception message.
    *
-   * @param response the {@link RestResponse} message for this exception.
+   * @param response the {@link StreamResponse} message for this exception.
    */
   public StreamException(StreamResponse response)
   {
@@ -44,7 +43,7 @@ public class StreamException extends RemoteInvocationException
   /**
    * Construct a new instance using the specified response message and cause.
    *
-   * @param response the {@link RestResponse} message for this exception.
+   * @param response the {@link StreamResponse} message for this exception.
    * @param cause the cause of this exception.
    */
   public StreamException(StreamResponse response, Throwable cause)
@@ -56,7 +55,7 @@ public class StreamException extends RemoteInvocationException
   /**
    * Construct a new instance using the specified response message, exception message, and cause.
    *
-   * @param response the {@link RestResponse} message for this exception.
+   * @param response the {@link StreamResponse} message for this exception.
    * @param message the exception message for this exception.
    * @param cause the cause of this exception.
    */
@@ -69,7 +68,7 @@ public class StreamException extends RemoteInvocationException
   /**
    * Construct a new instance using the specified response message and exception message.
    *
-   * @param response the {@link RestResponse} message for this exception.
+   * @param response the {@link StreamResponse} message for this exception.
    * @param message the exception message for this exception.
    */
   public StreamException(StreamResponse response, String message)
@@ -79,9 +78,9 @@ public class StreamException extends RemoteInvocationException
   }
 
   /**
-   * Return the {@link RestResponse} contained by this exception.
+   * Return the {@link StreamResponse} contained by this exception.
    *
-   * @return the {@link RestResponse} contained by this exception.
+   * @return the {@link StreamResponse} contained by this exception.
    */
   public StreamResponse getResponse()
   {

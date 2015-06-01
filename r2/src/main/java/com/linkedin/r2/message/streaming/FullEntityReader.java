@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
+ * This is a convenience Reader to assemble the full entity of a stream message.
+ *
  * @author Zhenkai Zhu
  */
 public final class FullEntityReader implements Reader
@@ -18,6 +20,9 @@ public final class FullEntityReader implements Reader
 
   private ReadHandle _rh;
 
+  /**
+   * @param callback the callback to be invoked when the reader finishes assembling the full entity
+   */
   public FullEntityReader(Callback<ByteString> callback)
   {
     _callback = callback;
@@ -44,11 +49,7 @@ public final class FullEntityReader implements Reader
 
   public void onDone()
   {
-    ByteString entity = ByteString.empty();
-
-    // commons-io 2.5 ByteArrayOutputStream has toInputStream() method; the returned stream is backed
-    // by buffers of this stream, avoiding memory allocation and copy
-    // but commons-io 2.5 is still SNAPSHOT version in their website, so we hacked our own
+    ByteString entity;
 
     try
     {
