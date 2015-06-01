@@ -3,6 +3,9 @@ package com.linkedin.r2.message.rest;
 import com.linkedin.r2.message.streaming.EntityStream;
 
 /**
+ * StreamMessage is a message with MessageHeaders and an EntityStream as its entity.
+ * StreamMessage is not immutable and in general cannot be reused.
+ *
  * @author Zhenkai Zhu
  */
 public interface StreamMessage extends MessageHeaders

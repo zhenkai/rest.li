@@ -1,21 +1,19 @@
 package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
-import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.rest.StreamResponseBuilder;
-import com.linkedin.r2.message.streaming.ByteStringWriter;
-import com.linkedin.r2.message.streaming.EntityStreams;
-
 
 /**
+ * An adapter for adapting RestRequestHandler to StreamRequestHandler. The adapter would convert StreamRequest to
+ * RestRequest before invoking the handleRequest method, and convert RestResponse to StreamResponse in the callback.
+ * This is needed because R2 internally only uses StreamRequest.
+ *
  * @author Zhenkai Zhu
  */
 public class StreamRequestHandlerAdapter implements StreamRequestHandler

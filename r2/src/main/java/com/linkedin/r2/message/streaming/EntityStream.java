@@ -13,7 +13,7 @@ public interface EntityStream
    * Add observer to this stream.
    *
    * @param o the Observer
-   * @throws java.lang.IllegalStateException if data had already start flowing
+   * @throws java.lang.IllegalStateException if entity stream already has a reader set
    */
   void addObserver(Observer o);
 

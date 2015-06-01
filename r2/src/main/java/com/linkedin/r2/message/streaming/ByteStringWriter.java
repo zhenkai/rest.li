@@ -4,7 +4,7 @@ import com.linkedin.data.ByteString;
 import com.linkedin.util.ArgumentUtil;
 
 /**
- * A  writer that produce content based on the ByteString body
+ * A writer that produce content based on the ByteString body
  */
 public class ByteStringWriter implements Writer
 {

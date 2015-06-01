@@ -23,7 +23,7 @@ import java.util.Map;
 
 
 /**
- * An object that represents a REST message, either a request or a response.<p/>
+ * An object that represents the headers/cookies of either a request or a response.<p/>
  *
  * @see RestRequest
  * @see RestResponse

@@ -6,6 +6,8 @@ import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 
 /**
+ * A request handler for {@link com.linkedin.r2.message.rest.StreamRequest}s.
+ *
  * @author Zhenkai Zhu
  */
 public interface StreamRequestHandler

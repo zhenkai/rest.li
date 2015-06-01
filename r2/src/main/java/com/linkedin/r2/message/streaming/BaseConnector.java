@@ -3,6 +3,9 @@ package com.linkedin.r2.message.streaming;
 import com.linkedin.data.ByteString;
 
 /**
+ * This is a convenient class to connect two entity streams and apply certain extra logic when passing along
+ * read requests or data. E.g. wrap and handling errors, data transformation, etc.
+ *
  * @author Zhenkai Zhu
  */
 public class BaseConnector implements Reader, Writer
