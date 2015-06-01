@@ -11,6 +11,7 @@ public interface ReadHandle
    * This method signals the writer of the EntityStream that it can write more data.
    *
    * @param n the additional number of data chunks that the writer is permitted to write
+   * @throws java.lang.IllegalArgumentException if n is not positive
    */
   void request(int n);
 }
