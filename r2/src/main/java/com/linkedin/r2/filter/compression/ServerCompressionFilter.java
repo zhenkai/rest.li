@@ -16,6 +16,18 @@
 
 package com.linkedin.r2.filter.compression;
 
+import com.linkedin.common.callback.Callback;
+import com.linkedin.r2.filter.compression.streaming.CompositeEntityStream;
+import com.linkedin.r2.filter.compression.streaming.CompositeWriter;
+import com.linkedin.r2.filter.compression.streaming.PartialReader;
+import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
+import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.message.rest.StreamException;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,68 +35,66 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.TreeMap;
+import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.RestFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestException;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestResponse;
-import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 
 /**
  *
  * Filter class for server to negotiate acceptable compression formats from clients
  * and compresses the response with the relevant headers accordingly.
- * @author erli
  *
+ * @author erli
+ * @author Ang Xu
  */
-public class ServerCompressionFilter implements Filter, RestFilter
+public class ServerCompressionFilter implements StreamFilter
 {
   private static final Logger LOG = LoggerFactory.getLogger(ServerCompressionFilter.class);
 
   private final Set<EncodingType> _supportedEncoding;
+  private final Executor _executor;
+  private final int _compressThreshold;
 
-  /**
-   * Instantiates an empty compression filter that does no compression.
-   */
-  public ServerCompressionFilter()
-  {
-    this(new EncodingType[0]);
-  }
 
   /** Takes a comma delimited string containing standard
    * HTTP encoding headers and instantiates server compression
    * support for the said encoding types.
    * @param acceptedFilters
    */
-  public ServerCompressionFilter(String acceptedFilters)
+  public ServerCompressionFilter(String acceptedFilters, Executor executor)
   {
-    this(AcceptEncoding.parseAcceptEncoding(acceptedFilters));
+    this(acceptedFilters, executor, 0);
+  }
+
+  public ServerCompressionFilter(String acceptedFilters, Executor executor, int compressThreshold)
+  {
+    this(AcceptEncoding.parseAcceptEncoding(acceptedFilters), executor, compressThreshold);
   }
 
   /** Instantiates a compression filter
    * that supports the compression methods in the given set in argument.
    * @param supportedEncoding
    */
-  public ServerCompressionFilter(EncodingType[] supportedEncoding)
+  public ServerCompressionFilter(EncodingType[] supportedEncoding, Executor executor, int compressThreshold)
   {
     _supportedEncoding = new HashSet<EncodingType>(Arrays.asList(supportedEncoding));
     _supportedEncoding.add(EncodingType.IDENTITY);
     _supportedEncoding.add(EncodingType.ANY);
+    _executor = executor;
+    _compressThreshold = compressThreshold;
   }
 
   /**
    * Handles compression tasks for incoming requests
    */
   @Override
-  public void onRestRequest(RestRequest req, RequestContext requestContext,
-                            Map<String, String> wireAttrs,
-                            NextFilter<RestRequest, RestResponse> nextFilter)
+  public void onRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
+      NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     try
     {
@@ -111,13 +121,11 @@ public class ServerCompressionFilter implements Filter, RestFilter
         }
 
         //Process the correct compression types only
-        if (encoding.hasCompressor())
+        StreamingCompressor compressor = encoding.getCompressor(_executor);
+        if (compressor != null)
         {
-          byte[] decompressedContent = encoding.getCompressor().inflate(req.getEntity().asInputStream());
-          Map<String, String> headers = new HashMap<String, String>(req.getHeaders());
-          headers.remove(HttpConstants.CONTENT_ENCODING);
-          headers.put(HttpConstants.CONTENT_LENGTH, Integer.toString(decompressedContent.length));
-          req = req.builder().setEntity(decompressedContent).setHeaders(headers).build();
+          EntityStream uncompressedStream = compressor.inflate(req.getEntityStream());
+          req = req.builder().build(uncompressedStream);
         }
       }
 
@@ -125,7 +133,9 @@ public class ServerCompressionFilter implements Filter, RestFilter
       String responseCompression = req.getHeader(HttpConstants.ACCEPT_ENCODING);
       if (responseCompression == null)
       {
-        responseCompression = ""; //Only permit identity
+        // per RFC 2616, section 14.3, if no Accept-Encoding field is present in a request,
+        // server SHOULD use "identity" content-encoding if it is available.
+        responseCompression = EncodingType.IDENTITY.getHttpName();
       }
 
       requestContext.putLocalAttr(HttpConstants.ACCEPT_ENCODING, responseCompression);
@@ -135,8 +145,9 @@ public class ServerCompressionFilter implements Filter, RestFilter
     {
       //If we can't decompress the client's request, we can't do much more with it
       LOG.error(e.getMessage(), e.getCause());
-      RestResponse restResponse = new RestResponseBuilder().setStatus(HttpConstants.UNSUPPORTED_MEDIA_TYPE).build();
-      nextFilter.onError(new RestException(restResponse, e), requestContext, wireAttrs);
+      StreamResponse streamResponse =
+          new StreamResponseBuilder().setStatus(HttpConstants.UNSUPPORTED_MEDIA_TYPE).build(EntityStreams.emptyStream());
+      nextFilter.onError(new StreamException(streamResponse, e), requestContext, wireAttrs);
     }
   }
 
@@ -144,48 +155,67 @@ public class ServerCompressionFilter implements Filter, RestFilter
    * Optionally compresses outgoing response
    * */
   @Override
-  public void onRestResponse(RestResponse res, RequestContext requestContext,
-                             Map<String, String> wireAttrs,
-                             NextFilter<RestRequest, RestResponse> nextFilter)
+  public void onResponse(final StreamResponse res, final RequestContext requestContext, final Map<String, String> wireAttrs,
+      final NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
+    StreamResponse response = res;
     try
     {
-      if (res.getEntity().length() > 0)
+      String responseCompression = (String) requestContext.getLocalAttr(HttpConstants.ACCEPT_ENCODING);
+      if (responseCompression == null)
       {
-        String responseCompression = (String) requestContext.getLocalAttr(HttpConstants.ACCEPT_ENCODING);
-        if (responseCompression == null)
-        {
-          throw new CompressionException(CompressionConstants.UNKNOWN_ENCODING);
-        }
+        throw new CompressionException(CompressionConstants.UNKNOWN_ENCODING);
+      }
 
-        List<AcceptEncoding> parsedEncodings = AcceptEncoding.parseAcceptEncodingHeader(responseCompression, _supportedEncoding);
-        EncodingType selectedEncoding = AcceptEncoding.chooseBest(parsedEncodings);
+      List<AcceptEncoding> parsedEncodings = AcceptEncoding.parseAcceptEncodingHeader(responseCompression, _supportedEncoding);
+      EncodingType selectedEncoding = AcceptEncoding.chooseBest(parsedEncodings);
 
-        //Check if there exists an acceptable encoding
-        if (selectedEncoding != null)
+      //Check if there exists an acceptable encoding
+      if (selectedEncoding != null)
+      {
+        final StreamingCompressor compressor = selectedEncoding.getCompressor(_executor);
+        if (compressor != null)
         {
-          //NOTE: this is sort of problematic and is mirrored in 3 other places.
-          //ByteBuffer from res.getEntity() is read only, and it's awkward for
-          //compressor to return a sensible value for identity
-          if (selectedEncoding.hasCompressor())
+          PartialReader reader = new PartialReader(_compressThreshold, new Callback<EntityStream[]>()
           {
-            Compressor compressor = selectedEncoding.getCompressor();
-            byte[] compressed = compressor.deflate(res.getEntity().asInputStream());
-
-            if (compressed.length < res.getEntity().length())
+            @Override
+            public void onError(Throwable ex)
             {
-              RestResponseBuilder resCompress = res.builder();
-              resCompress.addHeaderValue(HttpConstants.CONTENT_ENCODING, compressor.getContentEncodingName());
-              resCompress.setEntity(compressed);
-              res = resCompress.build();
+              nextFilter.onError(ex, requestContext, wireAttrs);
             }
-          }
+
+            @Override
+            public void onSuccess(EntityStream[] results)
+            {
+              if (results.length == 1) // entity stream is less than threshold
+              {
+                StreamResponse response = res.builder().build(results[0]);
+                nextFilter.onResponse(response, requestContext, wireAttrs);
+              }
+              else
+              {
+                EntityStream compressedStream = compressor.deflate(EntityStreams.newEntityStream(new CompositeWriter(results)));
+                StreamResponseBuilder builder = res.builder();
+                // remove original content-length header if presents.
+                if (builder.getHeader(HttpConstants.CONTENT_LENGTH) != null)
+                {
+                  Map<String, String> headers = stripHeaders(builder.getHeaders(), HttpConstants.CONTENT_LENGTH);
+                  builder.setHeaders(headers);
+                }
+                StreamResponse response = builder.addHeaderValue(HttpConstants.CONTENT_ENCODING, compressor.getContentEncodingName())
+                    .build(compressedStream);
+                nextFilter.onResponse(response, requestContext, wireAttrs);
+              }
+            }
+          });
+          res.getEntityStream().setReader(reader);
+          return;
         }
-        else
-        {
-          //Not acceptable encoding status
-          res = res.builder().setStatus(HttpConstants.NOT_ACCEPTABLE).setEntity(new byte[0]).build();
-        }
+      }
+      else
+      {
+        //Not acceptable encoding status
+        response = new StreamResponseBuilder().setStatus(HttpConstants.NOT_ACCEPTABLE).build(EntityStreams.emptyStream());
       }
     }
     catch (CompressionException e)
@@ -193,15 +223,25 @@ public class ServerCompressionFilter implements Filter, RestFilter
       LOG.error(e.getMessage(), e.getCause());
     }
 
-    nextFilter.onResponse(res, requestContext, wireAttrs);
+    nextFilter.onResponse(response, requestContext, wireAttrs);
   }
 
 
   @Override
-  public void onRestError(Throwable ex, RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          NextFilter<RestRequest, RestResponse> nextFilter)
+  public void onError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
+      NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     nextFilter.onError(ex, requestContext, wireAttrs);
+  }
+
+  private Map<String, String> stripHeaders(Map<String, String> headerMap, String...headers)
+  {
+    Map<String, String> newMap = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+    newMap.putAll(headerMap);
+    for (String header : headers)
+    {
+      newMap.remove(header);
+    }
+    return newMap;
   }
 }

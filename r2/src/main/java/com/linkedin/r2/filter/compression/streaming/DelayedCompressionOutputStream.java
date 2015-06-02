@@ -18,6 +18,7 @@ package com.linkedin.r2.filter.compression.streaming;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 
 /**
@@ -46,21 +47,44 @@ public abstract class DelayedCompressionOutputStream extends OutputStream
   @Override
   public void write(int b) throws IOException
   {
-    if (_writeIndex < _threshold)
+    if (_compression != null)
+    {
+      _compression.write(b);
+    }
+    else if (_writeIndex < _threshold)
     {
       _buffer[_writeIndex++] = (byte)b;
     }
-    else if (_writeIndex == _threshold)
+    else
     {
       _compression = compressionOutputStream(_dest);
       _compression.write(_buffer);
       _compression.write(b);
       _writeIndex ++;
     }
+  }
+
+  @Override
+  public void write(byte b[], int off, int len) throws IOException
+  {
+    if (_compression != null)
+    {
+      _compression.write(b, off, len);
+    }
     else
     {
-      _compression.write(b);
-      _writeIndex ++;
+      if (_writeIndex + len <= _threshold)
+      {
+        System.arraycopy(b, off, _buffer, _writeIndex, len);
+        _writeIndex += len;
+      }
+      else
+      {
+        _compression = compressionOutputStream(_dest);
+        _compression.write(_buffer, 0, _writeIndex);
+        _compression.write(b, off, len);
+        _writeIndex += len;
+      }
     }
   }
 

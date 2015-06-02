@@ -56,9 +56,9 @@ public class Bzip2Compressor extends AbstractCompressor
   }
 
   @Override
-  protected StreamingDeflater createDeflater(int threshold)
+  protected StreamingDeflater createDeflater()
   {
-    return new StreamingDeflater(threshold)
+    return new StreamingDeflater()
     {
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException

@@ -423,6 +423,6 @@ public class TestHttpClientFactory
     requestCompressionConfigs.put("service3", new CompressionConfig(111));
     HttpClientFactory factory = new HttpClientFactory(null, null, true, null, true, null, true, null,
         requestCompressionThresholdDefault, requestCompressionConfigs);
-    Assert.assertEquals(factory.getCompressionConfig(serviceName, EncodingType.SNAPPY.getHttpName()), expectedConfig);
+    Assert.assertEquals(factory.getCompressionConfig(serviceName, EncodingType.SNAPPY_FRAMED.getHttpName()), expectedConfig);
   }
 }
