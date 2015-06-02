@@ -30,9 +30,6 @@ import java.util.Map;
  *
  * @author Chris Pettitt
  * @version $Revision$
- *
- *
- * TODO [ZZ]: update compression filters & caprep filters and remove this interface
  */
 public interface RestRequestFilter extends Filter
 {

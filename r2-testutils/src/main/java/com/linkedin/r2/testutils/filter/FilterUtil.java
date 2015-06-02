@@ -18,6 +18,8 @@
 package com.linkedin.r2.testutils.filter;
 
 import com.linkedin.r2.filter.FilterChain;
+import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.message.rest.StreamFilter;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Response;
