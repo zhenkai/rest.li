@@ -22,8 +22,6 @@ package com.linkedin.r2.filter.message.rest;
  * {@link com.linkedin.r2.message.rest.RestResponse}s.
  *
  * @author Chris Pettitt
- *
- * TODO [ZZ]: update compression filters & caprep filters and remove this interface
  */
 public interface RestFilter extends RestRequestFilter, RestResponseFilter
 {
