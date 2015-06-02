@@ -18,12 +18,12 @@
 package com.linkedin.r2.caprep;
 
 
-import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.caprep.db.DbSource;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
-import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -32,8 +32,6 @@ import com.linkedin.r2.message.rest.RestStatus;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ReplayFilter implements StreamRequestFilter
+public class ReplayFilter implements RestRequestFilter
 {
   private static final Logger _log = LoggerFactory.getLogger(ReplayFilter.class);
 
@@ -61,33 +59,20 @@ public class ReplayFilter implements StreamRequestFilter
   }
 
   @Override
-  public void onRequest(StreamRequest req, final RequestContext requestContext,
-                            final Map<String, String> wireAttrs,
-                            final NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestRequest(RestRequest req, RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    Messages.toRestRequest(req, new Callback<RestRequest>()
+    if (!replayResponse(req, requestContext, nextFilter))
     {
-      @Override
-      public void onError(Throwable e)
-      {
-        nextFilter.onError(e, requestContext, wireAttrs);
-      }
-
-      @Override
-      public void onSuccess(RestRequest result)
-      {
-        if (!replayResponse(result, requestContext, nextFilter))
-        {
-          nextFilter.onRequest(Messages.toStreamRequest(result), requestContext, wireAttrs);
-        }
-      }
-    });
-
+      nextFilter.onRequest(req, requestContext, wireAttrs);
+    }
   }
 
   private boolean replayResponse(RestRequest req, RequestContext requestContext,
-                              NextFilter<StreamRequest, StreamResponse> nextFilter)
+                              NextFilter<RestRequest, RestResponse> nextFilter)
   {
+    @SuppressWarnings("unchecked")
     final RestResponse res = _db.replay(req);
     if (res != null)
     {
@@ -101,11 +86,11 @@ public class ReplayFilter implements StreamRequestFilter
       // exception.
       if (!RestStatus.isOK(res.getStatus()))
       {
-        nextFilter.onError(Messages.toStreamException(new RestException(res)), requestContext, wireAttrs);
+        nextFilter.onError(new RestException(res), requestContext, wireAttrs);
       }
       else
       {
-        nextFilter.onResponse(Messages.toStreamResponse(res), requestContext, wireAttrs);
+        nextFilter.onResponse(res, requestContext, wireAttrs);
       }
       return true;
     }

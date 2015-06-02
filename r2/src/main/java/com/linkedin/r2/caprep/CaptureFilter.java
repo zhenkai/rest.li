@@ -18,16 +18,10 @@
 package com.linkedin.r2.caprep;
 
 
-import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.caprep.db.DbSink;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.RequestFilter;
-import com.linkedin.r2.filter.message.rest.RestResponseFilter;
-import com.linkedin.r2.filter.message.rest.StreamFilter;
-import com.linkedin.r2.message.rest.Messages;
-import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.filter.message.rest.RestFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -35,9 +29,6 @@ import com.linkedin.r2.message.rest.RestResponse;
 import java.io.IOException;
 import java.util.Map;
 
-import com.linkedin.r2.message.rest.StreamException;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class CaptureFilter implements StreamFilter
+public class CaptureFilter implements RestFilter
 {
   private static final Logger _log = LoggerFactory.getLogger(CaptureFilter.class);
 
@@ -64,72 +55,32 @@ public class CaptureFilter implements StreamFilter
   }
 
   @Override
-  public void onRequest(StreamRequest req, final RequestContext requestContext, final Map<String, String> wireAttrs,
-                        final NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestRequest(RestRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
+                        NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    Messages.toRestRequest(req, new Callback<RestRequest>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        nextFilter.onError(e, requestContext, wireAttrs);
-      }
+    // Save request so that it can be associated with the response
+    requestContext.putLocalAttr(REQ_ATTR, req);
 
-      @Override
-      public void onSuccess(RestRequest result)
-      {
-        // Save request so that it can be associated with the response
-        requestContext.putLocalAttr(REQ_ATTR, result);
-
-        nextFilter.onRequest(Messages.toStreamRequest(result), requestContext, wireAttrs);
-      }
-    });
-
+    nextFilter.onRequest(req, requestContext, wireAttrs);
   }
 
   @Override
-  public void onResponse(final StreamResponse res, final RequestContext requestContext,
-                             final Map<String, String> wireAttrs,
-                             final NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestResponse(RestResponse res, RequestContext requestContext,
+                             Map<String, String> wireAttrs,
+                             NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    Messages.toRestResponse(res, new Callback<RestResponse>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        nextFilter.onError(e, requestContext, wireAttrs);
-      }
-
-      @Override
-      public void onSuccess(RestResponse result)
-      {
-        saveResponse(result, requestContext);
-        nextFilter.onResponse(Messages.toStreamResponse(result), requestContext, wireAttrs);
-      }
-    });
+    saveResponse(res, requestContext);
+    nextFilter.onResponse(res, requestContext, wireAttrs);
   }
 
   @Override
-  public void onError(Throwable ex, final RequestContext requestContext,
-                          final Map<String, String> wireAttrs,
-                          final NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestError(Throwable ex, RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    if (ex instanceof StreamException)
+    if (ex instanceof RestException)
     {
-      Messages.toRestException((StreamException) ex, new Callback<RestException>()
-      {
-        @Override
-        public void onError(Throwable e)
-        {
-          nextFilter.onError(e, requestContext, wireAttrs);
-        }
-
-        @Override
-        public void onSuccess(RestException result)
-        {
-          saveResponse(result.getResponse(), requestContext);
-        }
-      });
+      saveResponse(((RestException) ex).getResponse(), requestContext);
     }
 
     nextFilter.onError(ex, requestContext, wireAttrs);
