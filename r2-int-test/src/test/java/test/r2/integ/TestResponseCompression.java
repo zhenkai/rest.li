@@ -20,11 +20,11 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.FilterChains;
+import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
-import com.linkedin.r2.filter.compression.streaming.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.SnappyCompressor;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
 import com.linkedin.r2.filter.message.rest.StreamFilter;
@@ -64,14 +64,15 @@ import org.testng.annotations.Test;
  */
 public class TestResponseCompression extends AbstractStreamTest
 {
-  private static final URI SMALL_URI = URI.create("/small");
+  private static final URI SMALL_URI  = URI.create("/small");
+  private static final URI TINY_URI   = URI.create("/tiny");
 
-  protected final ExecutorService _executor = Executors.newCachedThreadPool();
-  protected final StreamFilter _compressionFilter = new ServerCompressionFilter(EncodingType.values(), _executor);
-
+  protected ExecutorService _executor = Executors.newCachedThreadPool();
+  protected StreamFilter _compressionFilter =
+      new ServerCompressionFilter(EncodingType.values(), _executor, (int)TINY_BYTES_NUM+1);
 
   @AfterClass
-  public void afterClass()
+  public void afterClass() throws Exception
   {
     _executor.shutdown();
   }
@@ -87,6 +88,7 @@ public class TestResponseCompression extends AbstractStreamTest
   {
     return new TransportDispatcherBuilder()
         .addStreamHandler(SMALL_URI, new BytesWriterRequestHandler(BYTE, SMALL_BYTES_NUM))
+        .addStreamHandler(TINY_URI, new BytesWriterRequestHandler(BYTE, TINY_BYTES_NUM))
         .build();
   }
 
@@ -103,65 +105,66 @@ public class TestResponseCompression extends AbstractStreamTest
   public void testDeflateCompression()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("deflate", new DeflateCompressor(_executor));
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "deflate", new DeflateCompressor(_executor));
   }
 
   @Test
   public void testGzipCompression()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("gzip", new GzipCompressor(_executor));
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "gzip", new GzipCompressor(_executor));
   }
 
   @Test
   public void testBzip2Compression()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("bzip2", new Bzip2Compressor(_executor));
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "bzip2", new Bzip2Compressor(_executor));
   }
 
   @Test
   public void testSnappyCompression()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("x-snappy-framed", new SnappyCompressor(_executor));
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "x-snappy-framed", new SnappyCompressor(_executor));
   }
 
   @Test
   public void testSnappyCompression2()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("x-snappy-framed;q=1, bzip2;q=0.75, gzip;q=0.5, defalte;q=0",
-        new SnappyCompressor(_executor));
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM,
+                            "x-snappy-framed;q=1, bzip2;q=0.75, gzip;q=0.5, defalte;q=0",
+                            new SnappyCompressor(_executor));
   }
 
   @Test
   public void testSnappyCompression3()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("x-snappy-framed, *;q=0",
-        new SnappyCompressor(_executor));
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "x-snappy-framed, *;q=0",
+                            new SnappyCompressor(_executor));
   }
 
   @Test
   public void testNoCompression()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("identity", new NoopCompressor());
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "identity", new NoopCompressor());
   }
 
   @Test
   public void testNoCompression2()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression("", new NoopCompressor());
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "", new NoopCompressor());
   }
 
   @Test
-  public void testNoCompression3()
+  public void testCompressionThreshold()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    testResponseCompression(null, new NoopCompressor());
+    testResponseCompression(TINY_URI, TINY_BYTES_NUM, "x-snappy-framed", new NoopCompressor());
   }
 
   @Test
@@ -171,14 +174,11 @@ public class TestResponseCompression extends AbstractStreamTest
     testEncodingNotAcceptable("foobar");
   }
 
-  private void testResponseCompression(String acceptEncoding, final StreamingCompressor compressor)
+  private void testResponseCompression(URI uri, long bytes, String acceptEncoding, final StreamingCompressor compressor)
       throws InterruptedException, TimeoutException, ExecutionException
   {
-    StreamRequestBuilder builder = new StreamRequestBuilder((Bootstrap.createHttpURI(PORT, SMALL_URI)));
-    if (acceptEncoding != null)
-    {
-      builder.addHeaderValue(HttpConstants.ACCEPT_ENCODING, acceptEncoding);
-    }
+    StreamRequestBuilder builder = new StreamRequestBuilder((Bootstrap.createHttpURI(PORT, uri)));
+    builder.addHeaderValue(HttpConstants.ACCEPT_ENCODING, acceptEncoding);
     StreamRequest request = builder.build(EntityStreams.emptyStream());
 
     final FutureCallback<StreamResponse> callback = new FutureCallback<StreamResponse>();
@@ -193,7 +193,7 @@ public class TestResponseCompression extends AbstractStreamTest
     decompressedStream.setReader(reader);
 
     readerCallback.get(60, TimeUnit.SECONDS);
-    Assert.assertEquals(reader.getTotalBytes(), SMALL_BYTES_NUM);
+    Assert.assertEquals(reader.getTotalBytes(), bytes);
     Assert.assertTrue(reader.allBytesCorrect());
   }
 
@@ -276,7 +276,7 @@ public class TestResponseCompression extends AbstractStreamTest
     }
 
     @Override
-    public EntityStream deflate(EntityStream input, int threshold)
+    public EntityStream deflate(EntityStream input)
     {
       return input;
     }

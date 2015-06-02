@@ -47,16 +47,7 @@ abstract class StreamingInflater extends BufferedReaderInputStream implements Wr
   @Override
   public void onInit(WriteHandle wh)
   {
-    try
-    {
-      _wh = wh;
-      _in = createInputStream(this);
-    }
-    catch (IOException ex)
-    {
-      _wh.error(ex);
-      throw new RuntimeException(ex);
-    }
+    _wh = wh;
   }
 
   @Override
@@ -69,6 +60,11 @@ abstract class StreamingInflater extends BufferedReaderInputStream implements Wr
       {
         try
         {
+          if (_in == null)
+          {
+            _in = createInputStream(StreamingInflater.this);
+          }
+
           byte[] bytes = new byte[BUF_SIZE];
           while (_wh.remaining() > 0)
           {

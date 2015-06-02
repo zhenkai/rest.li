@@ -17,12 +17,8 @@
 package com.linkedin.restli.examples;
 
 
-import com.linkedin.common.callback.FutureCallback;
-import com.linkedin.common.util.None;
 import com.linkedin.r2.RemoteInvocationException;
-import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.CompressionConfig;
-import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.compression.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.ClientCompressionFilter;
 import com.linkedin.r2.filter.compression.CompressionException;
@@ -33,8 +29,6 @@ import com.linkedin.r2.filter.compression.GzipCompressor;
 import com.linkedin.r2.filter.compression.SnappyCompressor;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestException;
-import com.linkedin.r2.transport.common.Client;
-import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.util.RequestContextUtil;
@@ -82,6 +76,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.concurrent.Executors;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -331,7 +326,8 @@ public class TestCompressionServer extends RestLiIntegrationTest
     ClientCompressionFilter cf = new ClientCompressionFilter(EncodingType.IDENTITY,
                                                              new CompressionConfig(Integer.MAX_VALUE),
                                                              encoding,
-                                                             Arrays.asList(new String[]{"*"}));
+                                                             Arrays.asList(new String[]{"*"}),
+                                                             Executors.newSingleThreadExecutor());
     Assert.assertEquals(cf.buildAcceptEncodingHeader(), acceptEncoding);
   }
 
