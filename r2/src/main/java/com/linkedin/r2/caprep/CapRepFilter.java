@@ -25,6 +25,7 @@ import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.RestFilter;
 import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.filter.message.rest.StreamFilterAdapters;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -60,8 +61,8 @@ public class CapRepFilter implements StreamFilter, CapRepAdmin
     _filter.setFilter(PASS_THROUGH_FILTER);
     try
     {
-      _filter.setFilter(new CaptureFilter(new DirectoryDbSink(directory,
-                                                              new DefaultMessageSerializer())));
+      _filter.setFilter(StreamFilterAdapters.adaptRestFilter(new CaptureFilter(new DirectoryDbSink(directory,
+                                                              new DefaultMessageSerializer()))));
     }
     catch (IOException e)
     {
@@ -82,8 +83,8 @@ public class CapRepFilter implements StreamFilter, CapRepAdmin
     _filter.setFilter(PASS_THROUGH_FILTER);
     try
     {
-      _filter.setFilter(new ReplayFilter(new DirectoryDbSource(directory,
-                                                               new DefaultMessageSerializer())));
+      _filter.setFilter(StreamFilterAdapters.adaptRestFilter(new ReplayFilter(new DirectoryDbSource(directory,
+                                                               new DefaultMessageSerializer()))));
     }
     catch (IOException e)
     {

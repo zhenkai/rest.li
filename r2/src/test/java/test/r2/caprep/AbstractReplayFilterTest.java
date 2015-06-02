@@ -22,6 +22,7 @@ import com.linkedin.r2.caprep.ReplayFilter;
 import com.linkedin.r2.caprep.db.TransientDb;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.FilterChain;
+import com.linkedin.r2.filter.message.rest.StreamFilterAdapters;
 import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
@@ -100,6 +101,6 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
   @Override
   protected Filter createFilter(TransientDb db)
   {
-    return new ReplayFilter(db);
+    return StreamFilterAdapters.adaptRestFilter(new ReplayFilter(db));
   }
 }
