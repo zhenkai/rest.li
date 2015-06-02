@@ -46,6 +46,7 @@ class ChannelPoolHandler extends ChannelInboundHandlerAdapter
   public static final AttributeKey<AsyncPool<Channel>> CHANNEL_POOL_ATTR_KEY
       = AttributeKey.valueOf("ChannelPool");
   /* package private */ static final Object CHANNEL_RELEASE_SIGNAL = new Object();
+  /* package private */ static final Object CHANNEL_DESTROY_SIGNAL = new Object();
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception
@@ -56,6 +57,14 @@ class ChannelPoolHandler extends ChannelInboundHandlerAdapter
       if (pool != null)
       {
         pool.put(ctx.channel());
+      }
+    }
+    else if (msg == CHANNEL_DESTROY_SIGNAL)
+    {
+      AsyncPool<Channel> pool = ctx.channel().attr(CHANNEL_POOL_ATTR_KEY).getAndRemove();
+      if (pool != null)
+      {
+        pool.dispose(ctx.channel());
       }
     }
   }

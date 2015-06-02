@@ -60,6 +60,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   private final long _maxContentLength;
 
   private TimeoutBufferedWriter _chunkedMessageWriter;
+  boolean shouldCloseConnection;
 
   RAPResponseDecoder(long maxContentLength)
   {
@@ -71,6 +72,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   {
     if (msg instanceof HttpResponse)
     {
+      // reset this value to false on first piece of response, as by default we don't close the connection
+      shouldCloseConnection = false;
       HttpResponse m = (HttpResponse) msg;
       if (is100ContinueExpected(m))
       {
@@ -114,13 +117,21 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
 
       for (Map.Entry<String, String> e : m.headers())
       {
-        if (e.getKey().equalsIgnoreCase(HttpConstants.RESPONSE_COOKIE_HEADER_NAME))
+        String key = e.getKey();
+        String value = e.getValue();
+        if (key.equalsIgnoreCase(HttpConstants.RESPONSE_COOKIE_HEADER_NAME))
         {
-          builder.addCookie(e.getValue());
+          builder.addCookie(value);
         }
         else
         {
-          builder.unsafeAddHeaderValue(e.getKey(), e.getValue());
+          builder.unsafeAddHeaderValue(key, value);
+        }
+
+        // server indicates channel close
+        if ("connection".equalsIgnoreCase(key) && "close".equalsIgnoreCase(value))
+        {
+          shouldCloseConnection = true;
         }
       }
 
@@ -146,7 +157,14 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       if (chunk instanceof LastHttpContent)
       {
         _chunkedMessageWriter = null;
-        ctx.fireChannelRead(ChannelPoolHandler.CHANNEL_RELEASE_SIGNAL);
+        if (shouldCloseConnection)
+        {
+          ctx.fireChannelRead(ChannelPoolHandler.CHANNEL_DESTROY_SIGNAL);
+        }
+        else
+        {
+          ctx.fireChannelRead(ChannelPoolHandler.CHANNEL_RELEASE_SIGNAL);
+        }
       }
 
       currentWriter.processHttpChunk(chunk);
