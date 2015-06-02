@@ -39,10 +39,7 @@ public interface StreamingCompressor
 
   /** Compress function.
    * @param input     EntityStream to be compressed
-   * @param threshold Threshold value to determine whether the input stream needs
-   *                  to be compressed or not. The input stream will be compressed
-   *                  iff its total length exceeds the threshold.
    * @return Newly created EntityStream of compressed data, or null if error
    * */
-  EntityStream deflate(EntityStream input, int threshold);
+  EntityStream deflate(EntityStream input);
 }

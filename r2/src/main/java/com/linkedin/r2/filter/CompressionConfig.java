@@ -78,20 +78,13 @@ public class CompressionConfig
         '}';
   }
 
-  /**
-   * Determines whether the request should be compressed, first checking {@link CompressionOption} in the request context,
-   * then the threshold.
-   *
-   * @param entityLength request body length.
-   * @param requestCompressionOverride compression force on/off override from the request context.
-   * @return true if the outgoing request should be compressed.
-   */
-  public boolean shouldCompressRequest(int entityLength, CompressionOption requestCompressionOverride)
+  public int getThreshold(CompressionOption requestCompressionOverride)
   {
-    if (requestCompressionOverride != null)
+    if (requestCompressionOverride != null &&
+        requestCompressionOverride == CompressionOption.FORCE_ON)
     {
-      return (requestCompressionOverride == CompressionOption.FORCE_ON);
+      return 0; // force compression
     }
-    return entityLength >= _compressionThreshold;
+    return _compressionThreshold;
   }
 }

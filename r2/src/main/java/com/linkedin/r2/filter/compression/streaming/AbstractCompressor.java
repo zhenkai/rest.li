@@ -35,13 +35,13 @@ public abstract class AbstractCompressor implements StreamingCompressor
   }
 
   @Override
-  public EntityStream deflate(EntityStream input, int threshold)
+  public EntityStream deflate(EntityStream input)
   {
-    StreamingDeflater deflater = createDeflater(threshold);
+    StreamingDeflater deflater = createDeflater();
     input.setReader(deflater);
     return EntityStreams.newEntityStream(deflater);
   }
 
   abstract protected StreamingInflater createInflater();
-  abstract protected StreamingDeflater createDeflater(int threshold);
+  abstract protected StreamingDeflater createDeflater();
 }

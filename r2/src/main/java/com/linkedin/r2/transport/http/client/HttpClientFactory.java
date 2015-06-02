@@ -37,6 +37,7 @@ import com.linkedin.r2.util.ConfigValueExtractor;
 import com.linkedin.r2.util.NamedThreadFactory;
 
 import io.netty.channel.nio.NioEventLoopGroup;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
@@ -122,6 +123,7 @@ public class HttpClientFactory implements TransportClientFactory
   private final boolean                    _shutdownExecutor;
   private final boolean                    _shutdownCallbackExecutor;
   private final FilterChain                _filters;
+  private final Executor                   _compressionExecutor;
 
   private final AtomicBoolean              _finishingShutdown = new AtomicBoolean(false);
   private volatile ScheduledFuture<?>      _shutdownTimeoutTask;
@@ -291,7 +293,7 @@ public class HttpClientFactory implements TransportClientFactory
   {
     this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup,
         shutdownCallbackExecutor, jmxManager, requestCompressionThresholdDefault, requestCompressionConfigs,
-        useClientCompression, true);
+        useClientCompression, true, null);
   }
 
   public HttpClientFactory(FilterChain filters,
@@ -305,7 +307,8 @@ public class HttpClientFactory implements TransportClientFactory
                            int requestCompressionThresholdDefault,
                            Map<String, CompressionConfig> requestCompressionConfigs,
                            boolean useClientCompression,
-                           boolean tcpNoDelay)
+                           boolean tcpNoDelay,
+                           Executor compressionExecutor)
   {
     _filters = filters;
     _eventLoopGroup = eventLoopGroup;
@@ -327,6 +330,7 @@ public class HttpClientFactory implements TransportClientFactory
     _requestCompressionConfigs = Collections.unmodifiableMap(requestCompressionConfigs);
     _useClientCompression = useClientCompression;
     _tcpNoDelay = tcpNoDelay;
+    _compressionExecutor = compressionExecutor;
   }
 
   @Override
@@ -410,7 +414,7 @@ public class HttpClientFactory implements TransportClientFactory
                                                                                       LIST_SEPARATOR);
     FilterChain filters;
 
-    if (_useClientCompression)
+    if (_useClientCompression && _compressionExecutor != null)
     {
       String httpServiceName = (String) properties.get(HTTP_SERVICE_NAME);
       String requestContentEncodingName = getRequestContentEncodingName(httpRequestServerSupportedEncodings);
@@ -419,7 +423,8 @@ public class HttpClientFactory implements TransportClientFactory
       filters = _filters.addLast(new ClientCompressionFilter(requestContentEncodingName,
           compressionConfig,
           responseCompressionSchemaName,
-          httpResponseCompressionOperations));
+          httpResponseCompressionOperations,
+          _compressionExecutor));
     }
     else
     {

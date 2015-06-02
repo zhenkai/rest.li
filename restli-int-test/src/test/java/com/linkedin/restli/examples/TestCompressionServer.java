@@ -34,8 +34,6 @@ import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.filter.message.rest.RestResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestException;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.util.RequestContextUtil;
@@ -83,6 +81,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.concurrent.Executors;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -365,7 +364,8 @@ public class TestCompressionServer extends RestLiIntegrationTest
     ClientCompressionFilter cf = new ClientCompressionFilter(EncodingType.IDENTITY,
                                                              new CompressionConfig(Integer.MAX_VALUE),
                                                              encoding,
-                                                             Arrays.asList(new String[]{"*"}));
+                                                             Arrays.asList(new String[]{"*"}),
+                                                             Executors.newSingleThreadExecutor());
     Assert.assertEquals(cf.buildAcceptEncodingHeader(), acceptEncoding);
   }
 

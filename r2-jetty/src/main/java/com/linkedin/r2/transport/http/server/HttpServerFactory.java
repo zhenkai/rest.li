@@ -32,7 +32,7 @@ public class HttpServerFactory
 {
   public static final String  DEFAULT_CONTEXT_PATH          = "/";
   public static final int     DEFAULT_THREAD_POOL_SIZE      = 512;
-  public static final int     DEFAULT_ASYNC_TIMEOUT         = 5000;
+  public static final int     DEFAULT_ASYNC_TIMEOUT         = 30000;
   public static final HttpJettyServer.ServletType DEFAULT_SERVLET_TYPE = HttpJettyServer.ServletType.RAP;
 
   private final FilterChain _filters;
