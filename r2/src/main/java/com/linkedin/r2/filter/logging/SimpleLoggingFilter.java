@@ -24,12 +24,12 @@ import com.linkedin.r2.filter.message.rest.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
-import com.linkedin.r2.message.rest.RestException;
 
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.streaming.Observer;
@@ -99,7 +99,7 @@ public class SimpleLoggingFilter implements StreamFilter
       @Override
       public void onError(Throwable e)
       {
-        throw new RuntimeException(e);
+        _log.debug("Cannot get the length of the request", e);
       }
 
       @Override
@@ -122,7 +122,7 @@ public class SimpleLoggingFilter implements StreamFilter
       @Override
       public void onError(Throwable e)
       {
-        throw new RuntimeException(e);
+        _log.debug("Cannot get the length of the response", e);
       }
 
       @Override
@@ -152,10 +152,10 @@ public class SimpleLoggingFilter implements StreamFilter
 
   private boolean ignoreLog(Throwable ex)
   {
-    if (ex instanceof RestException)
+    if (ex instanceof StreamException)
     {
-      RestException restException = (RestException)ex;
-      if (restException.getResponse() != null)
+      StreamException streamException = (StreamException)ex;
+      if (streamException.getResponse() != null)
       {
         return true;
       }
@@ -167,10 +167,10 @@ public class SimpleLoggingFilter implements StreamFilter
 
   private boolean logFullException(Throwable ex)
   {
-    if (ex instanceof RestException)
+    if (ex instanceof StreamException)
     {
-      RestException restException = (RestException)ex;
-      if (restException.getResponse() != null)
+      StreamException streamException = (StreamException)ex;
+      if (streamException.getResponse() != null)
       {
         return true;
       }

@@ -28,7 +28,7 @@ public class ByteStringWriter implements Writer
   @Override
   public void onWritePossible()
   {
-    while(_wh.remaining() > 0 && _offset <= _content.length())
+    while(_wh.remaining() > 0)
     {
       if (_offset == _content.length())
       {
