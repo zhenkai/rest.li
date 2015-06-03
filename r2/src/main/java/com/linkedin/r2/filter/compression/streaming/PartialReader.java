@@ -24,7 +24,7 @@ public class PartialReader implements Reader
 
   private final Queue<ByteString> _buffer = new LinkedList<ByteString>();
   private ReadHandle _rh;
-  private WriteHandle _wh;
+  private WriteHandle _remainingWh;
   private int _readLen;
   private int _outstanding;
 
@@ -46,7 +46,7 @@ public class PartialReader implements Reader
   @Override
   public void onDataAvailable(ByteString data)
   {
-    if (_wh == null)
+    if (_remainingWh == null)
     {
       _buffer.add(data);
       _readLen += data.length();
@@ -65,8 +65,8 @@ public class PartialReader implements Reader
     else
     {
       _outstanding--;
-      _wh.write(data);
-      int diff = _wh.remaining() - _outstanding;
+      _remainingWh.write(data);
+      int diff = _remainingWh.remaining() - _outstanding;
       if (diff > 0)
       {
         _rh.request(diff);
@@ -78,27 +78,27 @@ public class PartialReader implements Reader
   @Override
   public void onDone()
   {
-    if (_wh == null)
+    if (_remainingWh == null)
     {
       EntityStream stream = EntityStreams.newEntityStream(new ByteStringsWriter(_buffer));
       _callback.onSuccess(new EntityStream[] {stream});
     }
     else
     {
-      _wh.done();
+      _remainingWh.done();
     }
   }
 
   @Override
   public void onError(Throwable e)
   {
-    if (_wh == null)
+    if (_remainingWh == null)
     {
       _callback.onError(e);
     }
     else
     {
-      _wh.error(e);
+      _remainingWh.error(e);
     }
   }
 
@@ -107,13 +107,13 @@ public class PartialReader implements Reader
     @Override
     public void onInit(WriteHandle wh)
     {
-      _wh = wh;
+      _remainingWh = wh;
     }
 
     @Override
     public void onWritePossible()
     {
-      _outstanding = _wh.remaining();
+      _outstanding = _remainingWh.remaining();
       _rh.request(_outstanding);
     }
 

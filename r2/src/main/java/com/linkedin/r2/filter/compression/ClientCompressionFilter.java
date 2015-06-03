@@ -225,10 +225,10 @@ public class ClientCompressionFilter implements StreamFilter
           .build(req.getEntityStream());
     }
 
-    final StreamRequest request = req;
-    final StreamingCompressor compressor = _requestContentEncoding.getCompressor(_executor);
-    if (compressor != null)
+    if (_requestContentEncoding != EncodingType.IDENTITY)
     {
+      final StreamRequest request = req;
+      final StreamingCompressor compressor = _requestContentEncoding.getCompressor(_executor);
       CompressionOption option = (CompressionOption) requestContext.getLocalAttr(R2Constants.REQUEST_COMPRESSION_OVERRIDE);
       if (option == null || option != CompressionOption.FORCE_OFF)
       {
@@ -246,19 +246,18 @@ public class ClientCompressionFilter implements StreamFilter
           {
             if (result.length == 1)
             {
-              StreamRequest req = request.builder().build(result[0]);
-              nextFilter.onRequest(req, requestContext, wireAttrs);
+              StreamRequest uncompressedRequest = request.builder().build(result[0]);
+              nextFilter.onRequest(uncompressedRequest, requestContext, wireAttrs);
             }
             else
             {
               StreamRequestBuilder builder = request.builder();
-              EntityStream compressedStream = compressor.deflate(
-                  EntityStreams.newEntityStream(new CompositeWriter(result)));
+              EntityStream compressedStream = compressor.deflate(EntityStreams.newEntityStream(new CompositeWriter(result)));
               Map<String, String> headers = stripHeaders(builder.getHeaders(), HttpConstants.CONTENT_LENGTH);
-              StreamRequest req = builder.setHeaders(headers)
-                                         .setHeader(HttpConstants.CONTENT_ENCODING, compressor.getContentEncodingName())
-                                         .build(compressedStream);
-              nextFilter.onRequest(req, requestContext, wireAttrs);
+              StreamRequest compressedRequest = builder.setHeaders(headers)
+                  .setHeader(HttpConstants.CONTENT_ENCODING, compressor.getContentEncodingName())
+                  .build(compressedStream);
+              nextFilter.onRequest(compressedRequest, requestContext, wireAttrs);
             }
           }
         });
@@ -312,43 +311,25 @@ public class ClientCompressionFilter implements StreamFilter
     Boolean decompressionOff = (Boolean) requestContext.getLocalAttr(R2Constants.RESPONSE_DECOMPRESSION_OFF);
     if (decompressionOff == null || !decompressionOff)
     {
-      try
+      //Check for header encoding
+      String compressionHeader = res.getHeader(HttpConstants.CONTENT_ENCODING);
+      //Compress if necessary
+      if (compressionHeader != null)
       {
-        //Check for header encoding
-        String compressionHeader = res.getHeader(HttpConstants.CONTENT_ENCODING);
-
-        //Compress if necessary
-        if (compressionHeader != null)
+        final EncodingType encoding = EncodingType.get(compressionHeader.trim().toLowerCase());
+        if (encoding == null)
         {
-          final EncodingType encoding;
-          try
-          {
-            encoding = EncodingType.get(compressionHeader.trim().toLowerCase());
-          }
-          catch (IllegalArgumentException e)
-          {
-            throw new CompressionException(CompressionConstants.SERVER_ENCODING_ERROR + compressionHeader);
-          }
-          final StreamingCompressor compressor = encoding.getCompressor(_executor);
-          if (compressor != null)
-          {
-            EntityStream uncompressedStream = compressor.inflate(res.getEntityStream());
-            StreamResponseBuilder builder = res.builder();
-            Map<String, String> headers =
-                stripHeaders(builder.getHeaders(), HttpConstants.CONTENT_ENCODING, HttpConstants.CONTENT_LENGTH);
-            res = builder.setHeaders(headers).build(uncompressedStream);
-          }
-          byte[] inflated = encoding.getCompressor().inflate(res.getEntity().asInputStream());
-          Map<String, String> headers = new HashMap<String, String>(res.getHeaders());
-          headers.remove(HttpConstants.CONTENT_ENCODING);
-          headers.put(HttpConstants.CONTENT_LENGTH, Integer.toString(inflated.length));
-          res = res.builder().setEntity(inflated).setHeaders(headers).build();
+          nextFilter.onError(new IllegalArgumentException("Server returned unrecognized content encoding: " +
+              compressionHeader), requestContext, wireAttrs);
+          return;
         }
-      }
-      catch (CompressionException e)
-      {
-        nextFilter.onError(e, requestContext, wireAttrs);
-        return;
+
+        final StreamingCompressor compressor = encoding.getCompressor(_executor);
+        EntityStream uncompressedStream = compressor.inflate(res.getEntityStream());
+        StreamResponseBuilder builder = res.builder();
+        Map<String, String> headers =
+            stripHeaders(builder.getHeaders(), HttpConstants.CONTENT_ENCODING, HttpConstants.CONTENT_LENGTH);
+        res = builder.setHeaders(headers).build(uncompressedStream);
       }
     }
 
@@ -370,28 +351,17 @@ public class ClientCompressionFilter implements StreamFilter
       //Compress if necessary
       if (compressionHeader != null)
       {
-        EncodingType encoding = null;
-        try
-        {
-          encoding = EncodingType.get(compressionHeader.trim().toLowerCase());
-        }
-        catch (IllegalArgumentException e)
-        {
-          // ignore, let the original exception propagate.
-        }
+        EncodingType encoding = EncodingType.get(compressionHeader.trim().toLowerCase());
         if (encoding != null)
         {
           final StreamingCompressor compressor = encoding.getCompressor(_executor);
-          if (compressor != null)
-          {
-            EntityStream uncompressedStream = compressor.inflate(response.getEntityStream());
+          EntityStream uncompressedStream = compressor.inflate(response.getEntityStream());
 
-            StreamResponseBuilder builder = response.builder();
-            Map<String, String> headers =
-                stripHeaders(builder.getHeaders(), HttpConstants.CONTENT_ENCODING, HttpConstants.CONTENT_LENGTH);
-            response = builder.setHeaders(headers).build(uncompressedStream);
-            ex = new StreamException(response);
-          }
+          StreamResponseBuilder builder = response.builder();
+          Map<String, String> headers =
+              stripHeaders(builder.getHeaders(), HttpConstants.CONTENT_ENCODING, HttpConstants.CONTENT_LENGTH);
+          response = builder.setHeaders(headers).build(uncompressedStream);
+          ex = new StreamException(response);
         }
       }
     }
