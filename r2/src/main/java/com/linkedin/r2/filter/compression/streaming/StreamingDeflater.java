@@ -21,10 +21,10 @@ import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
-import com.linkedin.r2.util.LinkedDeque;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Deque;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 /**
@@ -121,7 +121,7 @@ abstract class StreamingDeflater implements Reader, Writer
   {
     private static final int BUF_SIZE = 4096;
 
-    private final Deque<ByteString> _data = new LinkedDeque<ByteString>();
+    private final Queue<ByteString> _data = new ConcurrentLinkedQueue<ByteString>();
     private final byte[] _buffer = new byte[BUF_SIZE];
     private int _writeIndex = 0;
     private boolean _done = false;
@@ -149,7 +149,7 @@ abstract class StreamingDeflater implements Reader, Writer
       writeIfPossible();
     }
 
-    public void writeIfPossible()
+    public synchronized void writeIfPossible()
     {
       while(_wh.remaining() > 0)
       {

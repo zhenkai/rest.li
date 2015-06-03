@@ -25,6 +25,7 @@ import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
 import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
+import com.linkedin.r2.filter.compression.streaming.NoopCompressor;
 import com.linkedin.r2.filter.compression.streaming.SnappyCompressor;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
 import com.linkedin.r2.filter.message.rest.StreamFilter;
@@ -257,28 +258,6 @@ public class TestResponseCompression extends AbstractStreamTest
     StreamResponse buildResponse(Writer writer)
     {
       return new StreamResponseBuilder().build(EntityStreams.newEntityStream(writer));
-    }
-  }
-
-  private static class NoopCompressor implements StreamingCompressor
-  {
-
-    @Override
-    public String getContentEncodingName()
-    {
-      return "no-op";
-    }
-
-    @Override
-    public EntityStream inflate(EntityStream input)
-    {
-      return input;
-    }
-
-    @Override
-    public EntityStream deflate(EntityStream input)
-    {
-      return input;
     }
   }
 }
