@@ -74,18 +74,18 @@ public final class EntityStreams
     private List<Observer> _observers;
     private Reader _reader;
 
-    private final AtomicInteger _remaining;
+    private int _remaining;
     private boolean _notifyWritePossible;
-    private AtomicReference<State> _state;
+    private State _state;
 
     EntityStreamImpl(Writer writer)
     {
       _writer = writer;
       _lock = new Object();
       _observers = new ArrayList<Observer>();
-      _remaining = new AtomicInteger(0);
+      _remaining = 0;
       _notifyWritePossible = true;
-      _state = new AtomicReference<State>(State.UNINITIALIZED);
+      _state = State.UNINITIALIZED;
     }
 
     public void addObserver(Observer o)
@@ -102,7 +102,7 @@ public final class EntityStreams
       synchronized (_lock)
       {
         checkInit();
-        _state.set(State.ACTIVE);
+        _state = State.ACTIVE;
         _reader = r;
         _observers = Collections.unmodifiableList(_observers);
       }
@@ -119,19 +119,24 @@ public final class EntityStreams
       @Override
       public void write(final ByteString data)
       {
-        if (_state.get() == State.FINISHED)
+        if (_state == State.FINISHED)
         {
           throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
         }
 
-        if (_state.get() == State.ABORTED)
+        if (_state == State.ABORTED)
         {
           return;
         }
 
-        if (_remaining.decrementAndGet() < 0)
+        synchronized (_lock)
         {
-          throw new IllegalStateException("Attempt to write when remaining is 0");
+          _remaining--;
+
+          if (_remaining < 0)
+          {
+            throw new IllegalStateException("Attempt to write when remaining is 0");
+          }
         }
 
         for (Observer observer : _observers)
@@ -160,7 +165,7 @@ public final class EntityStreams
       @Override
       public void done()
       {
-        if (_state.compareAndSet(State.ACTIVE, State.FINISHED))
+        if (_state == State.ACTIVE)
         {
           for (Observer observer : _observers)
           {
@@ -177,6 +182,7 @@ public final class EntityStreams
           try
           {
             _reader.onDone();
+            _state = State.FINISHED;
           }
           catch (Exception ex)
           {
@@ -188,7 +194,7 @@ public final class EntityStreams
       @Override
       public void error(final Throwable e)
       {
-        if (_state.compareAndSet(State.ACTIVE, State.FINISHED))
+        if (_state == State.ACTIVE)
         {
           doError(e);
         }
@@ -199,17 +205,16 @@ public final class EntityStreams
       {
         synchronized (_lock)
         {
-          if (_state.get() != State.ACTIVE)
+          if (_state != State.ACTIVE)
           {
             return 0;
           }
 
-          int remaining = _remaining.get();
-          if (remaining == 0)
+          if (_remaining == 0)
           {
             _notifyWritePossible = true;
           }
-          return remaining;
+          return _remaining;
         }
       }
     }
@@ -227,11 +232,11 @@ public final class EntityStreams
         boolean needNotify = false;
         synchronized (_lock)
         {
-          _remaining.addAndGet(chunkNum);
+          _remaining += chunkNum;
           // overflow
-          if (_remaining.get() < 0)
+          if (_remaining < 0)
           {
-            _remaining.set(Integer.MAX_VALUE);
+            _remaining = Integer.MAX_VALUE;
           }
 
           // notify the writer if needed
@@ -251,7 +256,7 @@ public final class EntityStreams
 
     private void checkInit()
     {
-      if (_state.get() != State.UNINITIALIZED)
+      if (_state != State.UNINITIALIZED)
       {
         throw new IllegalStateException("EntityStream had already been initialized and can no longer accept Observers or Reader");
       }
@@ -259,9 +264,9 @@ public final class EntityStreams
 
     private void ensureAbort(Throwable e)
     {
-      if (_state.get() != State.ABORTED)
+      if (_state != State.ABORTED)
       {
-        _state.set(State.ABORTED);
+        _state = State.ABORTED;
         _writer.onAbort(e);
       }
     }
@@ -283,6 +288,7 @@ public final class EntityStreams
       try
       {
         _reader.onError(e);
+        _state = State.FINISHED;
       }
       catch (Exception ex)
       {
