@@ -1,0 +1,29 @@
+package com.linkedin.r2.filter.compression.streaming;
+
+import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.message.streaming.EntityStream;
+
+
+/**
+ * @author Ang Xu
+ */
+public class NoopCompressor implements StreamingCompressor
+{
+  @Override
+  public String getContentEncodingName()
+  {
+    return EncodingType.IDENTITY.getHttpName();
+  }
+
+  @Override
+  public EntityStream inflate(EntityStream input)
+  {
+    return input;
+  }
+
+  @Override
+  public EntityStream deflate(EntityStream input)
+  {
+    return input;
+  }
+}

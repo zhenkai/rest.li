@@ -16,6 +16,7 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
+import com.linkedin.r2.filter.compression.EncodingType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +40,7 @@ public class SnappyCompressor extends AbstractCompressor
   @Override
   public String getContentEncodingName()
   {
-    return "x-snappy-framed";
+    return EncodingType.SNAPPY_FRAMED.getHttpName();
   }
 
   @Override

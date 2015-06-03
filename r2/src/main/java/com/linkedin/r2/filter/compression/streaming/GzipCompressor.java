@@ -16,6 +16,7 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
+import com.linkedin.r2.filter.compression.EncodingType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +40,7 @@ public class GzipCompressor extends AbstractCompressor
   @Override
   public String getContentEncodingName()
   {
-    return "gzip";
+    return EncodingType.GZIP.getHttpName();
   }
 
   @Override
