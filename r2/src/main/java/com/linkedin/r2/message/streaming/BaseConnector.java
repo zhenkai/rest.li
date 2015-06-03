@@ -13,10 +13,12 @@ public class BaseConnector implements Reader, Writer
   private WriteHandle _wh;
   private ReadHandle _rh;
   private int _outstanding;
+  private volatile boolean _aborted;
 
   public BaseConnector()
   {
     _outstanding = 0;
+    _aborted = false;
   }
 
   @Override
@@ -35,13 +37,20 @@ public class BaseConnector implements Reader, Writer
   @Override
   public void onDataAvailable(ByteString data)
   {
-    _outstanding--;
-    _wh.write(data);
-    int diff = _wh.remaining() - _outstanding;
-    if (diff > 0)
+    if (!_aborted)
     {
-      _rh.request(diff);
-      _outstanding += diff;
+      _outstanding--;
+      _wh.write(data);
+      int diff = _wh.remaining() - _outstanding;
+      if (diff > 0)
+      {
+        _rh.request(diff);
+        _outstanding += diff;
+      }
+    }
+    else
+    {
+      _rh.request(1);
     }
   }
 
@@ -67,6 +76,8 @@ public class BaseConnector implements Reader, Writer
   @Override
   public void onAbort(Throwable e)
   {
+    _aborted = true;
+    _rh.request(5);
   }
 
   protected WriteHandle wrapWriteHandle(WriteHandle wh)

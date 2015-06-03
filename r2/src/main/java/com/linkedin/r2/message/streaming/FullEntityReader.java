@@ -40,10 +40,11 @@ public final class FullEntityReader implements Reader
     {
       data.write(_outputStream);
       _rh.request(1);
-    } catch (Exception ex)
+    }
+    catch (Exception ex)
     {
       _callback.onError(ex);
-
+      throw new RuntimeException(ex);
     }
   }
 
