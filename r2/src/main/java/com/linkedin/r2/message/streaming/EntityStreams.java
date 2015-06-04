@@ -159,7 +159,7 @@ public final class EntityStreams
           {
             observer.onDataAvailable(data);
           }
-          catch (Exception ex)
+          catch (RuntimeException ex)
           {
             LOG.warn("Observer throws exception at onDataAvailable", ex);
           }
@@ -169,7 +169,7 @@ public final class EntityStreams
         {
           _reader.onDataAvailable(data);
         }
-        catch (Exception ex)
+        catch (RuntimeException ex)
         {
           // the lock ensures that once we change the _state to ABORTED, it will stay as ABORTED
           synchronized (_lock)
@@ -217,7 +217,7 @@ public final class EntityStreams
           {
             observer.onDone();
           }
-          catch (Exception ex)
+          catch (RuntimeException ex)
           {
             LOG.warn("Observer throws exception at onDone, ignored.", ex);
           }
@@ -227,12 +227,12 @@ public final class EntityStreams
         {
           _reader.onDone();
         }
-        catch (Exception ex)
+        catch (RuntimeException ex)
         {
           LOG.warn("Reader throws exception at onDone; notifying writer", ex);
           // At this point, no cancel had happened and no cancel will happen, _writer.onAbort will not be invoked more than once
           // This is still a value to let writer know about this exception, e.g. see DispatcherRequestFilter.Connector
-          _writer.onAbort(ex);
+          safeAbortWriter(ex);
         }
       }
 
@@ -264,27 +264,18 @@ public final class EntityStreams
           return;
         }
 
-        for (Observer observer : _observers)
-        {
-          try
-          {
-            observer.onError(e);
-          }
-          catch (Exception ex)
-          {
-            LOG.warn("Observer throws exception at onError, ignored.", ex);
-          }
-        }
+        safeNotifyErrorToObservers(e);
 
         try
         {
           _reader.onError(e);
         }
-        catch (Exception ex)
+        catch (RuntimeException ex)
         {
           LOG.warn("Reader throws exception at onError; notifying writer", ex);
           // at this point, no cancel had happened and no cancel will happen, _writer.onAbort will not be invoked more than once
-          _writer.onAbort(ex);
+          // This is still a value to let writer know about this exception, e.g. see DispatcherRequestFilter.Connector
+          safeAbortWriter(ex);
         }
       }
 
@@ -360,7 +351,19 @@ public final class EntityStreams
 
         if (needNotify)
         {
-          _writer.onWritePossible();
+          try
+          {
+            _writer.onWritePossible();
+          }
+          catch (RuntimeException ex)
+          {
+            // we can safely do cancel here as no WriteHandle method could be called at the same time
+            synchronized (_lock)
+            {
+              _state = State.ABORTED;
+            }
+            doCancel(ex, true);
+          }
         }
       }
 
@@ -400,31 +403,54 @@ public final class EntityStreams
       }
     }
 
-    private void doCancel(Throwable e, boolean notifyReader)
+    private void safeAbortWriter(Throwable throwable)
     {
-      _writer.onAbort(e);
+      try
+      {
+        _writer.onAbort(throwable);
+      }
+      catch (RuntimeException ex)
+      {
+        LOG.warn("Writer throws exception at onAbort", ex);
+      }
+    }
 
+    private void safeNotifyErrorToObservers(Throwable throwable)
+    {
       for (Observer observer : _observers)
       {
         try
         {
-          observer.onError(e);
+          observer.onError(throwable);
         }
-        catch (Exception ex)
+        catch (RuntimeException ex)
         {
           LOG.warn("Observer throws exception at onError, ignored.", ex);
         }
       }
+    }
+
+    private void safeNotifyErrorToReader(Throwable throwable)
+    {
+      try
+      {
+        _reader.onError(throwable);
+      }
+      catch (RuntimeException ex)
+      {
+        LOG.error("Reader throws exception at onError", ex);
+      }
+    }
+
+    private void doCancel(Throwable e, boolean notifyReader)
+    {
+      safeAbortWriter(e);
+
+      safeNotifyErrorToObservers(e);
 
       if (notifyReader)
       {
-        try
-        {
-          _reader.onError(e);
-        } catch (Exception ex)
-        {
-          LOG.error("Reader throws exception at onError", ex);
-        }
+        safeNotifyErrorToReader(e);
       }
     }
   }
