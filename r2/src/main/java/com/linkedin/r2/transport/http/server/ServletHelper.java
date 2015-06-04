@@ -1,14 +1,20 @@
 package com.linkedin.r2.transport.http.server;
 
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamException;
+import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
+import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,18 +32,13 @@ import java.util.Map;
 /**
  * @author Zhenkai Zhu
  */
-public abstract class AbstractServlet extends HttpServlet
+/* package private */class ServletHelper
 {
-  private static final Logger _log = LoggerFactory.getLogger(AbstractServlet.class);
-  private static final long   serialVersionUID = 0L;
+  private static final Logger LOG = LoggerFactory.getLogger(ServletHelper.class.getName());
 
-  protected abstract HttpDispatcher getDispatcher();
+  private ServletHelper() {}
 
-  @Override
-  protected abstract void service(final HttpServletRequest req, final HttpServletResponse resp)
-      throws ServletException, IOException;
-
-  protected StreamRequestBuilder readStreamRequestHeadersFromServletRequest(HttpServletRequest req) throws IOException,
+  static StreamRequestBuilder readStreamRequestHeadersFromServletRequest(HttpServletRequest req) throws IOException,
       ServletException,
       URISyntaxException
   {
@@ -82,7 +83,7 @@ public abstract class AbstractServlet extends HttpServlet
    * unable to strip off the contextPath or servletPath.
    * @throws ServletException if resulting pathInfo is empty
    */
-  protected static String extractPathInfo(HttpServletRequest req) throws ServletException
+  static String extractPathInfo(HttpServletRequest req) throws ServletException
   {
     // For "http:hostname:8080/contextPath/servletPath/pathInfo" the RequestURI is "/contextPath/servletPath/pathInfo"
     // where the contextPath, servletPath and pathInfo parts all contain their leading slash.
@@ -116,7 +117,7 @@ public abstract class AbstractServlet extends HttpServlet
     }
     else
     {
-      _log.warn("Unable to extract 'non decoded' pathInfo, returning 'decoded' pathInfo instead.  This may cause issues processing request URIs containing special characters. requestUri=" + requestUri);
+      LOG.warn("Unable to extract 'non decoded' pathInfo, returning 'decoded' pathInfo instead.  This may cause issues processing request URIs containing special characters. requestUri=" + requestUri);
       return req.getPathInfo();
     }
 
@@ -141,7 +142,7 @@ public abstract class AbstractServlet extends HttpServlet
    * @param req The HTTP servlet request
    * @return The request context
    */
-  protected RequestContext readRequestContext(HttpServletRequest req)
+  static RequestContext readRequestContext(HttpServletRequest req)
   {
     RequestContext context = new RequestContext();
     context.putLocalAttr(R2Constants.REMOTE_ADDR, req.getRemoteAddr());
@@ -164,7 +165,7 @@ public abstract class AbstractServlet extends HttpServlet
   }
 
 
-  protected StreamResponse writeResponseHeadersToServletResponse(TransportResponse<StreamResponse> response,
+  static StreamResponse writeResponseHeadersToServletResponse(TransportResponse<StreamResponse> response,
                                                               HttpServletResponse resp)
   {
     Map<String, String> wireAttrs = response.getWireAttributes();
@@ -205,5 +206,23 @@ public abstract class AbstractServlet extends HttpServlet
     }
 
     return streamResponse;
+  }
+
+  static void writeToServletError(HttpServletResponse resp, int statusCode, String message) throws IOException
+  {
+    RestResponse restResponse =
+        RestStatus.responseForStatus(statusCode, message);
+    writeResponseHeadersToServletResponse(TransportResponseImpl.success(Messages.toStreamResponse(restResponse)), resp);
+    final ByteString entity = restResponse.getEntity();
+    entity.write(resp.getOutputStream());
+    resp.getOutputStream().close();
+  }
+
+  static StreamRequest readFromServletRequest(HttpServletRequest req, Writer writer) throws IOException,
+      ServletException,
+      URISyntaxException
+  {
+    StreamRequestBuilder rb = readStreamRequestHeadersFromServletRequest(req);
+    return rb.build(EntityStreams.newEntityStream(writer));
   }
 }

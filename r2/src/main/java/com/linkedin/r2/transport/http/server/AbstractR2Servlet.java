@@ -18,37 +18,19 @@
 package com.linkedin.r2.transport.http.server;
 
 
-import com.linkedin.data.ByteString;
-import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Messages;
-import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
-import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.Writer;
-import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
-import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
-import com.linkedin.r2.transport.http.common.HttpConstants;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Enumeration;
-import java.util.Map;
-import javax.mail.MessagingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -57,11 +39,13 @@ import org.slf4j.LoggerFactory;
  * @author Fatih Emekci
  * @version $Revision$
  */
-public abstract class AbstractR2Servlet extends AbstractServlet
+public abstract class AbstractR2Servlet extends HttpServlet
 {
   private static final long   serialVersionUID = 0L;
 
   private final long _ioHandlerTimeout;
+
+  protected abstract HttpDispatcher getDispatcher();
 
   public AbstractR2Servlet(long ioHandlerTimeout)
   {
@@ -74,17 +58,17 @@ public abstract class AbstractR2Servlet extends AbstractServlet
   {
     final SyncIOHandler ioHandler = new SyncIOHandler(req.getInputStream(), resp.getOutputStream(), 2, _ioHandlerTimeout);
 
-    RequestContext requestContext = readRequestContext(req);
+    RequestContext requestContext = ServletHelper.readRequestContext(req);
 
     StreamRequest streamRequest;
 
     try
     {
-      streamRequest = readFromServletRequest(req, ioHandler);
+      streamRequest = ServletHelper.readFromServletRequest(req, ioHandler);
     }
     catch (URISyntaxException e)
     {
-      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+      ServletHelper.writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
       return;
     }
 
@@ -94,7 +78,7 @@ public abstract class AbstractR2Servlet extends AbstractServlet
       @Override
       public void onResponse(TransportResponse<StreamResponse> response)
       {
-        StreamResponse streamResponse = writeResponseHeadersToServletResponse(response, resp);
+        StreamResponse streamResponse = ServletHelper.writeResponseHeadersToServletResponse(response, resp);
         streamResponse.getEntityStream().setReader(ioHandler);
       }
     };
@@ -102,23 +86,5 @@ public abstract class AbstractR2Servlet extends AbstractServlet
     getDispatcher().handleRequest(streamRequest, requestContext, callback);
 
     ioHandler.loop();
-  }
-
-  protected void writeToServletError(HttpServletResponse resp, int statusCode, String message) throws IOException
-  {
-    RestResponse restResponse =
-        RestStatus.responseForStatus(statusCode, message);
-    writeResponseHeadersToServletResponse(TransportResponseImpl.success(Messages.toStreamResponse(restResponse)), resp);
-    final ByteString entity = restResponse.getEntity();
-    entity.write(resp.getOutputStream());
-    resp.getOutputStream().close();
-  }
-
-  protected StreamRequest readFromServletRequest(HttpServletRequest req, Writer writer) throws IOException,
-      ServletException,
-      URISyntaxException
-  {
-    StreamRequestBuilder rb = readStreamRequestHeadersFromServletRequest(req);
-    return rb.build(EntityStreams.newEntityStream(writer));
   }
 }

@@ -19,11 +19,11 @@ package com.linkedin.r2.transport.http.server;
 
 
 import java.net.URISyntaxException;
-import javax.mail.MessagingException;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -35,7 +35,6 @@ import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -45,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @version $Revision$
  */
 @SuppressWarnings("serial")
-public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
+public abstract class AbstractAsyncR2Servlet extends HttpServlet
 {
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
 
@@ -54,13 +53,14 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 
   private final long _ioHandlerTimeout;
 
+  protected abstract HttpDispatcher getDispatcher();
+
   /**
    * Initialize the servlet, optionally using servlet-api-3.0 async API, if supported
    * by the container. The latter is checked later in init()
    */
   public AbstractAsyncR2Servlet(long timeout, long ioHandlerTimeout)
   {
-    super(ioHandlerTimeout);
     _timeout = timeout;
     _ioHandlerTimeout = ioHandlerTimeout;
   }
@@ -74,17 +74,17 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
 
     final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 3, _ioHandlerTimeout);
 
-    RequestContext requestContext = readRequestContext(req);
+    RequestContext requestContext = ServletHelper.readRequestContext(req);
 
     StreamRequest streamRequest;
 
     try
     {
-      streamRequest = readFromServletRequest(req, ioHandler);
+      streamRequest = ServletHelper.readFromServletRequest(req, ioHandler);
     }
     catch (URISyntaxException e)
     {
-      writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
+      ServletHelper.writeToServletError(resp, RestStatus.BAD_REQUEST, e.toString());
       return;
     }
 
@@ -132,7 +132,7 @@ public abstract class AbstractAsyncR2Servlet extends AbstractR2Servlet
             try
             {
               ioHandler.startWritingResponse();
-              StreamResponse streamResponse = writeResponseHeadersToServletResponse(response, resp);
+              StreamResponse streamResponse = ServletHelper.writeResponseHeadersToServletResponse(response, resp);
               streamResponse.getEntityStream().setReader(ioHandler);
               ioHandler.loop();
             }
