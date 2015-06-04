@@ -88,8 +88,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
   @Override
   public void onAbort(Throwable ex)
   {
-    // TODO [ZZ]: do something smarter?
-    throw new IllegalStateException("Exception thrown by request processing code", ex);
+    // TODO [ZZ]: this may not be right; ideally we should continue reading all bytes before complete; work on later
+    // throw new IllegalStateException("Exception thrown by request processing code", ex);
+    if (!_otherDirectionFinished.compareAndSet(false, true))
+    {
+      // the other direction finished, we can complete
+      _ctx.complete();
+    }
   }
 
   private void writeIfPossible()
