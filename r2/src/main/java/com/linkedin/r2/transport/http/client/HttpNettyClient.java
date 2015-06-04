@@ -368,8 +368,12 @@ import org.slf4j.LoggerFactory;
           @Override
           public void run()
           {
-            // stop the timeout for streaming since streaming of response would not happen
-            streamingTimeout.getItem();
+            Timeout<None> timeout = channel.attr(RAPResponseDecoder.TIMEOUT_ATTR_KEY).getAndRemove();
+            if (timeout != null)
+            {
+              // stop the timeout for streaming since streaming of response would not happen
+              timeout.getItem();
+            }
           }
         });
         // This handler invokes the callback with the response once it arrives.
