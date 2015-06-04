@@ -48,10 +48,6 @@ public class BaseConnector implements Reader, Writer
         _outstanding += diff;
       }
     }
-    else
-    {
-      _rh.request(1);
-    }
   }
 
   @Override
@@ -77,7 +73,7 @@ public class BaseConnector implements Reader, Writer
   public void onAbort(Throwable e)
   {
     _aborted = true;
-    _rh.request(5);
+    _rh.cancel();
   }
 
   protected WriteHandle wrapWriteHandle(WriteHandle wh)

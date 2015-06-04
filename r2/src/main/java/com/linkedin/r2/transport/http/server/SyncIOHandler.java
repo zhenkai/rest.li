@@ -1,6 +1,7 @@
 package com.linkedin.r2.transport.http.server;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.streaming.AbortedException;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
@@ -153,8 +154,39 @@ public class SyncIOHandler implements Writer, Reader
         }
         case WriteRequestAborted:
         {
-          // TODO [ZZ]: do something smarter?
-          throw new ServletException((Throwable)event.getData());
+          if (event.getData() instanceof AbortedException)
+          {
+            // reader cancels, we'll drain the stream on behalf of reader
+            // we don't directly drain it here because we'd like to give other events
+            // some opportunities to be executed; e.g. return an error response
+            _eventQueue.add(Event.DrainRequestEvent);
+          }
+          else
+          {
+            // reader throws, which it shouldn't do, we cannot do much
+            // TODO: do we want to be smarter and return server error response?
+            throw new ServletException((Throwable)event.getData());
+          }
+          break;
+        }
+        case DrainRequest:
+        {
+          byte[] buf = new byte[4096];
+          for (int i = 0; i < 10; i++)
+          {
+            int actualLen = _is.read(buf);
+            if (actualLen < 0)
+            {
+              _requestReadFinished = true;
+              break;
+            }
+          }
+          if (!_requestReadFinished)
+          {
+            // add self back to event queue and give others a chance to run
+            _eventQueue.add(Event.DrainRequestEvent);
+          }
+          break;
         }
         default:
           throw new IllegalStateException("Unknown event type:" + event.getEventType());
@@ -181,6 +213,7 @@ public class SyncIOHandler implements Writer, Reader
   {
     WriteRequestPossible,
     WriteRequestAborted,
+    DrainRequest,
     FullResponseReceived,
     ResponseDataAvailable,
     ResponseDataError,
@@ -193,6 +226,7 @@ public class SyncIOHandler implements Writer, Reader
 
     static Event WriteRequestPossibleEvent = new Event(EventType.WriteRequestPossible);
     static Event FullResponseReceivedEvent = new Event(EventType.FullResponseReceived);
+    static Event DrainRequestEvent = new Event(EventType.DrainRequest);
 
     Event(EventType eventType)
     {
