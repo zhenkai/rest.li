@@ -14,4 +14,9 @@ public interface ReadHandle
    * @throws java.lang.IllegalArgumentException if n is not positive
    */
   void request(int n);
+
+  /**
+   * This method cancels the stream
+   */
+  void cancel();
 }
