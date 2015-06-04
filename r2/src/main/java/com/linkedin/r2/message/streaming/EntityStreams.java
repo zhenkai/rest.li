@@ -7,9 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+;
 
 /**
  * A class consists exclusively of static methods to deal with EntityStream {@link com.linkedin.r2.message.streaming.EntityStream}
@@ -64,11 +62,13 @@ public final class EntityStreams
     UNINITIALIZED,
     ACTIVE,
     FINISHED,
-    ABORTED
+    ABORTED,
+    ABORT_REQUESTED,
   }
 
   private static class EntityStreamImpl implements EntityStream
   {
+    private static final Exception READER_ABORTED_EXCEPTION = new AbortedException("Reader aborted");
     private final Writer _writer;
     private final Object _lock;
     private List<Observer> _observers;
@@ -119,24 +119,38 @@ public final class EntityStreams
       @Override
       public void write(final ByteString data)
       {
-        if (_state == State.FINISHED)
-        {
-          throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
-        }
-
-        if (_state == State.ABORTED)
-        {
-          return;
-        }
+        boolean doCancelNow = false;
 
         synchronized (_lock)
         {
+          if (_state == State.FINISHED)
+          {
+            throw new IllegalStateException("Attempting to write after done or error of WriteHandle is invoked");
+          }
+
+          if (_state == State.ABORTED)
+          {
+            return;
+          }
+
           _remaining--;
 
           if (_remaining < 0)
           {
             throw new IllegalStateException("Attempt to write when remaining is 0");
           }
+
+          if (_state == State.ABORT_REQUESTED)
+          {
+            doCancelNow = true;
+            _state = State.ABORTED;
+          }
+        }
+
+        if (doCancelNow)
+        {
+          doCancel(READER_ABORTED_EXCEPTION, false);
+          return;
         }
 
         for (Observer observer : _observers)
@@ -157,65 +171,157 @@ public final class EntityStreams
         }
         catch (Exception ex)
         {
-          doError(ex);
-          ensureAbort(ex);
+          // the lock ensures that once we change the _state to ABORTED, it will stay as ABORTED
+          synchronized (_lock)
+          {
+            _state = State.ABORTED;
+          }
+
+          // we can safely do cancel here because no other place could be doing cancel (mutually exclusively by design)
+          doCancel(ex, true);
         }
       }
 
       @Override
       public void done()
       {
-        if (_state == State.ACTIVE)
+        boolean doCancelNow = false;
+        synchronized (_lock)
         {
-          for (Observer observer : _observers)
+          if (_state != State.ACTIVE && _state != State.ABORT_REQUESTED)
           {
-            try
-            {
-              observer.onDone();
-            }
-            catch (Exception ex)
-            {
-              LOG.warn("Observer throws exception at onDone, ignored.", ex);
-            }
+            return;
           }
 
+          if (_state == State.ABORT_REQUESTED)
+          {
+            doCancelNow = true;
+            _state = State.ABORTED;
+          }
+          else
+          {
+            _state = State.FINISHED;
+          }
+        }
+
+        if (doCancelNow)
+        {
+          doCancel(READER_ABORTED_EXCEPTION, false);
+          return;
+        }
+
+
+        for (Observer observer : _observers)
+        {
           try
           {
-            _reader.onDone();
-            _state = State.FINISHED;
+            observer.onDone();
           }
           catch (Exception ex)
           {
-            ensureAbort(ex);
+            LOG.warn("Observer throws exception at onDone, ignored.", ex);
           }
+        }
+
+        try
+        {
+          _reader.onDone();
+        }
+        catch (Exception ex)
+        {
+          LOG.warn("Reader throws exception at onDone; notifying writer", ex);
+          // At this point, no cancel had happened and no cancel will happen, _writer.onAbort will not be invoked more than once
+          // This is still a value to let writer know about this exception, e.g. see DispatcherRequestFilter.Connector
+          _writer.onAbort(ex);
         }
       }
 
       @Override
       public void error(final Throwable e)
       {
-        if (_state == State.ACTIVE)
+        boolean doCancelNow = false;
+        synchronized (_lock)
         {
-          doError(e);
+          if (_state != State.ACTIVE && _state != State.ABORT_REQUESTED)
+          {
+            return;
+          }
+
+          if (_state == State.ABORT_REQUESTED)
+          {
+            doCancelNow = true;
+            _state = State.ABORTED;
+          }
+          else
+          {
+            _state = State.FINISHED;
+          }
+        }
+
+        if (doCancelNow)
+        {
+          doCancel(READER_ABORTED_EXCEPTION, false);
+          return;
+        }
+
+        for (Observer observer : _observers)
+        {
+          try
+          {
+            observer.onError(e);
+          }
+          catch (Exception ex)
+          {
+            LOG.warn("Observer throws exception at onError, ignored.", ex);
+          }
+        }
+
+        try
+        {
+          _reader.onError(e);
+        }
+        catch (Exception ex)
+        {
+          LOG.warn("Reader throws exception at onError; notifying writer", ex);
+          // at this point, no cancel had happened and no cancel will happen, _writer.onAbort will not be invoked more than once
+          _writer.onAbort(ex);
         }
       }
 
       @Override
       public int remaining()
       {
+        int result;
+        boolean doCancelNow = false;
         synchronized (_lock)
         {
-          if (_state != State.ACTIVE)
+          if (_state != State.ACTIVE && _state != State.ABORT_REQUESTED)
           {
             return 0;
           }
 
-          if (_remaining == 0)
+          if (_state == State.ABORT_REQUESTED)
           {
-            _notifyWritePossible = true;
+            doCancelNow = true;
+            _state = State.ABORTED;
+            result = 0;
           }
-          return _remaining;
+          else
+          {
+            if (_remaining == 0)
+            {
+              _notifyWritePossible = true;
+            }
+            result = _remaining;
+          }
         }
+
+        if (doCancelNow)
+        {
+          doCancel(READER_ABORTED_EXCEPTION, false);
+        }
+
+        return result;
       }
     }
 
@@ -232,6 +338,11 @@ public final class EntityStreams
         boolean needNotify = false;
         synchronized (_lock)
         {
+          if (_state != State.ACTIVE)
+          {
+            return;
+          }
+
           _remaining += chunkNum;
           // overflow
           if (_remaining < 0)
@@ -252,6 +363,33 @@ public final class EntityStreams
           _writer.onWritePossible();
         }
       }
+
+      @Override
+      public void cancel()
+      {
+        boolean doCancelNow;
+        synchronized (_lock)
+        {
+          // this means writer is waiting for on WritePossible (cannot call WriteHandle.write) and has not called
+          // WriteHandle.onDone() or WriteHandle.onError() yet, so we can safely do cancel here
+
+          // otherwise, we would let the writer thread invoke doCancel later
+          doCancelNow = _notifyWritePossible && _state == State.ACTIVE;
+          if (doCancelNow)
+          {
+            _state = State.ABORTED;
+          }
+          else if (_state == State.ACTIVE)
+          {
+            _state = State.ABORT_REQUESTED;
+          }
+        }
+
+        if (doCancelNow)
+        {
+          doCancel(READER_ABORTED_EXCEPTION, false);
+        }
+      }
     }
 
     private void checkInit()
@@ -262,17 +400,10 @@ public final class EntityStreams
       }
     }
 
-    private void ensureAbort(Throwable e)
+    private void doCancel(Throwable e, boolean notifyReader)
     {
-      if (_state != State.ABORTED)
-      {
-        _state = State.ABORTED;
-        _writer.onAbort(e);
-      }
-    }
+      _writer.onAbort(e);
 
-    private void doError(Throwable e)
-    {
       for (Observer observer : _observers)
       {
         try
@@ -285,15 +416,15 @@ public final class EntityStreams
         }
       }
 
-      try
+      if (notifyReader)
       {
-        _reader.onError(e);
-        _state = State.FINISHED;
-      }
-      catch (Exception ex)
-      {
-        // LOG.error("Reader throws exception at onError", ex);
-        ensureAbort(ex);
+        try
+        {
+          _reader.onError(e);
+        } catch (Exception ex)
+        {
+          LOG.error("Reader throws exception at onError", ex);
+        }
       }
     }
   }
