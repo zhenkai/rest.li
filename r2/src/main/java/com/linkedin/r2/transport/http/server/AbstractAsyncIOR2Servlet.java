@@ -18,27 +18,20 @@
 package com.linkedin.r2.transport.http.server;
 
 
-import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestStatus;
-import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
-import com.linkedin.r2.transport.http.common.HttpConstants;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Enumeration;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -50,9 +43,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * @author Steven Ihde
@@ -60,12 +50,14 @@ import org.slf4j.LoggerFactory;
  * @author Fatih Emekci
  * @version $Revision$
  */
-public abstract class AbstractAsyncIOR2Servlet extends AbstractServlet
+public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
 {
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
   private static final long   serialVersionUID = 0L;
 
   private final long _timeout;
+
+  protected abstract HttpDispatcher getDispatcher();
 
   public AbstractAsyncIOR2Servlet(long timeout)
   {
@@ -76,7 +68,7 @@ public abstract class AbstractAsyncIOR2Servlet extends AbstractServlet
   protected void service(final HttpServletRequest req, final HttpServletResponse resp)
           throws ServletException, IOException
   {
-    RequestContext requestContext = readRequestContext(req);
+    RequestContext requestContext = ServletHelper.readRequestContext(req);
 
     final AsyncContext ctx = req.startAsync();
     ctx.setTimeout(_timeout);
@@ -152,7 +144,7 @@ public abstract class AbstractAsyncIOR2Servlet extends AbstractServlet
                                       WrappedAsyncContext ctx)
       throws IOException
   {
-    StreamResponse streamResponse = writeResponseHeadersToServletResponse(response, resp);
+    StreamResponse streamResponse = ServletHelper.writeResponseHeadersToServletResponse(response, resp);
 
     ServletOutputStream os = resp.getOutputStream();
     AsyncIOResponseHandler handler = new AsyncIOResponseHandler(os, ctx.getCtx(), ctx.getOtherDirectionFinished());
@@ -173,7 +165,7 @@ public abstract class AbstractAsyncIOR2Servlet extends AbstractServlet
       ServletException,
       URISyntaxException
   {
-    StreamRequestBuilder builder = readStreamRequestHeadersFromServletRequest(req);
+    StreamRequestBuilder builder = ServletHelper.readStreamRequestHeadersFromServletRequest(req);
 
     ServletInputStream is = req.getInputStream();
     AsyncIORequestHandler handler = new AsyncIORequestHandler(is, ctx.getCtx(), ctx.getOtherDirectionFinished());
