@@ -357,6 +357,7 @@ public final class EntityStreams
           }
           catch (RuntimeException ex)
           {
+            LOG.warn("Writer throws at onWritePossible", ex);
             // we can safely do cancel here as no WriteHandle method could be called at the same time
             synchronized (_lock)
             {
