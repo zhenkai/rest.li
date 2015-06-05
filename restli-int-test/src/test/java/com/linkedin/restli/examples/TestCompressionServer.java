@@ -26,7 +26,6 @@ import com.linkedin.r2.filter.compression.Compressor;
 import com.linkedin.r2.filter.compression.DeflateCompressor;
 import com.linkedin.r2.filter.compression.EncodingType;
 import com.linkedin.r2.filter.compression.GzipCompressor;
-import com.linkedin.r2.filter.compression.SnappyCompressor;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
@@ -64,12 +63,9 @@ import com.linkedin.restli.internal.common.AllProtocolVersions;
 import com.linkedin.restli.internal.testutils.URIDetails;
 import com.linkedin.restli.test.util.RootBuilderWrapper;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -103,7 +99,6 @@ public class TestCompressionServer extends RestLiIntegrationTest
   {
     return new Object[][]
       {
-        { new SnappyCompressor() },
         { new Bzip2Compressor() },
         { new GzipCompressor() },
         { new DeflateCompressor()}
@@ -208,7 +203,7 @@ public class TestCompressionServer extends RestLiIntegrationTest
         //Basic sanity checks
         {"gzip", "gzip"},
         {"deflate", "deflate"},
-        {"snappy", "snappy"},
+        {"x-snappy-framed", "x-snappy-framed"},
         {"bzip2", "bzip2"},
         {"deflate, nonexistentcompression", "deflate"},
         {"blablabla, dEflate", "deflate"},
@@ -359,8 +354,9 @@ public class TestCompressionServer extends RestLiIntegrationTest
     Assert.assertTrue(response.getEntity().getContentLength() < original.length);
   }
 
+  //NOTE: this feature cannot be supported with r2 streaming, thus this test is disabled.
   //Test compression when it is worse (lengthwise)
-  @Test(dataProvider = "compressorDataProvider")
+  @Test(dataProvider = "compressorDataProvider", enabled = false)
   public void testCompressionWorse(Compressor compressor) throws RemoteInvocationException, HttpException, IOException, URISyntaxException
   {
     String path = CompressionResource.getPath();
@@ -843,24 +839,8 @@ public class TestCompressionServer extends RestLiIntegrationTest
   private <T> void checkHeaderForCompression(Response<T> response, String operationsConfig, String methodName)
   {
     String contentEncodingHeader = response.getHeader(HttpConstants.CONTENT_ENCODING);
-    String allPossibleAcceptEncodings = "gzip, deflate, bzip2, snappy";
-
-    Map<String, Set<String>> methodsAndFamilies = getCompressionMethods(operationsConfig);
-    Set<String> methods = methodsAndFamilies.get("methods");
-    Set<String> families = methodsAndFamilies.get("families");
-
-    if (shouldCompress(families, methods, methodName))
-    {
-      if (contentEncodingHeader == null)
-      {
-        Assert.fail("Content-Encoding header absent");
-      }
-      Assert.assertTrue(allPossibleAcceptEncodings.contains(contentEncodingHeader));
-    }
-    else
-    {
-      Assert.assertNull(contentEncodingHeader);
-    }
+    // Content-Encoding header should have been removed
+    Assert.assertNull(contentEncodingHeader);
   }
 
   private boolean shouldCompress(Set<String> families, Set<String> methods, String methodName)

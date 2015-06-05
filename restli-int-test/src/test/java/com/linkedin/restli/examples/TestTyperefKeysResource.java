@@ -55,10 +55,6 @@ import org.testng.annotations.Test;
  */
 public class TestTyperefKeysResource extends RestLiIntegrationTest
 {
-  private static final Client CLIENT = new TransportClientAdapter(new HttpClientFactory().getClient(Collections.<String, String>emptyMap()));
-  private static final String URI_PREFIX = "http://localhost:1338/";
-  private static final RestClient REST_CLIENT = new RestClient(CLIENT, URI_PREFIX);
-
   @BeforeClass
   public void initClass() throws Exception
   {
@@ -78,7 +74,7 @@ public class TestTyperefKeysResource extends RestLiIntegrationTest
     Greeting greeting = new Greeting().setId(1L).setMessage("Foo").setTone(Tone.FRIENDLY);
     CreateRequest<Greeting> req = new TyperefKeysBuilders(requestOptions).create().input(greeting).build();
 
-    Response<EmptyRecord> resp = REST_CLIENT.sendRequest(req).getResponse();
+    Response<EmptyRecord> resp = getClient().sendRequest(req).getResponse();
     Assert.assertEquals(resp.getId(), "1");
   }
 
@@ -88,7 +84,7 @@ public class TestTyperefKeysResource extends RestLiIntegrationTest
     Greeting greeting = new Greeting().setId(1L).setMessage("Foo").setTone(Tone.FRIENDLY);
     CreateIdRequest<Long, Greeting> req = new TyperefKeysRequestBuilders(requestOptions).create().input(greeting).build();
 
-    Response<IdResponse<Long>> resp = REST_CLIENT.sendRequest(req).getResponse();
+    Response<IdResponse<Long>> resp = getClient().sendRequest(req).getResponse();
     Assert.assertEquals(resp.getEntity().getId(), new Long(1L));
   }
 
@@ -96,7 +92,7 @@ public class TestTyperefKeysResource extends RestLiIntegrationTest
   public void testBatchGet(RestliRequestOptions requestOptions) throws RemoteInvocationException
   {
     BatchGetRequest<Greeting> req = new TyperefKeysBuilders(requestOptions).batchGet().ids(1L, 2L).build();
-    Response<BatchResponse<Greeting>> resp = REST_CLIENT.sendRequest(req).getResponse();
+    Response<BatchResponse<Greeting>> resp = getClient().sendRequest(req).getResponse();
 
     Map<String, Greeting> results = resp.getEntity().getResults();
     Assert.assertEquals(results.get("1").getId(), new Long(1L));
@@ -107,7 +103,7 @@ public class TestTyperefKeysResource extends RestLiIntegrationTest
   public void testBatchGetKV(RestliRequestOptions requestOptions) throws RemoteInvocationException
   {
     BatchGetKVRequest<Long,Greeting> req = new TyperefKeysBuilders(requestOptions).batchGet().ids(1L, 2L).buildKV();
-    Response<BatchKVResponse<Long, Greeting>> resp = REST_CLIENT.sendRequest(req).getResponse();
+    Response<BatchKVResponse<Long, Greeting>> resp = getClient().sendRequest(req).getResponse();
 
     Map<Long, Greeting> results = resp.getEntity().getResults();
     Assert.assertEquals(results.get(1L).getId(), new Long(1L));
@@ -118,7 +114,7 @@ public class TestTyperefKeysResource extends RestLiIntegrationTest
   public void testBatchGetEntity(RestliRequestOptions requestOptions) throws RemoteInvocationException
   {
     BatchGetEntityRequest<Long,Greeting> req = new TyperefKeysRequestBuilders(requestOptions).batchGet().ids(1L, 2L).build();
-    Response<BatchKVResponse<Long, EntityResponse<Greeting>>> resp = REST_CLIENT.sendRequest(req).getResponse();
+    Response<BatchKVResponse<Long, EntityResponse<Greeting>>> resp = getClient().sendRequest(req).getResponse();
 
     Map<Long, EntityResponse<Greeting>> results = resp.getEntity().getResults();
     Assert.assertEquals(results.get(1L).getEntity().getId(), new Long(1L));

@@ -264,10 +264,8 @@ public class ClientCompressionFilter implements StreamFilter
         return;
       }
     }
-    else
-    {
-      nextFilter.onRequest(req, requestContext, wireAttrs);
-    }
+
+    nextFilter.onRequest(req, requestContext, wireAttrs);
   }
 
   /**
