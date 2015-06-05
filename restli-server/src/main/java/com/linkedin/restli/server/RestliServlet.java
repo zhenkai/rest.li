@@ -121,7 +121,7 @@ public class RestliServlet extends HttpServlet
     _r2Servlet.init(servletConfig);
   }
 
-  private AbstractR2Servlet buildR2ServletFromServletParams(ServletConfig servletConfig)
+  private HttpServlet buildR2ServletFromServletParams(ServletConfig servletConfig)
   {
     ResourceFactory resourceFactory = new PrototypeResourceFactory();
 
