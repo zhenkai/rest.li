@@ -72,7 +72,7 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
     final AsyncContext ctx = req.startAsync(req, resp);
     ctx.setTimeout(_timeout);
 
-    final AsyncCtxSyncIOHandler ioHandler = new AsyncCtxSyncIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 3, _ioHandlerTimeout);
+    final AsyncEventIOHandler ioHandler = new AsyncEventIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 3, _ioHandlerTimeout);
 
     RequestContext requestContext = ServletHelper.readRequestContext(req);
 
@@ -131,7 +131,6 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
           {
             try
             {
-              ioHandler.startWritingResponse();
               StreamResponse streamResponse = ServletHelper.writeResponseHeadersToServletResponse(response, resp);
               streamResponse.getEntityStream().setReader(ioHandler);
               ioHandler.loop();
@@ -147,7 +146,6 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
     };
 
     getDispatcher().handleRequest(streamRequest, requestContext, callback);
-    ioHandler.startReadingRequest();
     ioHandler.loop();
   }
 
