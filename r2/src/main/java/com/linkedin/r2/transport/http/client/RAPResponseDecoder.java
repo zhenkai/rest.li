@@ -154,6 +154,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         this.exceptionCaught(ctx, chunk.getDecoderResult().cause());
       }
 
+      currentWriter.processHttpChunk(chunk);
+
       if (chunk instanceof LastHttpContent)
       {
         _chunkedMessageWriter = null;
@@ -166,8 +168,6 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
           ctx.fireChannelRead(ChannelPoolHandler.CHANNEL_RELEASE_SIGNAL);
         }
       }
-
-      currentWriter.processHttpChunk(chunk);
     }
     else
     {
