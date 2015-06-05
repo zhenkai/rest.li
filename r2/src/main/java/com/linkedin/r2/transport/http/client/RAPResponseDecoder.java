@@ -75,6 +75,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     {
       HttpResponse m = (HttpResponse) msg;
       shouldCloseConnection = !isKeepAlive(m);
+
       if (is100ContinueExpected(m))
       {
         ctx.writeAndFlush(CONTINUE).addListener(new ChannelFutureListener()
@@ -329,6 +330,7 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         if (chunk instanceof LastHttpContent)
         {
           _lastChunkReceived = true;
+          _timeout.getItem();
         }
         if (_wh != null)
         {
@@ -370,7 +372,6 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         {
           if (_lastChunkReceived)
           {
-            _timeout.getItem();
             _wh.done();
           }
           break;
