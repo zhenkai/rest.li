@@ -1,5 +1,7 @@
 package com.linkedin.r2.transport.http.server;
 
+import com.linkedin.r2.message.streaming.ReadHandle;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -14,41 +16,50 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Zhenkai Zhu
  */
-public class AsyncCtxSyncIOHandler extends SyncIOHandler
+public class AsyncEventIOHandler extends SyncIOHandler
 {
   private final AtomicBoolean _completed = new AtomicBoolean(false);
   private final AsyncContext _ctx;
-  private boolean _requestReadStarted = false;
-  private boolean _responseWriteStarted = false;
+  private volatile boolean _responseWriteStarted = false;
   private boolean _inLoop = false;
 
-  public AsyncCtxSyncIOHandler(ServletInputStream is, ServletOutputStream os, AsyncContext ctx, int bufferCapacity, long timeout)
+  public AsyncEventIOHandler(ServletInputStream is, ServletOutputStream os, AsyncContext ctx, int bufferCapacity, long timeout)
   {
     super(is, os, bufferCapacity, timeout);
     _ctx = ctx;
   }
 
   @Override
-  protected synchronized boolean shouldContinue()
+  protected boolean shouldContinue()
   {
-    boolean shouldContinue =  (_requestReadStarted && !requestReadFinished()
-        || (_responseWriteStarted && !responseWriteFinished()));
+    boolean shouldContinue =  !requestReadFinished()
+        || (_responseWriteStarted && !responseWriteFinished());
 
     if (!shouldContinue)
     {
-      _inLoop = false;
+      synchronized (this)
+      {
+        // check again in synchronized block to make sure we can exit safely
+        shouldContinue =  !requestReadFinished()
+            || (_responseWriteStarted && !responseWriteFinished());
+
+        if (!shouldContinue)
+        {
+          _inLoop = false;
+        }
+      }
     }
     return shouldContinue;
   }
 
-  public synchronized void startWritingResponse()
+  @Override
+  public void onInit(ReadHandle rh)
   {
-    _responseWriteStarted = true;
-  }
-
-  public synchronized void startReadingRequest()
-  {
-    _requestReadStarted = true;
+    synchronized (this)
+    {
+      _responseWriteStarted = true;
+    }
+    super.onInit(rh);
   }
 
   @Override
