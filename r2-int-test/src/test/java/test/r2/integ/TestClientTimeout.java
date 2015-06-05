@@ -200,7 +200,7 @@ public class TestClientTimeout extends AbstractStreamTest
     public void handleRequest(StreamRequest request, RequestContext requestContext, final Callback<StreamResponse> callback)
     {
       request.getEntityStream().setReader(new DrainReader());
-      callback.onSuccess(new StreamResponseBuilder().build(EntityStreams.emptyStream()));
+      callback.onSuccess(new StreamResponseBuilder().build(EntityStreams.newEntityStream(new BytesWriter(1024 * 100, (byte) 100))));
     }
   }
 
