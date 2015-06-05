@@ -32,4 +32,10 @@ public class TestStreamRequestAsyncEvent extends TestStreamRequest
   {
     super.test404();
   }
+
+  @Test
+  public void testErrorWriter() throws Exception
+  {
+    super.testErrorWriter();
+  }
 }
