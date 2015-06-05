@@ -42,6 +42,7 @@ import java.util.concurrent.TimeoutException;
 
 import static io.netty.handler.codec.http.HttpHeaders.is100ContinueExpected;
 import static io.netty.handler.codec.http.HttpHeaders.isTransferEncodingChunked;
+import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChunked;
 
 
@@ -72,9 +73,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   {
     if (msg instanceof HttpResponse)
     {
-      // reset this value to false on first piece of response, as by default we don't close the connection
-      shouldCloseConnection = false;
       HttpResponse m = (HttpResponse) msg;
+      shouldCloseConnection = !isKeepAlive(m);
       if (is100ContinueExpected(m))
       {
         ctx.writeAndFlush(CONTINUE).addListener(new ChannelFutureListener()
@@ -126,12 +126,6 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         else
         {
           builder.unsafeAddHeaderValue(key, value);
-        }
-
-        // server indicates channel close
-        if ("connection".equalsIgnoreCase(key) && "close".equalsIgnoreCase(value))
-        {
-          shouldCloseConnection = true;
         }
       }
 
