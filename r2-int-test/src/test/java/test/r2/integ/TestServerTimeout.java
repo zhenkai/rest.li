@@ -47,7 +47,7 @@ public class TestServerTimeout
 {
   private static final int PORT = 10001;
   private static final URI BUGGY_SERVER_URI = URI.create("/buggy");
-  private static final long SERVER_IOHANDLER_TIMEOUT = 500;
+  private static final int SERVER_IOHANDLER_TIMEOUT = 500;
   private HttpClientFactory _clientFactory;
   private Client _client;
   private HttpServer _server;
@@ -62,7 +62,7 @@ public class TestServerTimeout
     Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
     handlers.put(BUGGY_SERVER_URI, new BuggyRequestHandler());
     TransportDispatcher transportDispatcher = new TransportDispatcherBuilder(handlers).build();
-    _server = new HttpServerFactory().createServer(PORT, transportDispatcher, SERVER_IOHANDLER_TIMEOUT);
+    _server = new HttpServerFactory().createRAPServer(PORT, transportDispatcher, SERVER_IOHANDLER_TIMEOUT);
     _server.start();
   }
 

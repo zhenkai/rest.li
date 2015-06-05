@@ -23,9 +23,9 @@ public class AsyncEventIOHandler extends SyncIOHandler
   private volatile boolean _responseWriteStarted = false;
   private boolean _inLoop = false;
 
-  public AsyncEventIOHandler(ServletInputStream is, ServletOutputStream os, AsyncContext ctx, int bufferCapacity, long timeout)
+  public AsyncEventIOHandler(ServletInputStream is, ServletOutputStream os, AsyncContext ctx, int bufferCapacity)
   {
-    super(is, os, bufferCapacity, timeout);
+    super(is, os, bufferCapacity, Integer.MAX_VALUE);
     _ctx = ctx;
   }
 

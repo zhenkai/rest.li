@@ -135,16 +135,16 @@ public class HttpJettyServer implements HttpServer
     return new Connector[]{http};
   }
 
-  private static HttpServlet createServlet(HttpDispatcher dispatcher, ServletType type, int asyncTimeOut)
+  private static HttpServlet createServlet(HttpDispatcher dispatcher, ServletType type, int timeout)
   {
     HttpServlet httpServlet;
     switch (type)
     {
       case ASYNC_IO:
-        httpServlet = new AsyncIORAPServlet(dispatcher, asyncTimeOut);
+        httpServlet = new AsyncIORAPServlet(dispatcher, timeout);
         break;
       case ASYNC_EVENT:
-        httpServlet = new AsyncR2Servlet(dispatcher, asyncTimeOut);
+        httpServlet = new AsyncR2Servlet(dispatcher, timeout);
         break;
       default:
         httpServlet = new RAPServlet(dispatcher);

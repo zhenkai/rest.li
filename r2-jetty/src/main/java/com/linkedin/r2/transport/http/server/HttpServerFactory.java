@@ -128,13 +128,14 @@ public class HttpServerFactory
                                 asyncTimeOut);
   }
 
-  public HttpServer createServer(int port, TransportDispatcher transportDispatcher, long ioHandlerTimeout)
+  public HttpServer createServer(int port, TransportDispatcher transportDispatcher, int timeout)
   {
-    final TransportDispatcher filterDispatcher =
-        new FilterChainDispatcher(transportDispatcher,  _filters);
-    final HttpDispatcher dispatcher = new HttpDispatcher(filterDispatcher);
+    return createServer(port, DEFAULT_CONTEXT_PATH, DEFAULT_THREAD_POOL_SIZE, transportDispatcher, _servletType, timeout);
+  }
 
-    HttpServlet servlet = new RAPServlet(dispatcher, ioHandlerTimeout);
-    return new HttpJettyServer(port, servlet);
+  public HttpServer createRAPServer(int port, TransportDispatcher transportDispatcher, int timeout)
+  {
+    HttpServlet httpServlet = new RAPServlet(transportDispatcher, timeout);
+    return new HttpJettyServer(port, httpServlet);
   }
 }
