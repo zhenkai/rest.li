@@ -31,7 +31,7 @@ public class SyncIOHandler implements Writer, Reader
   private final int _maxBufferedChunks;
   private final BlockingQueue<Event> _eventQueue;
   private WriteHandle _wh;
-  private ReadHandle _rh;
+  private volatile ReadHandle _rh;
   private boolean _requestReadFinished;
   private boolean _responseWriteFinished;
   private final long _timeout;
