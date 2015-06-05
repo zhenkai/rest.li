@@ -32,6 +32,7 @@ public class SyncIOHandler implements Writer, Reader
   private final BlockingQueue<Event> _eventQueue;
   private WriteHandle _wh;
   private volatile ReadHandle _rh;
+  private boolean _forceExit;
   private boolean _requestReadFinished;
   private boolean _responseWriteFinished;
   private final long _timeout;
@@ -44,6 +45,7 @@ public class SyncIOHandler implements Writer, Reader
     _eventQueue = new LinkedBlockingDeque<Event>();
     _requestReadFinished = false;
     _responseWriteFinished = false;
+    _forceExit = false;
     _timeout = timeout;
   }
 
@@ -94,7 +96,7 @@ public class SyncIOHandler implements Writer, Reader
   {
     final long startTime = System.currentTimeMillis();
 
-    while(shouldContinue())
+    while(shouldContinue() && !_forceExit)
     {
       Event event;
       try
@@ -188,6 +190,11 @@ public class SyncIOHandler implements Writer, Reader
           }
           break;
         }
+        case ForceExit:
+        {
+          _forceExit = true;
+          break;
+        }
         default:
           throw new IllegalStateException("Unknown event type:" + event.getEventType());
       }
@@ -209,6 +216,11 @@ public class SyncIOHandler implements Writer, Reader
     return _requestReadFinished;
   }
 
+  protected void exitLoop()
+  {
+    _eventQueue.add(Event.ForceExitEvent);
+  }
+
   private static enum  EventType
   {
     WriteRequestPossible,
@@ -217,6 +229,7 @@ public class SyncIOHandler implements Writer, Reader
     FullResponseReceived,
     ResponseDataAvailable,
     ResponseDataError,
+    ForceExit,
   }
 
   private static class Event
@@ -227,6 +240,7 @@ public class SyncIOHandler implements Writer, Reader
     static Event WriteRequestPossibleEvent = new Event(EventType.WriteRequestPossible);
     static Event FullResponseReceivedEvent = new Event(EventType.FullResponseReceived);
     static Event DrainRequestEvent = new Event(EventType.DrainRequest);
+    static Event ForceExitEvent = new Event(EventType.ForceExit);
 
     Event(EventType eventType)
     {

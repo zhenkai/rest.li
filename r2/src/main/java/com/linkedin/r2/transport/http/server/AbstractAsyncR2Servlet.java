@@ -33,8 +33,11 @@ import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -47,6 +50,7 @@ import java.io.IOException;
 public abstract class AbstractAsyncR2Servlet extends HttpServlet
 {
   private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncR2Servlet.class.getName());
 
   // servlet async context timeout in ms.
   private final long _timeout;
@@ -69,11 +73,13 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
     final AsyncContext ctx = req.startAsync(req, resp);
     ctx.setTimeout(_timeout);
 
-    final AsyncEventIOHandler ioHandler = new AsyncEventIOHandler(req.getInputStream(), resp.getOutputStream(), ctx, 3);
+    final WrappedAsyncContext wrappedCtx = new WrappedAsyncContext(ctx);
 
-    RequestContext requestContext = ServletHelper.readRequestContext(req);
+    final AsyncEventIOHandler ioHandler = new AsyncEventIOHandler(req.getInputStream(), resp.getOutputStream(), wrappedCtx, 3);
 
-    StreamRequest streamRequest;
+    final RequestContext requestContext = ServletHelper.readRequestContext(req);
+
+    final StreamRequest streamRequest;
 
     try
     {
@@ -85,12 +91,21 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
       return;
     }
 
+    final AtomicBoolean startedResponding = new AtomicBoolean(false);
+
     ctx.addListener(new AsyncListener()
     {
       @Override
       public void onTimeout(AsyncEvent event) throws IOException
       {
-        // do nothing
+        LOG.error("Server timeout");
+        if (startedResponding.compareAndSet(false, true))
+        {
+          LOG.info("Returning server timeout response");
+          ServletHelper.writeToServletError(resp, RestStatus.INTERNAL_SERVER_ERROR, "Server timeout");
+        }
+        ioHandler.exitLoop();
+        wrappedCtx.complete();
       }
 
       @Override
@@ -102,7 +117,14 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
       @Override
       public void onError(AsyncEvent event) throws IOException
       {
-        // do nothing
+        LOG.error("Server error");
+        if (startedResponding.compareAndSet(false, true))
+        {
+          LOG.info("Returning server error response");
+          ServletHelper.writeToServletError(resp, RestStatus.INTERNAL_SERVER_ERROR, "Server error");
+        }
+        ioHandler.exitLoop();
+        wrappedCtx.complete();
       }
 
       @Override
@@ -116,38 +138,82 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
       }
     });
 
-    TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
+    final TransportCallback<StreamResponse> callback = new TransportCallback<StreamResponse>()
     {
       @Override
       public void onResponse(final TransportResponse<StreamResponse> response)
       {
-        ctx.start(new Runnable()
+        if (startedResponding.compareAndSet(false, true))
         {
-          @Override
-          public void run()
+          ctx.start(new Runnable()
           {
-            try
+            @Override
+            public void run()
             {
-              StreamResponse streamResponse = ServletHelper.writeResponseHeadersToServletResponse(response, resp);
-              streamResponse.getEntityStream().setReader(ioHandler);
-              ioHandler.loop();
+              try
+              {
+                StreamResponse streamResponse = ServletHelper.writeResponseHeadersToServletResponse(response, resp);
+                streamResponse.getEntityStream().setReader(ioHandler);
+                ioHandler.loop();
+              }
+              catch (Exception e)
+              {
+                req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+                wrappedCtx.complete();
+              }
             }
-            catch (Exception e)
-            {
-              req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
-              ctx.complete();
-            }
-          }
-        });
+          });
+        }
+        else
+        {
+          LOG.error("Dropped a response; this is mostly like because that AsyncContext timeout or error had already happened");
+        }
       }
     };
 
-    getDispatcher().handleRequest(streamRequest, requestContext, callback);
-    ioHandler.loop();
+    // we have to use a new thread and let this thread return to pool. otherwise the timeout won't start
+    ctx.start(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        try
+        {
+          getDispatcher().handleRequest(streamRequest, requestContext, callback);
+          ioHandler.loop();
+        }
+        catch (Exception e)
+        {
+          req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+          wrappedCtx.complete();
+        }
+      }
+    });
+
   }
 
   public long getTimeout()
   {
     return _timeout;
+  }
+
+  /* package private */static class WrappedAsyncContext
+  {
+
+    private final AtomicBoolean _completed = new AtomicBoolean(false);
+    private final AsyncContext _ctx;
+
+    WrappedAsyncContext(AsyncContext ctx)
+    {
+      _ctx = ctx;
+    }
+
+    void complete()
+    {
+      if (_completed.compareAndSet(false, true))
+      {
+        _ctx.complete();
+      }
+    }
   }
 }

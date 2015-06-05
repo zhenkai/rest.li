@@ -2,7 +2,6 @@ package com.linkedin.r2.transport.http.server;
 
 import com.linkedin.r2.message.streaming.ReadHandle;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -19,11 +18,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AsyncEventIOHandler extends SyncIOHandler
 {
   private final AtomicBoolean _completed = new AtomicBoolean(false);
-  private final AsyncContext _ctx;
+  private final AbstractAsyncR2Servlet.WrappedAsyncContext _ctx;
   private volatile boolean _responseWriteStarted = false;
   private boolean _inLoop = false;
 
-  public AsyncEventIOHandler(ServletInputStream is, ServletOutputStream os, AsyncContext ctx, int bufferCapacity)
+  public AsyncEventIOHandler(ServletInputStream is, ServletOutputStream os, AbstractAsyncR2Servlet.WrappedAsyncContext ctx, int bufferCapacity)
   {
     super(is, os, bufferCapacity, Integer.MAX_VALUE);
     _ctx = ctx;
@@ -50,6 +49,11 @@ public class AsyncEventIOHandler extends SyncIOHandler
       }
     }
     return shouldContinue;
+  }
+
+  public void exitLoop()
+  {
+    super.exitLoop();
   }
 
   @Override
@@ -79,10 +83,7 @@ public class AsyncEventIOHandler extends SyncIOHandler
     super.loop();
     if (requestReadFinished() && responseWriteFinished())
     {
-      if (_completed.compareAndSet(false, true))
-      {
-        _ctx.complete();
-      }
+      _ctx.complete();
     }
   }
 }
