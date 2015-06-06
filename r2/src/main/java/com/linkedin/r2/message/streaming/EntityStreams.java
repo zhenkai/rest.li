@@ -68,7 +68,6 @@ public final class EntityStreams
 
   private static class EntityStreamImpl implements EntityStream
   {
-    private static final Exception READER_ABORTED_EXCEPTION = new AbortedException("Reader aborted");
     private final Writer _writer;
     private final Object _lock;
     private List<Observer> _observers;
@@ -149,7 +148,7 @@ public final class EntityStreams
 
         if (doCancelNow)
         {
-          doCancel(READER_ABORTED_EXCEPTION, false);
+          doCancel(getAbortedException(), false);
           return;
         }
 
@@ -206,7 +205,7 @@ public final class EntityStreams
 
         if (doCancelNow)
         {
-          doCancel(READER_ABORTED_EXCEPTION, false);
+          doCancel(getAbortedException(), false);
           return;
         }
 
@@ -260,7 +259,7 @@ public final class EntityStreams
 
         if (doCancelNow)
         {
-          doCancel(READER_ABORTED_EXCEPTION, false);
+          doCancel(getAbortedException(), false);
           return;
         }
 
@@ -309,7 +308,7 @@ public final class EntityStreams
 
         if (doCancelNow)
         {
-          doCancel(READER_ABORTED_EXCEPTION, false);
+          doCancel(getAbortedException(), false);
         }
 
         return result;
@@ -391,7 +390,7 @@ public final class EntityStreams
 
         if (doCancelNow)
         {
-          doCancel(READER_ABORTED_EXCEPTION, false);
+          doCancel(getAbortedException(), false);
         }
       }
     }
@@ -453,6 +452,11 @@ public final class EntityStreams
       {
         safeNotifyErrorToReader(e);
       }
+    }
+
+    private static Exception getAbortedException()
+    {
+      return new AbortedException("Reader aborted");
     }
   }
 }
