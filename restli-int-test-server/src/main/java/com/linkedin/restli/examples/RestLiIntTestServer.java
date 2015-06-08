@@ -24,7 +24,6 @@ import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
-import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import com.linkedin.restli.docgen.DefaultDocumentationRequestHandler;
@@ -46,8 +45,6 @@ import com.linkedin.restli.server.resources.ResourceFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -59,7 +56,8 @@ public class RestLiIntTestServer
 {
   public static final int      DEFAULT_PORT           = 1338;
   public static final int      NO_COMPRESSION_PORT    = 1339;
-  public static final String   supportedCompression   = "gzip,x-snappy-framed,bzip2,deflate";
+  public static final int      FILTERS_PORT           = 1340;
+  public static final String   supportedCompression   = "gzip,snappy,bzip2,deflate";
   public static final String[] RESOURCE_PACKAGE_NAMES = {
       "com.linkedin.restli.examples.groups.server.rest.impl",
       "com.linkedin.restli.examples.greetings.server",
@@ -74,33 +72,28 @@ public class RestLiIntTestServer
         .setTimerScheduler(scheduler)
         .build();
 
-    ExecutorService compressionExecutor = Executors.newCachedThreadPool();
-
-    HttpServer server = createServer(engine, DEFAULT_PORT, supportedCompression, compressionExecutor);
+    HttpServer server = createServer(engine, DEFAULT_PORT, supportedCompression);
     server.start();
 
     System.out.println("HttpServer running on port " + DEFAULT_PORT + ". Press any key to stop server");
     System.in.read();
 
     server.stop();
-    compressionExecutor.shutdown();
     engine.shutdown();
   }
 
-  public static HttpServer createServer(final Engine engine, int port, String supportedCompression,
-      Executor compressionExecutor)
+  public static HttpServer createServer(final Engine engine, int port, String supportedCompression)
   {
-    return createServer(engine, port, supportedCompression, false, -1, compressionExecutor);
+    return createServer(engine, port, supportedCompression, false, -1);
   }
 
   public static HttpServer createServer(final Engine engine,
                                         int port,
                                         String supportedCompression,
                                         boolean useAsyncServletApi,
-                                        int asyncTimeOut,
-                                        Executor compressionExecutor)
+                                        int asyncTimeOut)
   {
-    return createServer(engine, port, supportedCompression, useAsyncServletApi, asyncTimeOut, null, null, compressionExecutor);
+    return createServer(engine, port, supportedCompression, useAsyncServletApi, asyncTimeOut, null, null);
   }
 
   public static HttpServer createServer(final Engine engine,
@@ -109,8 +102,7 @@ public class RestLiIntTestServer
                                         boolean useAsyncServletApi,
                                         int asyncTimeOut,
                                         List<? extends RequestFilter> requestFilters,
-                                        List<? extends ResponseFilter> responseFilters,
-                                        Executor compressionExecutor)
+                                        List<? extends ResponseFilter> responseFilters)
   {
     final FilterChain fc = FilterChains.empty().addLast(new ServerCompressionFilter(supportedCompression))
         .addLast(new SimpleLoggingFilter());
@@ -143,13 +135,11 @@ public class RestLiIntTestServer
 
     TransportDispatcher dispatcher = new DelegatingTransportDispatcher(new RestLiServer(config, factory, engine));
 
-    final FilterChain fc = FilterChains.empty().addLast(new ServerCompressionFilter(supportedCompression, compressionExecutor))
-        .addLast(new SimpleLoggingFilter());
-    return new HttpServerFactory(fc).createServer(port,
-                                                  HttpServerFactory.DEFAULT_CONTEXT_PATH,
-                                                  HttpServerFactory.DEFAULT_THREAD_POOL_SIZE,
-                                                  dispatcher,
-                                                  useAsyncServletApi ? HttpJettyServer.ServletType.ASYNC_EVENT : HttpJettyServer.ServletType.RAP,
-                                                  asyncTimeOut);
+    return new HttpServerFactory(filterChain).createServer(port,
+                                                           HttpServerFactory.DEFAULT_CONTEXT_PATH,
+                                                           HttpServerFactory.DEFAULT_THREAD_POOL_SIZE,
+                                                           dispatcher,
+                                                           useAsyncServletApi,
+                                                           asyncTimeOut);
   }
 }
