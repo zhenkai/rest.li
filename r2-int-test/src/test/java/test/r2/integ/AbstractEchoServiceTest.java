@@ -62,7 +62,7 @@ public abstract class AbstractEchoServiceTest
   private LogEntityLengthFilter _serverLengthFilter;
   private LogEntityLengthFilter _clientLengthFilter;
 
-  @BeforeMethod
+  @BeforeClass
   protected void setUp() throws Exception
   {
     _serverCaptureFilter = new CaptureWireAttributesFilter();
@@ -87,7 +87,7 @@ public abstract class AbstractEchoServiceTest
     _server.start();
   }
 
-  @AfterMethod
+  @AfterClass
   protected void tearDown() throws Exception
   {
     final FutureCallback<None> callback = new FutureCallback<None>();
