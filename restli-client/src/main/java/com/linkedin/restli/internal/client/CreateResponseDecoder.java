@@ -31,7 +31,6 @@ import com.linkedin.restli.common.TypeSpec;
 import com.linkedin.restli.internal.common.HeaderUtil;
 import com.linkedin.restli.internal.common.ResponseUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 

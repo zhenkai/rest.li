@@ -17,7 +17,7 @@
 package com.linkedin.restli.internal.client;
 
 import com.linkedin.restli.client.ErrorHandlingBehavior;
-import com.linkedin.restli.client.RestClient;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;

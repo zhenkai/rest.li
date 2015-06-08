@@ -26,7 +26,7 @@ import com.linkedin.restli.internal.server.RoutingResult;
 import com.linkedin.restli.internal.server.model.ResourceMethodDescriptor;
 import com.linkedin.restli.server.RestLiServiceException;
 import com.linkedin.restli.server.UpdateResponse;
-import java.util.HashMap;
+
 import java.util.Map;
 import org.easymock.EasyMock;
 import org.testng.Assert;
