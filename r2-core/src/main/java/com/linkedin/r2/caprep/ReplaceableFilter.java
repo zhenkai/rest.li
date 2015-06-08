@@ -20,16 +20,17 @@ package com.linkedin.r2.caprep;
 
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.RequestFilter;
-import com.linkedin.r2.filter.message.ResponseFilter;
 import com.linkedin.r2.filter.message.rest.RestFilter;
 import com.linkedin.r2.filter.message.rest.RestRequestFilter;
 import com.linkedin.r2.filter.message.rest.RestResponseFilter;
-import com.linkedin.r2.message.Request;
+import com.linkedin.r2.filter.message.stream.StreamFilter;
+import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
+import com.linkedin.r2.filter.message.stream.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.Response;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.util.ArgumentUtil;
 
 import java.util.Map;
@@ -41,7 +42,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ReplaceableFilter implements RestFilter
+public class ReplaceableFilter implements StreamFilter, RestFilter
 {
   private volatile Filter _filter;
 
@@ -78,67 +79,13 @@ public class ReplaceableFilter implements RestFilter
 
   @Override
   public void onRestRequest(RestRequest req,
-                            RequestContext requestContext,
-                            Map<String, String> wireAttrs,
-                            NextFilter<RestRequest, RestResponse> nextFilter)
+                              RequestContext requestContext,
+                              Map<String, String> wireAttrs,
+                              NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    final Filter filter = _filter;
-    if (filter instanceof RestRequestFilter)
+    if (_filter instanceof RestRequestFilter)
     {
-      ((RestRequestFilter) filter).onRestRequest(req, requestContext, wireAttrs, nextFilter);
-    }
-    else
-    {
-      handleGenericRequest(req, requestContext, wireAttrs, nextFilter);
-    }
-  }
-
-  @Override
-  public void onRestResponse(RestResponse res,
-                             RequestContext requestContext,
-                             Map<String, String> wireAttrs,
-                             NextFilter<RestRequest, RestResponse> nextFilter)
-  {
-    final Filter filter = _filter;
-    if (filter instanceof RestResponseFilter)
-    {
-      ((RestResponseFilter) filter).onRestResponse(res, requestContext, wireAttrs, nextFilter);
-    }
-    else
-    {
-      handleGenericResponse(res, requestContext, wireAttrs, nextFilter);
-    }
-  }
-
-  @Override
-  public void onRestError(Throwable ex,
-                          RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          NextFilter<RestRequest, RestResponse> nextFilter)
-  {
-    final Filter filter = _filter;
-    if (filter instanceof RestResponseFilter)
-    {
-      ((RestResponseFilter) filter).onRestError(ex, requestContext, wireAttrs, nextFilter);
-    }
-    else
-    {
-      handleGenericError(ex, requestContext, wireAttrs, nextFilter);
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  private <REQ extends Request> void handleGenericRequest(REQ req,
-                                                          RequestContext requestContext,
-                                                          Map<String, String> wireAttrs,
-                                                          NextFilter<REQ, ? extends Response> nextFilter)
-  {
-    if (_filter instanceof RequestFilter)
-    {
-      ((RequestFilter) _filter).onRequest(req,
-                                          requestContext,
-                                          wireAttrs,
-                                          (NextFilter) nextFilter);
+      ((RestRequestFilter) _filter).onRestRequest(req, requestContext, wireAttrs, nextFilter);
     }
     else
     {
@@ -146,18 +93,15 @@ public class ReplaceableFilter implements RestFilter
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private <RES extends Response> void handleGenericResponse(RES res,
-                                                            RequestContext requestContext,
-                                                            Map<String, String> wireAttrs,
-                                                            NextFilter<? extends Request, RES> nextFilter)
+  @Override
+  public void onRestResponse(RestResponse res,
+                      RequestContext requestContext,
+                      Map<String, String> wireAttrs,
+                      NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    if (_filter instanceof ResponseFilter)
+    if (_filter instanceof RestResponseFilter)
     {
-      ((ResponseFilter) _filter).onResponse(res,
-                                            requestContext,
-                                            wireAttrs,
-                                            (NextFilter) nextFilter);
+      ((RestResponseFilter) _filter).onRestResponse(res, requestContext, wireAttrs, nextFilter);
     }
     else
     {
@@ -165,18 +109,64 @@ public class ReplaceableFilter implements RestFilter
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private void handleGenericError(Throwable ex,
-                                  RequestContext requestContext,
-                                  Map<String, String> wireAttrs,
-                                  NextFilter<? extends Request, ? extends Response> nextFilter)
+  @Override
+  public void onRestError(Throwable ex,
+                   RequestContext requestContext,
+                   Map<String, String> wireAttrs,
+                   NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    if (_filter instanceof ResponseFilter)
+    if (_filter instanceof RestResponseFilter)
     {
-      ((ResponseFilter) _filter).onError(ex,
-                                         requestContext,
-                                         wireAttrs,
-                                         (NextFilter) nextFilter);
+      ((RestResponseFilter) _filter).onRestError(ex, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onError(ex, requestContext, wireAttrs);
+    }
+  }
+
+  @Override
+  public void onStreamRequest(StreamRequest req,
+                            RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    if (_filter instanceof StreamRequestFilter)
+    {
+      ((StreamRequestFilter) _filter).onStreamRequest(req, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onRequest(req, requestContext, wireAttrs);
+    }
+  }
+
+  @Override
+  public void onStreamResponse(StreamResponse res,
+                             RequestContext requestContext,
+                             Map<String, String> wireAttrs,
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    if (_filter instanceof StreamResponseFilter)
+    {
+      ((StreamResponseFilter) _filter).onStreamResponse(res, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onResponse(res, requestContext, wireAttrs);
+    }
+
+  }
+
+  @Override
+  public void onStreamError(Throwable ex,
+                          RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    if (_filter instanceof StreamResponseFilter)
+    {
+      ((StreamResponseFilter) _filter).onStreamError(ex, requestContext, wireAttrs, nextFilter);
     }
     else
     {

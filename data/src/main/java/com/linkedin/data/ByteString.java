@@ -21,14 +21,15 @@ package com.linkedin.data;
 import com.linkedin.data.codec.JacksonDataCodec;
 import com.linkedin.data.codec.PsonDataCodec;
 import com.linkedin.util.ArgumentUtil;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * An immutable sequence of bytes.
@@ -42,9 +43,7 @@ public final class ByteString
   private static final JacksonDataCodec JACKSON_DATA_CODEC = new JacksonDataCodec();
   private static final ByteString EMPTY = new ByteString(new byte[0]);
 
-  private final byte[] _bytes;
-  private final int _offset;
-  private final int _length;
+  private final ByteArrays _byteArrays;
 
   /**
    * Returns an empty {@link ByteString}.
@@ -246,9 +245,9 @@ public final class ByteString
   private ByteString(byte[] bytes)
   {
     ArgumentUtil.notNull(bytes, "bytes");
-    _bytes = bytes;
-    _offset = 0;
-    _length = bytes.length;
+    ByteArray[] byteArrays = new ByteArray[1];
+    byteArrays[0] = new ByteArray(bytes, 0, bytes.length);
+    _byteArrays = new ByteArrays(byteArrays);
   }
 
   /**
@@ -257,9 +256,15 @@ public final class ByteString
   private ByteString(byte[] bytes, int offset, int length)
   {
     ArgumentUtil.notNull(bytes, "bytes");
-    _bytes = bytes;
-    _offset = offset;
-    _length = length;
+    ByteArray[] byteArrays = new ByteArray[1];
+    byteArrays[0] = new ByteArray(bytes, offset, length);
+    _byteArrays = new ByteArrays(byteArrays);
+  }
+
+  private ByteString(ByteArrays byteArrays)
+  {
+    ArgumentUtil.notNull(byteArrays, "byteArrays");
+    _byteArrays = byteArrays;
   }
 
   /**
@@ -269,7 +274,7 @@ public final class ByteString
    */
   public int length()
   {
-    return _length;
+    return _byteArrays.getBytesNum();
   }
 
   /**
@@ -278,7 +283,7 @@ public final class ByteString
    */
   public boolean isEmpty()
   {
-    return _length == 0;
+    return _byteArrays.getBytesNum() == 0;
   }
 
   /**
@@ -294,7 +299,11 @@ public final class ByteString
    */
   public byte[] copyBytes()
   {
-    return Arrays.copyOfRange(_bytes, _offset, _offset + _length);
+    byte[] result = new byte[_byteArrays.getBytesNum()];
+
+    copyBytes(result, 0);
+
+    return result;
   }
 
   /**
@@ -310,7 +319,13 @@ public final class ByteString
    */
   public void copyBytes(byte[] dest, int offset)
   {
-    System.arraycopy(_bytes, _offset, dest, offset, _length);
+    int position = offset;
+    for (int i = 0; i < _byteArrays.getByteArrayNum(); i ++)
+    {
+      ByteArray byteArray = _byteArrays.get(i);
+      System.arraycopy(byteArray.getBytes(), byteArray.getOffset(), dest, position, byteArray.getLength());
+      position += byteArray.getLength();
+    }
   }
 
   /**
@@ -320,7 +335,8 @@ public final class ByteString
    */
   public ByteBuffer asByteBuffer()
   {
-    return ByteBuffer.wrap(_bytes, _offset, _length).asReadOnlyBuffer();
+    ByteArray byteArray = assembleIfNeeded();
+    return ByteBuffer.wrap(byteArray.getBytes(), byteArray.getOffset(), byteArray.getLength()).asReadOnlyBuffer();
   }
 
   /**
@@ -344,7 +360,8 @@ public final class ByteString
    */
   public String asString(Charset charset)
   {
-    return new String(_bytes, _offset, _length, charset);
+    ByteArray byteArray = assembleIfNeeded();
+    return new String(byteArray.getBytes(), byteArray.getOffset(), byteArray.getLength(), charset);
   }
 
   /**
@@ -354,7 +371,8 @@ public final class ByteString
    */
   public String asAvroString()
   {
-    return Data.bytesToString(_bytes, _offset, _length);
+    ByteArray byteArray = assembleIfNeeded();
+    return Data.bytesToString(byteArray.getBytes(), byteArray.getOffset(), byteArray.getLength());
   }
 
   /**
@@ -364,7 +382,7 @@ public final class ByteString
    */
   public InputStream asInputStream()
   {
-    return new ByteArrayInputStream(_bytes, _offset, _length);
+    return new ByteArraysInputStream(_byteArrays);
   }
 
   /**
@@ -376,7 +394,11 @@ public final class ByteString
    */
   public void write(OutputStream out) throws IOException
   {
-    out.write(_bytes, _offset, _length);
+    for (int i = 0; i < _byteArrays.getByteArrayNum(); i++)
+    {
+      ByteArray byteArray = _byteArrays.get(i);
+      out.write(byteArray.getBytes(), byteArray.getOffset(), byteArray.getLength());
+    }
   }
 
   /**
@@ -393,8 +415,8 @@ public final class ByteString
    */
   public ByteString slice(int offset, int length)
   {
-    ArgumentUtil.checkBounds(_length, offset, length);
-    return new ByteString(_bytes, _offset + offset, length);
+    ArgumentUtil.checkBounds(_byteArrays.getBytesNum(), offset, length);
+    return new ByteString(_byteArrays.slice(offset, length));
   }
 
   /**
@@ -410,11 +432,8 @@ public final class ByteString
    */
   public ByteString copySlice(int offset, int length)
   {
-    ArgumentUtil.checkBounds(_length, offset, length);
-    int from = _offset + offset;
-    int to = from + length;
-    byte[] content = Arrays.copyOfRange(_bytes, from, to);
-    return new ByteString(content);
+    ArgumentUtil.checkBounds(_byteArrays.getBytesNum(), offset, length);
+    return new ByteString(slice(offset, length).copyBytes());
   }
 
   @Override
@@ -432,28 +451,56 @@ public final class ByteString
 
     ByteString that = (ByteString) o;
 
-    if (_length == that._length)
+    int length = length();
+
+    if (length != that.length())
     {
-      for (int i = _offset, j = that._offset; i < _offset + _length; i++, j++)
-      {
-        if (_bytes[i] != that._bytes[j])
-        {
-          return false;
-        }
-      }
-      return true;
+      return false;
     }
 
-    return false;
+    int arrayIndex = 0;
+    int arrayOffset = 0;
+    int thatArrayIndex = 0;
+    int thatArrayOffset = 0;
+    int pos = 0;
+
+    while(pos < length)
+    {
+      if (_byteArrays.get(arrayIndex).get(arrayOffset) != that._byteArrays.get(thatArrayIndex).get(thatArrayOffset))
+      {
+        return false;
+      }
+
+      arrayOffset++;
+      thatArrayOffset++;
+
+      if (arrayOffset == _byteArrays.get(arrayIndex).getLength())
+      {
+        arrayIndex++;
+        arrayOffset = 0;
+      }
+
+      if (thatArrayOffset == that._byteArrays.get(thatArrayIndex).getLength())
+      {
+        thatArrayIndex++;
+        thatArrayOffset = 0;
+      }
+      pos++;
+    }
+
+    return true;
   }
 
   @Override
   public int hashCode()
   {
     int result = 1;
-    for (int i = _offset; i < _offset + _length; i++)
+    for (int index = 0; index < _byteArrays.getByteArrayNum(); index++)
     {
-      result = result * 31 + _bytes[i];
+      for (int offset = 0; offset < _byteArrays.get(index).getLength(); offset++)
+      {
+        result = result * 31 + _byteArrays.get(index).get(offset);
+      }
     }
     return result;
   }
@@ -471,25 +518,97 @@ public final class ByteString
     StringBuilder sb = new StringBuilder();
     sb.append("ByteString(length=");
     sb.append(length());
-    if (_length > 0)
+    if (length() > 0)
     {
       sb.append(",bytes=");
-      for (int i = _offset; i < _offset + Math.min(_length, NUM_BYTES); i++)
+      for (int i = 0; i < Math.min(length(), NUM_BYTES); i++)
       {
-        sb.append(String.format("%02x", (int) _bytes[i] & 0xff));
+        sb.append(String.format("%02x", (int) _byteArrays.getByte(i) & 0xff));
       }
-      if (_length > NUM_BYTES * 2)
+      if (length() > NUM_BYTES * 2)
       {
         sb.append("...");
       }
-      for (int i = _offset + Math.max(NUM_BYTES, _length - NUM_BYTES); i < _offset + _length; i++)
+      for (int i =  Math.max(NUM_BYTES, length() - NUM_BYTES); i < length(); i++)
       {
-        sb.append(String.format("%02x", (int)_bytes[i] & 0xff));
+        sb.append(String.format("%02x", (int)_byteArrays.getByte(i) & 0xff));
       }
     }
     sb.append(")");
     return sb.toString();
   }
+
+  /**
+   * A builder to assemble multiple ByteStrings into one ByteString.
+   *
+   * This class is not thread safe
+   */
+  public static class Builder
+  {
+    private final List<ByteString> _chunks;
+
+    public Builder()
+    {
+      _chunks = new ArrayList<ByteString>();
+    }
+
+    public Builder append(ByteString dataChunk)
+    {
+      if (!EMPTY.equals(dataChunk))
+      {
+        _chunks.add(dataChunk);
+      }
+      return this;
+    }
+
+    public ByteString build()
+    {
+      // if & else if is some optimizing to avoid allocating & copying bytes
+      if (_chunks.isEmpty())
+      {
+        return empty();
+      }
+      else if (_chunks.size() == 1)
+      {
+        return _chunks.get(0);
+      }
+      else
+      {
+        int totalByteArrayNum = 0;
+        for (ByteString chunk: _chunks)
+        {
+          totalByteArrayNum += chunk._byteArrays.getByteArrayNum();
+        }
+
+        ByteArray[] byteArrays = new ByteArray[totalByteArrayNum];
+
+        int index = 0;
+        for (ByteString chunk: _chunks)
+        {
+          for (int i = 0; i < chunk._byteArrays.getByteArrayNum(); i++)
+          {
+            byteArrays[index] = chunk._byteArrays.get(i);
+            index++;
+          }
+        }
+
+        return new ByteString(new ByteArrays(byteArrays));
+      }
+    }
+  }
+
+  private ByteArray assembleIfNeeded()
+  {
+    if (_byteArrays.getByteArrayNum() == 1)
+    {
+      return _byteArrays.get(0);
+    }
+    else
+    {
+      return new ByteArray(copyBytes(), 0, _byteArrays.getBytesNum());
+    }
+  }
+
 
   /**
    * This class is intended for internal use only. The output stream should not be passed around after
@@ -506,6 +625,257 @@ public final class ByteString
     int getBytesCount()
     {
       return super.count;
+    }
+  }
+
+  private static class ByteArraysInputStream extends InputStream
+  {
+    private final ByteArrays _byteArrays;
+    private int _pos;
+    private int _arrayIndex;
+    private int _arrayOffset;
+    private int _mark;
+    private int _count;
+
+    ByteArraysInputStream(ByteArrays byteArrays)
+    {
+      _byteArrays = byteArrays;
+      _count = _byteArrays.getBytesNum();
+      _pos = 0;
+      _mark = _pos;
+      _arrayIndex = 0;
+      _arrayOffset = 0;
+    }
+
+    @Override
+    public synchronized int available()
+    {
+      return _count - _pos;
+    }
+
+    @Override
+    public synchronized void mark(int readLimit)
+    {
+      // readLimit is ignored per Java class Lib. book,  p.220.
+      _mark = _pos;
+    }
+
+    @Override
+    public boolean markSupported()
+    {
+      return true;
+    }
+
+    @Override
+    public synchronized int read()
+    {
+      if (_pos < _count)
+      {
+        _pos++;
+        byte result= _byteArrays.get(_arrayIndex).get(_arrayOffset);
+
+        _arrayOffset++;
+
+        if (_arrayOffset == _byteArrays.get(_arrayIndex).getLength())
+        {
+          _arrayIndex++;
+          _arrayOffset = 0;
+        }
+
+        return ((int) result) & 0xFF;
+      }
+
+      return -1;
+    }
+
+    @Override
+    public synchronized int read(byte[] buffer, int offset, int length)
+    {
+      if (_pos >= _count)
+      {
+        return -1;
+      }
+
+      int numBytes = Math.min(_count - _pos, length);
+
+      int copiedBytesNum = 0;
+      while (copiedBytesNum < numBytes)
+      {
+        ByteArray byteArray = _byteArrays.get(_arrayIndex);
+        int len = Math.min(byteArray.getLength() - _arrayOffset, numBytes - copiedBytesNum);
+        System.arraycopy(byteArray.getBytes(), byteArray.getOffset() + _arrayOffset, buffer, offset + copiedBytesNum, len);
+        copiedBytesNum += len;
+
+        if (len == byteArray.getLength() - _arrayOffset)
+        {
+          _arrayIndex++;
+          _arrayOffset = 0;
+        }
+        else
+        {
+          _arrayOffset += len;
+        }
+      }
+      _pos += numBytes;
+      return numBytes;
+    }
+
+    @Override
+    public synchronized void reset()
+    {
+      _pos = _mark;
+      _arrayIndex = _byteArrays.locate(_pos, 0, _byteArrays.getByteArrayNum());
+      _arrayOffset = _pos - _byteArrays._accumulatedLens[_arrayIndex];
+    }
+
+    @Override
+    public synchronized long skip(long num)
+    {
+      long numBytes = Math.min((long)(_count - _pos), num < 0 ? 0L : num);
+      _pos += numBytes;
+      _arrayIndex = _byteArrays.locate(_pos, 0, _byteArrays.getByteArrayNum());
+      _arrayOffset = _pos - _byteArrays._accumulatedLens[_arrayIndex];
+      return numBytes;
+    }
+  }
+
+  private static class ByteArrays
+  {
+    private final ByteArray[] _byteArrays;
+    private final int[] _accumulatedLens;
+    private final int _totalLength;
+
+    ByteArrays(ByteArray[] byteArrays)
+    {
+      _byteArrays = byteArrays;
+      int arrayNum = _byteArrays.length;
+      _accumulatedLens = new int[arrayNum];
+      int accuLen = 0;
+      for (int i = 0; i < arrayNum; i++)
+      {
+        _accumulatedLens[i] = accuLen;
+        accuLen += _byteArrays[i].getLength();
+      }
+      _totalLength = accuLen;
+    }
+
+    ByteArray get(int index)
+    {
+      return _byteArrays[index];
+    }
+
+    // log(n) complexity
+    byte getByte(int offset)
+    {
+      int index = locate(offset, 0, _byteArrays.length - 1);
+      return _byteArrays[index].get(offset - _accumulatedLens[index]);
+    }
+
+    ByteArrays slice(int offset, int length)
+    {
+      int startIndex = locate(offset, 0, _byteArrays.length - 1);
+      int endIndex = locate(offset + length, startIndex, _byteArrays.length - 1);
+
+      ByteArray[] byteArrays;
+      if (startIndex == endIndex)
+      {
+        byteArrays = new ByteArray[1];
+        byteArrays[0] = _byteArrays[startIndex].slice(offset - _accumulatedLens[startIndex], length);
+      }
+      else
+      {
+        int arrayLen = endIndex - startIndex + 1;
+        byteArrays = new ByteArray[arrayLen];
+        byteArrays[0] = _byteArrays[startIndex].slice(offset - _accumulatedLens[startIndex]);
+        byteArrays[arrayLen - 1] = _byteArrays[endIndex].slice(0, offset + length - _accumulatedLens[endIndex]);
+
+        for (int i = 1; i < arrayLen - 1; i ++)
+        {
+          byteArrays[i] = _byteArrays[startIndex + i];
+        }
+      }
+      return new ByteArrays(byteArrays);
+    }
+
+    int getBytesNum()
+    {
+      return _totalLength;
+    }
+
+    int getByteArrayNum()
+    {
+      return _byteArrays.length;
+    }
+
+    private int locate(int location, int startIndex, int endIndex)
+    {
+      if (startIndex > endIndex)
+      {
+        throw new IllegalArgumentException("location " + location + " is out of bound");
+      }
+
+      int mid = (startIndex + endIndex) / 2;
+
+      if (_accumulatedLens[mid] > location)
+      {
+        return locate(location, startIndex, mid - 1);
+      }
+      else if (mid == _byteArrays.length - 1 || _accumulatedLens[mid + 1] > location)
+      {
+        return mid;
+      }
+      else
+      {
+        return locate(location, mid + 1, endIndex);
+      }
+    }
+
+  }
+
+  private static class ByteArray
+  {
+    private final byte[] _bytes;
+    private final int _offset;
+    private final int _length;
+
+    ByteArray(byte[] bytes, int offset, int length)
+    {
+      _bytes = bytes;
+      _offset = offset;
+      _length = length;
+    }
+
+    byte[] getBytes()
+    {
+      return _bytes;
+    }
+
+    int getOffset()
+    {
+      return _offset;
+    }
+
+    int getLength()
+    {
+      return _length;
+    }
+
+    byte get(int i)
+    {
+      return _bytes[_offset + i];
+    }
+
+    ByteArray slice(int offset, int length)
+    {
+      ArgumentUtil.checkBounds(_length, offset, length);
+      return new ByteArray(_bytes, _offset + offset, length);
+    }
+
+    ByteArray slice(int offset)
+    {
+      assert offset < _length;
+
+      return new ByteArray(_bytes, _offset + offset, _length - offset);
     }
   }
 }

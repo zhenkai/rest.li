@@ -207,14 +207,15 @@ public class TestResponseCompression extends RestLiIntegrationTest
                                                                 Integer.MAX_VALUE,
                                                                 Collections.<String, CompressionConfig>emptyMap(),
                                                                 responseCompressionConfigs,
-                                                                true);
+                                                                true,
+                                                                Executors.newCachedThreadPool());
     Map<String, Object> properties = new HashMap<String, Object>();
     properties.put(HttpClientFactory.HTTP_SERVICE_NAME, SERVICE_NAME);
     if (useResponseCompression != null)
     {
       properties.put(HttpClientFactory.HTTP_USE_RESPONSE_COMPRESSION, String.valueOf(useResponseCompression));
     }
-    TransportClientAdapter clientAdapter1 = new TransportClientAdapter(httpClientFactory.getClient(properties));
+    TransportClientAdapter clientAdapter1 = new TransportClientAdapter(httpClientFactory.getClient(properties), true);
     RestClient client = new RestClient(clientAdapter1, FILTERS_URI_PREFIX);
     Long[] ids = new Long[idCount];
     for (int i = 0; i < ids.length; i++)

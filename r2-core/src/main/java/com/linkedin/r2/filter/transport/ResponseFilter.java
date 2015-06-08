@@ -20,9 +20,12 @@ package com.linkedin.r2.filter.transport;
 
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.stream.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.NullTransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
@@ -37,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ResponseFilter implements RestResponseFilter
+public class ResponseFilter implements StreamResponseFilter, RestResponseFilter
 {
   private static final String CALLBACK_ATTR = ResponseFilter.class.getName() + ".callback";
 
@@ -56,9 +59,10 @@ public class ResponseFilter implements RestResponseFilter
   }
 
   @Override
-  public void onRestResponse(RestResponse res, RequestContext requestContext,
-                             Map<String, String> wireAttrs,
-                             NextFilter<RestRequest, RestResponse> nextFilter)
+  public void onRestResponse(RestResponse res,
+                      RequestContext requestContext,
+                      Map<String, String> wireAttrs,
+                      NextFilter<RestRequest, RestResponse> nextFilter)
   {
     final TransportCallback<RestResponse> callback = getCallback(requestContext);
     callback.onResponse(TransportResponseImpl.success(res, wireAttrs));
@@ -66,12 +70,33 @@ public class ResponseFilter implements RestResponseFilter
   }
 
   @Override
-  public void onRestError(Throwable ex, RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          NextFilter<RestRequest, RestResponse> nextFilter)
+  public void onRestError(Throwable ex,
+                   RequestContext requestContext,
+                   Map<String, String> wireAttrs,
+                   NextFilter<RestRequest, RestResponse> nextFilter)
   {
     final TransportCallback<RestResponse> callback = getCallback(requestContext);
     callback.onResponse(TransportResponseImpl.<RestResponse>error(ex, wireAttrs));
+    nextFilter.onError(ex, requestContext, wireAttrs);
+  }
+
+  @Override
+  public void onStreamResponse(StreamResponse res, RequestContext requestContext,
+                             Map<String, String> wireAttrs,
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    final TransportCallback<StreamResponse> callback = getCallback(requestContext);
+    callback.onResponse(TransportResponseImpl.success(res, wireAttrs));
+    nextFilter.onResponse(res, requestContext, wireAttrs);
+  }
+
+  @Override
+  public void onStreamError(Throwable ex, RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    final TransportCallback<StreamResponse> callback = getCallback(requestContext);
+    callback.onResponse(TransportResponseImpl.<StreamResponse>error(ex, wireAttrs));
     nextFilter.onError(ex, requestContext, wireAttrs);
   }
 

@@ -26,6 +26,8 @@ import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.AbstractClient;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.TransportClientFactory;
@@ -99,13 +101,13 @@ public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationT
       {
         __metadata.put(RestConstants.RESTLI_PROTOCOL_VERSION_PROPERTY, restliProtocolVersion);
       }
-      __client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()));
+      __client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()), true);
     }
 
     @Override
-    public void restRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
+    public void streamRequest(StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
     {
-      __client.restRequest(request, requestContext, callback);
+      __client.streamRequest(request, requestContext, callback);
     }
 
     @Override
@@ -171,7 +173,7 @@ public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationT
   @Test
   public void testNoProtocolVersionHeaderSuccess() throws InterruptedException, ExecutionException
   {
-    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()));
+    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()), true);
     final RestRequestBuilder requestBuilder = new RestRequestBuilder(URI.create(URI_PREFIX + "greetings/1"));
     final RestRequest request = requestBuilder.build();
     Assert.assertTrue(request.getHeaders().isEmpty());
@@ -185,7 +187,7 @@ public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationT
   @Test
   public void testNoProtocolVersionHeaderFail() throws InterruptedException
   {
-    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()));
+    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()), true);
     final RestRequestBuilder requestBuilder = new RestRequestBuilder(URI.create(URI_PREFIX));
     final RestRequest request = requestBuilder.build();
     Assert.assertTrue(request.getHeaders().isEmpty());

@@ -19,9 +19,13 @@ package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 
 import java.net.URI;
 import java.util.Collections;
@@ -33,13 +37,9 @@ import java.util.concurrent.Future;
  * implementations of overloaded convenience methods implemented in terms of the most general
  * versions. Classes extending AbstractClient should implement:
  *
- *   void restRequest(RestRequest request,
- *                    RequestContext requestContext,
- *                    Callback<RestResponse> callback);
- *
- *   void rpcRequest(RpcRequest request,
- *                   RequestContext requestContext,
- *                   Callback<RpcResponse> callback);
+ *   void streamRequest(StreamRequest request,
+ *                      RequestContext requestContext,
+ *                      Callback<StreamResponse> callback);
  *
  *
  * @author Chris Pettitt
@@ -66,6 +66,24 @@ public abstract class AbstractClient implements Client
   public void restRequest(RestRequest request, Callback<RestResponse> callback)
   {
     restRequest(request, new RequestContext(), callback);
+  }
+
+  @Override
+  public void streamRequest(StreamRequest request, Callback<StreamResponse> callback)
+  {
+    streamRequest(request, new RequestContext(), callback);
+  }
+
+  @Override
+  public void restRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
+  {
+    StreamRequest streamRequest = Messages.toStreamRequest(request);
+    //make a copy of the caller's RequestContext to make sure we don't modify the caller's copy of request context because
+    // they may reuse it
+    RequestContext newRequestContext = new RequestContext(requestContext);
+    newRequestContext.putLocalAttr(R2Constants.IS_FULL_REQUEST, true);
+    // here we add back the content-length header for the response because some client code depends on this header
+    streamRequest(streamRequest, newRequestContext, Messages.toStreamCallback(callback, true));
   }
 
   @Override

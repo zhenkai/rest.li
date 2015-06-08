@@ -21,11 +21,18 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.d2.balancer.properties.PartitionData;
 import com.linkedin.d2.balancer.util.partitions.DefaultPartitionAccessor;
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequestBuilder;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.stream.StreamResponseBuilder;
+import com.linkedin.r2.message.stream.entitystream.ByteStringWriter;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -42,9 +49,38 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 
 public class TrackerClientTest
 {
+  @Test(groups = { "small", "back-end" })
+  public void testClientStreamRequest() throws URISyntaxException
+  {
+    URI uri = URI.create("http://test.qa.com:1234/foo");
+    double weight = 3d;
+    TestClient wrappedClient = new TestClient(true);
+    Clock clock = new SettableClock();
+    Map<Integer, PartitionData> partitionDataMap = new HashMap<Integer, PartitionData>(2);
+    partitionDataMap.put(DefaultPartitionAccessor.DEFAULT_PARTITION_ID, new PartitionData(3d));
+    TrackerClient client = new TrackerClient(uri, partitionDataMap, wrappedClient, clock, null);
+
+    assertEquals(client.getUri(), uri);
+    Double clientWeight = client.getPartitionWeight(DefaultPartitionAccessor.DEFAULT_PARTITION_ID);
+    assertEquals(clientWeight, weight);
+    assertEquals(client.getWrappedClient(), wrappedClient);
+
+    StreamRequest streamRequest = new StreamRequestBuilder(uri).build(EntityStreams.emptyStream());
+    Map<String, String> restWireAttrs = new HashMap<String, String>();
+    TestTransportCallback<StreamResponse> restCallback =
+        new TestTransportCallback<StreamResponse>();
+
+    client.streamRequest(streamRequest, new RequestContext(), restWireAttrs, restCallback);
+
+    assertFalse(restCallback.response.hasError());
+    assertSame(wrappedClient.streamRequest, streamRequest);
+    assertEquals(wrappedClient.restWireAttrs, restWireAttrs);
+  }
+
   @Test(groups = { "small", "back-end" })
   public void testClient() throws URISyntaxException
   {
@@ -75,25 +111,54 @@ public class TrackerClientTest
 
   public static class TestClient implements TransportClient
   {
+    public StreamRequest                   streamRequest;
     public RestRequest                     restRequest;
     public RequestContext                  restRequestContext;
     public Map<String, String>             restWireAttrs;
-    public TransportCallback<RestResponse> restCallback;
+    public TransportCallback<StreamResponse> streamCallback;
+    public TransportCallback<RestResponse>   restCallback;
 
     public boolean                         shutdownCalled;
+    private final boolean _emptyResponse;
+
+    public TestClient() { this(true);}
+
+    public TestClient(boolean emptyResponse)
+    {
+      _emptyResponse = emptyResponse;
+    }
 
     @Override
     public void restRequest(RestRequest request,
-                            RequestContext requestContext,
-                            Map<String, String> wireAttrs,
-                            TransportCallback<RestResponse> callback)
+                     RequestContext requestContext,
+                     Map<String, String> wireAttrs,
+                     TransportCallback<RestResponse> callback)
     {
       restRequest = request;
       restRequestContext = requestContext;
       restWireAttrs = wireAttrs;
       restCallback = callback;
+      RestResponseBuilder builder = new RestResponseBuilder();
+      RestResponse response = _emptyResponse ? builder.build() :
+          builder.setEntity("This is not empty".getBytes()).build();
+      callback.onResponse(TransportResponseImpl.success(response));
+    }
 
-      callback.onResponse(TransportResponseImpl.<RestResponse> success(new RestResponseBuilder().build(), wireAttrs));
+    @Override
+    public void streamRequest(StreamRequest request,
+                            RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            TransportCallback<StreamResponse> callback)
+    {
+      streamRequest = request;
+      restRequestContext = requestContext;
+      restWireAttrs = wireAttrs;
+      streamCallback = callback;
+
+      StreamResponseBuilder builder = new StreamResponseBuilder();
+      StreamResponse response = _emptyResponse ? builder.build(EntityStreams.emptyStream())
+          : builder.build(EntityStreams.newEntityStream(new ByteStringWriter(ByteString.copy("This is not empty".getBytes()))));
+      callback.onResponse(TransportResponseImpl.success(response, wireAttrs));
     }
 
     @Override

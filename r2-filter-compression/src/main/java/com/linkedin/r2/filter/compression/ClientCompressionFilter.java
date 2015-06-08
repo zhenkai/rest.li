@@ -241,7 +241,7 @@ public class ClientCompressionFilter implements Filter, RestFilter
     else if (responseCompressionOverride == CompressionOption.FORCE_ON)
     {
       builder.addHeaderValue(HttpConstants.ACCEPT_ENCODING, _acceptEncodingHeader)
-             .addHeaderValue(HttpConstants.HEADER_RESPONSE_COMPRESSION_THRESHOLD, Integer.toString(0));
+          .addHeaderValue(HttpConstants.HEADER_RESPONSE_COMPRESSION_THRESHOLD, Integer.toString(0));
     }
     return builder.build();
   }

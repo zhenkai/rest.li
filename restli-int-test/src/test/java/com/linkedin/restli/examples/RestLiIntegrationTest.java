@@ -26,9 +26,6 @@ import com.linkedin.parseq.Engine;
 import com.linkedin.parseq.EngineBuilder;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChain;
-import com.linkedin.r2.filter.FilterChains;
-import com.linkedin.r2.filter.compression.ServerCompressionFilter;
-import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
@@ -40,8 +37,10 @@ import com.linkedin.restli.server.filter.ResponseFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -63,6 +62,7 @@ public class RestLiIntegrationTest
   private Engine                   _engine;
   private HttpServer               _server;
   private HttpServer               _serverWithoutCompression;
+  private ExecutorService          _compressionExecutor;
   private HttpServer               _serverWithFilters;
 
   private HttpClientFactory        _clientFactory;
@@ -72,28 +72,62 @@ public class RestLiIntegrationTest
   // By default start a single synchronous server with compression.
   public void init() throws Exception
   {
-    init(false);
+    init(false, false);
   }
 
-  public void init(boolean async) throws IOException
+  // By default start a single synchronous server with compression.
+  public void init(boolean async) throws Exception
+  {
+    init(async, false);
+  }
+
+  public void init(boolean async, boolean includeNoCompression) throws IOException
   {
     initSchedulerAndEngine();
     int asyncTimeout = async ? 5000 : -1;
+    _compressionExecutor = Executors.newCachedThreadPool();
+
+    // Always start one server, whether sync or async
     _server =
         RestLiIntTestServer.createServer(_engine,
-                                         RestLiIntTestServer.DEFAULT_PORT,
-                                         RestLiIntTestServer.supportedCompression,
-                                         async,
-                                         asyncTimeout);
+            RestLiIntTestServer.DEFAULT_PORT,
+            RestLiIntTestServer.supportedCompression,
+            async,
+            asyncTimeout,
+            _compressionExecutor);
     _server.start();
+
+    // If requested, also start no compression server
+    if (includeNoCompression)
+    {
+      _serverWithoutCompression =
+          RestLiIntTestServer.createServer(_engine,
+              RestLiIntTestServer.NO_COMPRESSION_PORT,
+              "",
+              async,
+              asyncTimeout,
+              _compressionExecutor);
+      _serverWithoutCompression.start();
+    }
+
     initClient(URI_PREFIX);
   }
 
   public void init(List<? extends RequestFilter> requestFilters, List<? extends ResponseFilter> responseFilters) throws IOException
   {
-    final FilterChain fc = FilterChains.empty().addLast(new ServerCompressionFilter(RestLiIntTestServer.supportedCompression, new CompressionConfig(0)))
-        .addLast(new SimpleLoggingFilter());
-    init(requestFilters, responseFilters, fc, false);
+    initSchedulerAndEngine();
+    _compressionExecutor = Executors.newCachedThreadPool();
+    _serverWithFilters =
+        RestLiIntTestServer.createServer(_engine,
+            RestLiIntTestServer.FILTERS_PORT,
+            RestLiIntTestServer.supportedCompression,
+            false,
+            -1,
+            requestFilters,
+            responseFilters,
+            _compressionExecutor);
+    _serverWithFilters.start();
+    initClient(FILTERS_URI_PREFIX);
   }
 
   public void init(List<? extends RequestFilter> requestFilters, List<? extends ResponseFilter> responseFilters,
@@ -109,13 +143,15 @@ public class RestLiIntegrationTest
                                          responseFilters,
                                          filterChain);
     _serverWithFilters.start();
+    _compressionExecutor = Executors.newCachedThreadPool();
     // If requested, also start no compression server
     if (includeNoCompression)
     {
       _serverWithoutCompression =
           RestLiIntTestServer.createServer(_engine,
                                            RestLiIntTestServer.NO_COMPRESSION_PORT,
-                                           "");
+                                           "",
+                                           _compressionExecutor);
       _serverWithoutCompression.start();
     }
     initClient(FILTERS_URI_PREFIX);
@@ -129,7 +165,11 @@ public class RestLiIntegrationTest
 
   private void initClient(String uriPrefix)
   {
-    _clientFactory = new HttpClientFactory();
+    _clientFactory = new HttpClientFactory.Builder()
+        .setRequestCompressionThresholdDefault(500)
+        .setRequestCompressionConfigs(new HashMap<String, CompressionConfig>())
+        .setCompressionExecutor(_compressionExecutor)
+        .build();
     _transportClients = new ArrayList<Client>();
     Client client = newTransportClient(Collections.<String, String>emptyMap());
     _restClient = new RestClient(client, uriPrefix);
@@ -201,7 +241,7 @@ public class RestLiIntegrationTest
    */
   protected Client newTransportClient(Map<String, ? extends Object> properties)
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(properties));
+    Client client = new TransportClientAdapter(_clientFactory.getClient(properties), true);
     _transportClients.add(client);
     return client;
   }

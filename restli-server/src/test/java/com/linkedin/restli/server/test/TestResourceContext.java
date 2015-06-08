@@ -22,9 +22,7 @@ import com.linkedin.data.DataList;
 import com.linkedin.data.DataMap;
 import com.linkedin.data.transform.filter.FilterConstants;
 import com.linkedin.data.transform.filter.request.MaskTree;
-import com.linkedin.r2.message.RequestBuilder;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestMessageBuilder;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.restli.common.ProtocolVersion;
@@ -333,11 +331,6 @@ public class TestResourceContext
       return null;
     }
 
-    @Override
-    public RestMessageBuilder<? extends RestMessageBuilder<?>> restBuilder()
-    {
-      return null;
-    }
 
     @Override
     public Map<String, String> getHeaders()
@@ -361,12 +354,6 @@ public class TestResourceContext
     public String getHeader(String name)
     {
       return _headers.get(name);
-    }
-
-    @Override
-    public RequestBuilder<? extends RequestBuilder<?>> requestBuilder()
-    {
-      return null;
     }
 
     @Override

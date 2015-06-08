@@ -78,7 +78,7 @@ public class TestRestLiD2Integration extends RestLiIntegrationTest
   public void init()
   {
     _loadBalancer = MockLBFactory.createLoadBalancer();
-    _r2Client = new DynamicClient(_loadBalancer, null);
+    _r2Client = new DynamicClient(_loadBalancer, null, true);
     _restClient = new RestClient(_r2Client, "d2://");
   }
 

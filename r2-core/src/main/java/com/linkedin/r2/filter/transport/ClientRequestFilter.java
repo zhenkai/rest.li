@@ -19,11 +19,14 @@ package com.linkedin.r2.filter.transport;
 
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
@@ -37,7 +40,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ClientRequestFilter implements RestRequestFilter
+public class ClientRequestFilter implements StreamRequestFilter, RestRequestFilter
 {
   private final TransportClient _client;
 
@@ -51,6 +54,7 @@ public class ClientRequestFilter implements RestRequestFilter
     _client = client;
   }
 
+
   @Override
   public void onRestRequest(RestRequest req, final RequestContext requestContext,
                             Map<String, String> wireAttrs,
@@ -59,6 +63,21 @@ public class ClientRequestFilter implements RestRequestFilter
     try
     {
       _client.restRequest(req, requestContext, wireAttrs, createCallback(requestContext, nextFilter));
+    }
+    catch (Exception e)
+    {
+      nextFilter.onError(e, requestContext, new HashMap<String, String>());
+    }
+  }
+
+  @Override
+  public void onStreamRequest(StreamRequest req, final RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            final NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    try
+    {
+      _client.streamRequest(req, requestContext, wireAttrs, createCallback(requestContext, nextFilter));
     }
     catch (Exception e)
     {

@@ -24,6 +24,8 @@ import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 
@@ -62,12 +64,22 @@ public class FilterChainClient implements TransportClient
 
   @Override
   public void restRequest(RestRequest request,
-                          RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          TransportCallback<RestResponse> callback)
+                   RequestContext requestContext,
+                   Map<String, String> wireAttrs,
+                   TransportCallback<RestResponse> callback)
   {
     ResponseFilter.registerCallback(callback, requestContext);
     _filters.onRestRequest(request, requestContext, wireAttrs);
+  }
+
+  @Override
+  public void streamRequest(StreamRequest request,
+                          RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          TransportCallback<StreamResponse> callback)
+  {
+    ResponseFilter.registerCallback(callback, requestContext);
+    _filters.onStreamRequest(request, requestContext, wireAttrs);
   }
 
   @Override

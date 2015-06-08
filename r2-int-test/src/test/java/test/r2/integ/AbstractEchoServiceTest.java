@@ -34,11 +34,7 @@ import com.linkedin.r2.transport.common.Server;
 import com.linkedin.common.util.None;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -63,6 +59,8 @@ public abstract class AbstractEchoServiceTest
 
   private CaptureWireAttributesFilter _serverCaptureFilter;
   private CaptureWireAttributesFilter _clientCaptureFilter;
+  private LogEntityLengthFilter _serverLengthFilter;
+  private LogEntityLengthFilter _clientLengthFilter;
 
   @BeforeClass
   protected void setUp() throws Exception
@@ -70,12 +68,17 @@ public abstract class AbstractEchoServiceTest
     _serverCaptureFilter = new CaptureWireAttributesFilter();
     _clientCaptureFilter = new CaptureWireAttributesFilter();
 
+    _serverLengthFilter = new LogEntityLengthFilter();
+    _clientLengthFilter = new LogEntityLengthFilter();
+
     final FilterChain serverFilters = FilterChains.empty()
             .addFirst(_serverCaptureFilter)
+            .addLast(_serverLengthFilter)
             .addLast(new SendWireAttributeFilter(_toClientKey, _toClientValue, false));
 
     final FilterChain clientFilters = FilterChains.empty()
             .addFirst(_clientCaptureFilter)
+            .addLast(_clientLengthFilter)
             .addLast(new SendWireAttributeFilter(_toServerKey, _toServerValue, true));
 
     _client = createClient(clientFilters);
@@ -113,7 +116,13 @@ public abstract class AbstractEchoServiceTest
     final FutureCallback<String> callback = new FutureCallback<String>();
     client.echo(msg, callback);
 
-    Assert.assertEquals(callback.get(), msg);
+    String actual = callback.get();
+    Assert.assertEquals(actual, msg);
+    Assert.assertEquals(_clientLengthFilter.getRequestEntityLength(), msg.length());
+    Assert.assertEquals(_clientLengthFilter.getResponseEntityLength(), msg.length());
+    Assert.assertEquals(_serverLengthFilter.getRequestEntityLength(), msg.length());
+    Assert.assertEquals(_serverLengthFilter.getResponseEntityLength(), msg.length());
+
   }
 
   @Test
@@ -216,6 +225,8 @@ public abstract class AbstractEchoServiceTest
 
     // Make sure the server got its wire attribute
     Assert.assertEquals(_serverCaptureFilter.getRequest().get(_toServerKey), _toServerValue);
+
+    Assert.assertEquals(_serverCaptureFilter.getResponse().get(_toClientKey), _toClientValue);
 
     // Make sure the client got its wire attribute, but not the server's wire attribute
     Assert.assertEquals(_clientCaptureFilter.getResponse().get(_toClientKey), _toClientValue);

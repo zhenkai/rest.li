@@ -31,24 +31,20 @@ import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.http.common.HttpConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.mail.MessagingException;
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -248,7 +244,7 @@ public abstract class AbstractR2Servlet extends HttpServlet
    * Attempts to return a "non decoded" pathInfo by stripping off the contextPath and servletPath parts of the requestURI.
    * As a defensive measure, this method will return the "decoded" pathInfo directly by calling req.getPathInfo() if it is
    * unable to strip off the contextPath or servletPath.
-   * @throws ServletException if resulting pathInfo is empty
+   * @throws javax.servlet.ServletException if resulting pathInfo is empty
    */
   protected static String extractPathInfo(HttpServletRequest req) throws ServletException
   {

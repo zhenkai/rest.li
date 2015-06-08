@@ -22,10 +22,11 @@ import com.linkedin.common.util.None;
 import com.linkedin.d2.balancer.LoadBalancerClient;
 import com.linkedin.d2.balancer.util.LoadBalancerUtil;
 import com.linkedin.jersey.api.uri.UriBuilder;
-import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 
@@ -56,11 +57,20 @@ public class RewriteClient implements LoadBalancerClient
 
   @Override
   public void restRequest(RestRequest request,
-                          RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          TransportCallback<RestResponse> callback)
+                   RequestContext requestContext,
+                   Map<String, String> wireAttrs,
+                   TransportCallback<RestResponse> callback)
   {
     _wrappedClient.restRequest(rewriteRequest(request), requestContext, wireAttrs, callback);
+  }
+
+  @Override
+  public void streamRequest(StreamRequest request,
+                          RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          TransportCallback<StreamResponse> callback)
+  {
+    _wrappedClient.streamRequest(rewriteRequest(request), requestContext, wireAttrs, callback);
   }
 
   @Override
@@ -74,10 +84,14 @@ public class RewriteClient implements LoadBalancerClient
     return _wrappedClient;
   }
 
-  @SuppressWarnings("unchecked")
-  private <M extends Request> M rewriteRequest(M req)
+  private StreamRequest rewriteRequest(StreamRequest req)
   {
-    return (M)req.requestBuilder().setURI(rewriteUri(req.getURI())).build();
+    return req.builder().setURI(rewriteUri(req.getURI())).build(req.getEntityStream());
+  }
+
+  private RestRequest rewriteRequest(RestRequest req)
+  {
+    return req.builder().setURI(rewriteUri(req.getURI())).build();
   }
 
   private URI rewriteUri(URI uri)

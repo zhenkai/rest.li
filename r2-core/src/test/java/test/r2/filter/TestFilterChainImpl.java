@@ -20,16 +20,19 @@ package test.r2.filter;
 
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
+import com.linkedin.r2.filter.message.stream.StreamFilterAdapters;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.testutils.filter.MessageCountFilter;
-import com.linkedin.r2.testutils.filter.RpcRestCountFilter;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.linkedin.r2.testutils.filter.RestCountFilter;
+import com.linkedin.r2.testutils.filter.StreamCountFilter;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -42,40 +45,34 @@ public class TestFilterChainImpl
   @Test
   public void testRestRequestFilter()
   {
-    final RpcRestCountFilter filter = new RpcRestCountFilter();
+    final RestCountFilter filter = new RestCountFilter();
     final FilterChain fc = FilterChains.create(filter);
 
     fireRestRequest(fc);
 
-    assertRpcCounts(0, 0, 0, filter);
-    assertRestCounts(1, 0, 0, filter);
-    assertMessageCounts(0, 0, 0, filter);
+    assertRestMessageCounts(1, 0, 0, filter);
   }
 
   @Test
   public void testRestResponseFilter()
   {
-    final RpcRestCountFilter filter = new RpcRestCountFilter();
+    final RestCountFilter filter = new RestCountFilter();
     final FilterChain fc = FilterChains.create(filter);
 
     fireRestResponse(fc);
 
-    assertRpcCounts(0, 0, 0, filter);
-    assertRestCounts(0, 1, 0, filter);
-    assertMessageCounts(0, 0, 0, filter);
+    assertRestMessageCounts(0, 1, 0, filter);
   }
 
   @Test
   public void testRestErrorFilter()
   {
-    final RpcRestCountFilter filter = new RpcRestCountFilter();
+    final RestCountFilter filter = new RestCountFilter();
     final FilterChain fc = FilterChains.create(filter);
 
     fireRestError(fc);
 
-    assertRpcCounts(0, 0, 0, filter);
-    assertRestCounts(0, 0, 1, filter);
-    assertMessageCounts(0, 0, 0, filter);
+    assertRestMessageCounts(0, 0, 1, filter);
   }
 
   @Test
@@ -150,23 +147,84 @@ public class TestFilterChainImpl
     assertMessageCounts(0, 0, 1, filter3);
   }
 
+  @Test
+  public void testRestOverStreamChainRequestFilters()
+  {
+    final MessageCountFilter filter1 = new MessageCountFilter();
+    final StreamCountFilter filter2 = new StreamCountFilter();
+    final RestCountFilter filter3 = new RestCountFilter();
+    final FilterChain fc = FilterChains.create(filter1, filter2, StreamFilterAdapters.adaptRestFilter(filter3));
+
+    fireStreamRequest(fc);
+    assertMessageCounts(1, 0, 0, filter1);
+    assertStreamMessageCounts(1, 0, 0, filter2);
+    assertRestMessageCounts(1, 0, 0, filter3);
+  }
+
+  @Test
+  public void testRestOverStreamChainResponseFilters()
+  {
+    final MessageCountFilter filter1 = new MessageCountFilter();
+    final StreamCountFilter filter2 = new StreamCountFilter();
+    final RestCountFilter filter3 = new RestCountFilter();
+    final FilterChain fc = FilterChains.create(filter1, filter2, StreamFilterAdapters.adaptRestFilter(filter3));
+
+    fireStreamResponse(fc);
+    assertMessageCounts(0, 1, 0, filter1);
+    assertStreamMessageCounts(0, 1, 0, filter2);
+    assertRestMessageCounts(0, 1, 0, filter3);
+  }
+
+  @Test
+  public void testRestOverStreamChainErrorFilters()
+  {
+    final MessageCountFilter filter1 = new MessageCountFilter();
+    final StreamCountFilter filter2 = new StreamCountFilter();
+    final RestCountFilter filter3 = new RestCountFilter();
+    final FilterChain fc = FilterChains.create(filter1, filter2, StreamFilterAdapters.adaptRestFilter(filter3));
+
+    fireStreamError(fc);
+    assertMessageCounts(0, 0, 1, filter1);
+    assertStreamMessageCounts(0, 0, 1, filter2);
+    assertRestMessageCounts(0, 0, 1, filter3);
+  }
+
   private void fireRestRequest(FilterChain fc)
   {
-    fc.onRestRequest(new RestRequestBuilder(URI.create("test")).build(),
-                     createRequestContext(), createWireAttributes()
-    );
+    fc.onRestRequest(new RestRequestBuilder(URI.create("src/test/resources/test")).build(),
+        createRequestContext(), createWireAttributes());
   }
 
   private void fireRestResponse(FilterChain fc)
   {
     fc.onRestResponse(new RestResponseBuilder().build(),
-                      createRequestContext(), createWireAttributes()
-    );
+        createRequestContext(), createWireAttributes());
   }
 
   private void fireRestError(FilterChain fc)
   {
     fc.onRestError(new Exception(),
+        createRequestContext(), createWireAttributes()
+    );
+  }
+
+  private void fireStreamRequest(FilterChain fc)
+  {
+    fc.onStreamRequest(Messages.toStreamRequest(new RestRequestBuilder(URI.create("src/test/resources/test")).build()),
+                     createRequestContext(), createWireAttributes()
+    );
+  }
+
+  private void fireStreamResponse(FilterChain fc)
+  {
+    fc.onStreamResponse(Messages.toStreamResponse(new RestResponseBuilder().build()),
+                      createRequestContext(), createWireAttributes()
+    );
+  }
+
+  private void fireStreamError(FilterChain fc)
+  {
+    fc.onStreamError(new Exception(),
                    createRequestContext(), createWireAttributes()
     );
   }
@@ -188,14 +246,14 @@ public class TestFilterChainImpl
     Assert.assertEquals(err, filter.getErrCount());
   }
 
-  private void assertRpcCounts(int req, int res, int err, RpcRestCountFilter filter)
+  private void assertStreamMessageCounts(int req, int res, int err, StreamCountFilter filter)
   {
-    Assert.assertEquals(req, filter.getRpcReqCount());
-    Assert.assertEquals(res, filter.getRpcResCount());
-    Assert.assertEquals(err, filter.getRpcErrCount());
+    Assert.assertEquals(req, filter.getStreamReqCount());
+    Assert.assertEquals(res, filter.getStreamResCount());
+    Assert.assertEquals(err, filter.getStreamErrCount());
   }
 
-  private void assertRestCounts(int req, int res, int err, RpcRestCountFilter filter)
+  private void assertRestMessageCounts(int req, int res, int err, RestCountFilter filter)
   {
     Assert.assertEquals(req, filter.getRestReqCount());
     Assert.assertEquals(res, filter.getRestResCount());

@@ -93,7 +93,7 @@ public class LoadBalancerEchoClient
       IOException,
       PropertyStoreException
   {
-    DynamicClient client = new DynamicClient(getLoadBalancer(_hostPort), null);
+    DynamicClient client = new DynamicClient(getLoadBalancer(_hostPort), null, true);
 
     for (;;)
     {

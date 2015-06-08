@@ -17,7 +17,6 @@
 package com.linkedin.restli.internal.common;
 
 
-import com.linkedin.r2.message.rest.RestMessage;
 import com.linkedin.restli.common.ProtocolVersion;
 import com.linkedin.restli.common.RestConstants;
 
@@ -61,7 +60,7 @@ public class HeaderUtil
   }
 
   /**
-   * Get Rest.li ID HTTP header value of a {@link RestMessage} according to its protocol version.
+   * Get Rest.li ID HTTP header value of a {@link com.linkedin.r2.message.MessageHeaders} according to its protocol version.
    *
    * @param headers headers map
    * @return ID header value
@@ -103,7 +102,7 @@ public class HeaderUtil
   }
 
   /**
-   * Get Rest.li error response HTTP header value of a {@link RestMessage} according to its protocol version.
+   * Get Rest.li error response HTTP header value of a {@link com.linkedin.r2.message.MessageHeaders} according to its protocol version.
    *
    * @param headers headers map
    * @return error header value

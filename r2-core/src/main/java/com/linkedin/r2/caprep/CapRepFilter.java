@@ -23,28 +23,50 @@ import com.linkedin.r2.caprep.db.DirectoryDbSink;
 import com.linkedin.r2.caprep.db.DirectoryDbSource;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.message.rest.RestFilter;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.stream.StreamFilter;
+import com.linkedin.r2.filter.message.stream.StreamFilterAdapters;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestResponse;
 
 import java.io.IOException;
 import java.util.Map;
 
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * WARNING: This filter is not compatible with r2 streaming feature.
+ * Use this filter would result in both request and response being fully cached in memory; do not use with
+ * large requests/responses.
+ *
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class CapRepFilter implements RestFilter, CapRepAdmin
+public class CapRepFilter implements StreamFilter, RestFilter, CapRepAdmin
 {
   private static final Logger _log = LoggerFactory.getLogger(CapRepFilter.class);
 
   private static final Filter PASS_THROUGH_FILTER = new PassThroughFilter();
 
   private final ReplaceableFilter _filter = new ReplaceableFilter(PASS_THROUGH_FILTER);
+  private final boolean _restOverStream;
+
+  CapRepFilter()
+  {
+    this(R2Constants.DEFAULT_REST_OVER_STREAM);
+  }
+
+  CapRepFilter(boolean restOverStream)
+  {
+    _restOverStream = restOverStream;
+  }
 
   @Override
   public void capture(String directory) throws IOException
@@ -53,8 +75,17 @@ public class CapRepFilter implements RestFilter, CapRepAdmin
     _filter.setFilter(PASS_THROUGH_FILTER);
     try
     {
-      _filter.setFilter(new CaptureFilter(new DirectoryDbSink(directory,
-                                                              new DefaultMessageSerializer())));
+      final RestFilter captureFilter = new CaptureFilter(new DirectoryDbSink(directory,
+          new DefaultMessageSerializer()));
+
+      if (_restOverStream)
+      {
+        _filter.setFilter(StreamFilterAdapters.adaptRestFilter(captureFilter));
+      }
+      else
+      {
+        _filter.setFilter(captureFilter);
+      }
     }
     catch (IOException e)
     {
@@ -75,8 +106,16 @@ public class CapRepFilter implements RestFilter, CapRepAdmin
     _filter.setFilter(PASS_THROUGH_FILTER);
     try
     {
-      _filter.setFilter(new ReplayFilter(new DirectoryDbSource(directory,
-                                                               new DefaultMessageSerializer())));
+      final RestRequestFilter replayFilter = new ReplayFilter(new DirectoryDbSource(directory,
+          new DefaultMessageSerializer()));
+      if (_restOverStream)
+      {
+        _filter.setFilter(StreamFilterAdapters.adaptRestFilter(replayFilter));
+      }
+      else
+      {
+        _filter.setFilter(replayFilter);
+      }
     }
     catch (IOException e)
     {
@@ -98,13 +137,8 @@ public class CapRepFilter implements RestFilter, CapRepAdmin
   }
 
   @Override
-  public String getMode()
-  {
-    return _filter.getFilter().getClass().getSimpleName();
-  }
-
-  @Override
-  public void onRestRequest(RestRequest req, RequestContext requestContext,
+  public void onRestRequest(RestRequest req,
+                            RequestContext requestContext,
                             Map<String, String> wireAttrs,
                             NextFilter<RestRequest, RestResponse> nextFilter)
   {
@@ -112,7 +146,8 @@ public class CapRepFilter implements RestFilter, CapRepAdmin
   }
 
   @Override
-  public void onRestResponse(RestResponse res, RequestContext requestContext,
+  public void onRestResponse(RestResponse res,
+                             RequestContext requestContext,
                              Map<String, String> wireAttrs,
                              NextFilter<RestRequest, RestResponse> nextFilter)
   {
@@ -120,10 +155,41 @@ public class CapRepFilter implements RestFilter, CapRepAdmin
   }
 
   @Override
-  public void onRestError(Throwable ex, RequestContext requestContext,
+  public void onRestError(Throwable ex,
+                          RequestContext requestContext,
                           Map<String, String> wireAttrs,
                           NextFilter<RestRequest, RestResponse> nextFilter)
   {
     _filter.onRestError(ex, requestContext, wireAttrs, nextFilter);
+  }
+
+  @Override
+  public String getMode()
+  {
+    return _filter.getFilter().getClass().getSimpleName();
+  }
+
+  @Override
+  public void onStreamRequest(StreamRequest req, RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    _filter.onStreamRequest(req, requestContext, wireAttrs, nextFilter);
+  }
+
+  @Override
+  public void onStreamResponse(StreamResponse res, RequestContext requestContext,
+                             Map<String, String> wireAttrs,
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    _filter.onStreamResponse(res, requestContext, wireAttrs, nextFilter);
+  }
+
+  @Override
+  public void onStreamError(Throwable ex, RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    _filter.onStreamError(ex, requestContext, wireAttrs, nextFilter);
   }
 }

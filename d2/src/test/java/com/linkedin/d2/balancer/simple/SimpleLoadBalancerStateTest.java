@@ -42,8 +42,9 @@ import com.linkedin.d2.discovery.event.PropertyEventThread.PropertyEventShutdown
 import com.linkedin.d2.discovery.event.SynchronousExecutorService;
 import com.linkedin.d2.discovery.stores.mock.MockStore;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
-import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequestBuilder;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import com.linkedin.r2.transport.common.TransportClientFactory;
 import com.linkedin.r2.transport.common.bridge.client.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
@@ -866,20 +867,20 @@ public class SimpleLoadBalancerStateTest
 
     // Get client, then refresh cluster
     TrackerClient client = _state.getClient("service-1", uri);
-    client.restRequest(new RestRequestBuilder(URI.create("d2://service-1/foo")).build(),
-                       new RequestContext(),
-                       Collections.<String, String>emptyMap(),
-                       new TransportCallbackAdapter<RestResponse>(Callbacks.<RestResponse>empty()));
+    client.streamRequest(new StreamRequestBuilder(URI.create("d2://service-1/foo")).build(EntityStreams.emptyStream()),
+        new RequestContext(),
+        Collections.<String, String>emptyMap(),
+        new TransportCallbackAdapter<StreamResponse>(Callbacks.<StreamResponse>empty()));
 
     // now force a refresh by adding cluster
     _clusterRegistry.put("cluster-1", new ClusterProperties("cluster-1"));
 
     // Get client, then refresh service
     client = _state.getClient("service-1", uri);
-    client.restRequest(new RestRequestBuilder(URI.create("d2://service-1/foo")).build(),
-                       new RequestContext(),
-                       Collections.<String, String>emptyMap(),
-                       new TransportCallbackAdapter<RestResponse>(Callbacks.<RestResponse>empty()));
+    client.streamRequest(new StreamRequestBuilder(URI.create("d2://service-1/foo")).build(EntityStreams.emptyStream()),
+        new RequestContext(),
+        Collections.<String, String>emptyMap(),
+        new TransportCallbackAdapter<StreamResponse>(Callbacks.<StreamResponse>empty()));
 
     // refresh by adding service
     _serviceRegistry.put("service-1", new ServiceProperties("service-1",
@@ -894,10 +895,10 @@ public class SimpleLoadBalancerStateTest
 
     // Get client, then mark server up/down
     client = _state.getClient("service-1", uri);
-    client.restRequest(new RestRequestBuilder(URI.create("d2://service-1/foo")).build(),
-                       new RequestContext(),
-                       Collections.<String, String>emptyMap(),
-                       new TransportCallbackAdapter<RestResponse>(Callbacks.<RestResponse>empty()));
+    client.streamRequest(new StreamRequestBuilder(URI.create("d2://service-1/foo")).build(EntityStreams.emptyStream()),
+        new RequestContext(),
+        Collections.<String, String>emptyMap(),
+        new TransportCallbackAdapter<StreamResponse>(Callbacks.<StreamResponse>empty()));
 
     _uriRegistry.put("cluster-1", new UriProperties("cluster-1", Collections.<URI, Map<Integer, PartitionData>>emptyMap()));
 
@@ -905,10 +906,10 @@ public class SimpleLoadBalancerStateTest
 
     // Get the client one last time
     client = _state.getClient("service-1", uri);
-    client.restRequest(new RestRequestBuilder(URI.create("d2://service-1/foo")).build(),
-                       new RequestContext(),
-                       Collections.<String, String>emptyMap(),
-                       new TransportCallbackAdapter<RestResponse>(Callbacks.<RestResponse>empty()));
+    client.streamRequest(new StreamRequestBuilder(URI.create("d2://service-1/foo")).build(EntityStreams.emptyStream()),
+        new RequestContext(),
+        Collections.<String, String>emptyMap(),
+        new TransportCallbackAdapter<StreamResponse>(Callbacks.<StreamResponse>empty()));
 
 
 

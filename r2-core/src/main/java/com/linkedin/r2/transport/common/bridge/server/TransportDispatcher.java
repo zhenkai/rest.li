@@ -13,34 +13,42 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
-/* $Id$ */
 package com.linkedin.r2.transport.common.bridge.server;
-
 
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 
 import java.util.Map;
 
 /**
- * Interface for dispatching inbound requests to handlers.
- *
  * @author Chris Pettitt
- * @version $Revision$
+ * @author Zhenkai Zhu
  */
 public interface TransportDispatcher
 {
   /**
-   * Dispatch a {@link RestRequest}.
+   * Dispatch a {@link com.linkedin.r2.message.stream.StreamRequest}.
    *
-   * @param req the {@link com.linkedin.r2.message.rest.RestRequest} to be dispatched.
+   * @param req the {@link com.linkedin.r2.message.stream.StreamRequest} to be dispatched.
    * @param wireAttrs the wire attributes of the request.
    * @param requestContext {@link com.linkedin.r2.message.RequestContext} context for the request
    * @param callback a {@link com.linkedin.r2.transport.common.bridge.common.TransportCallback} to be called with the {@link com.linkedin.r2.message.rest.RestResponse}.
    */
   void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
-                         RequestContext requestContext, TransportCallback<RestResponse> callback);
+                           RequestContext requestContext, TransportCallback<RestResponse> callback);
+
+  /**
+   * Dispatch a {@link com.linkedin.r2.message.stream.StreamRequest}.
+   *
+   * @param req the {@link com.linkedin.r2.message.stream.StreamRequest} to be dispatched.
+   * @param wireAttrs the wire attributes of the request.
+   * @param requestContext {@link com.linkedin.r2.message.RequestContext} context for the request
+   * @param callback a {@link com.linkedin.r2.transport.common.bridge.common.TransportCallback} to be called with the {@link com.linkedin.r2.message.rest.RestResponse}.
+   */
+   void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs,
+                         RequestContext requestContext, TransportCallback<StreamResponse> callback);
 }

@@ -17,8 +17,7 @@ package com.linkedin.restli.server;
 
 import com.linkedin.parseq.Engine;
 import com.linkedin.parseq.EngineBuilder;
-import com.linkedin.r2.transport.http.server.AbstractR2Servlet;
-import com.linkedin.r2.transport.http.server.AsyncR2Servlet;
+import com.linkedin.r2.transport.http.server.AsyncR2StreamServlet;
 import com.linkedin.restli.server.resources.PrototypeResourceFactory;
 import com.linkedin.restli.server.resources.ResourceFactory;
 import java.io.IOException;
@@ -33,7 +32,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 
-import com.linkedin.r2.transport.http.server.RAPServlet;
+import com.linkedin.r2.transport.http.server.RAPStreamServlet;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +120,7 @@ public class RestliServlet extends HttpServlet
     _r2Servlet.init(servletConfig);
   }
 
-  private AbstractR2Servlet buildR2ServletFromServletParams(ServletConfig servletConfig)
+  private HttpServlet buildR2ServletFromServletParams(ServletConfig servletConfig)
   {
     ResourceFactory resourceFactory = new PrototypeResourceFactory();
 
@@ -151,12 +150,12 @@ public class RestliServlet extends HttpServlet
     if (!useAsync)
     {
       log.info("Initializing Rest.li with a thread based request handling.  Set useAsync=true on a Servlet API 3.0 container to enable Rest.li's async servlet.");
-      return new RAPServlet(dispatcher);
+      return new RAPStreamServlet(dispatcher);
     }
     else
     {
       log.info("Initializing Rest.li with an async request handling enabled.");
-      return new AsyncR2Servlet(dispatcher, asyncTimeOut);
+      return new AsyncR2StreamServlet(dispatcher, asyncTimeOut);
     }
   }
 

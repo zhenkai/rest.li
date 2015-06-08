@@ -20,31 +20,6 @@
 
 package com.linkedin.r2.transport.http.client;
 
-import io.netty.channel.Channel;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.codec.TooLongFrameException;
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.nio.channels.UnresolvedAddressException;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.CountDownLatch;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
@@ -55,6 +30,28 @@ import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
+import io.netty.channel.Channel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.handler.codec.TooLongFrameException;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Steven Ihde
@@ -124,7 +121,7 @@ public class TestHttpNettyClient
     TestServer testServer = new TestServer();
 
     HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(500).setIdleTimeout(10000)
-        .setShutdownTimeout(500).build();
+        .setShutdownTimeout(500).buildRest();
 
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
@@ -159,7 +156,7 @@ public class TestHttpNettyClient
                                   .setRequestTimeout(30000)
                                   .setIdleTimeout(10000)
                                   .setShutdownTimeout(500)
-                                  .build();
+                                  .buildRest();
 
     RestRequest r = new RestRequestBuilder(URI.create("http://this.host.does.not.exist.linkedin.com")).build();
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
@@ -194,7 +191,7 @@ public class TestHttpNettyClient
 
     HttpNettyClient client =
         new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(50000).setIdleTimeout(10000)
-            .setShutdownTimeout(500).setMaxResponseSize(TEST_MAX_RESPONSE_SIZE).build();
+            .setShutdownTimeout(500).setMaxResponseSize(TEST_MAX_RESPONSE_SIZE).buildRest();
 
     RestRequest r = new RestRequestBuilder(testServer.getResponseOfSizeURI(responseSize)).build();
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
@@ -237,7 +234,7 @@ public class TestHttpNettyClient
 
     HttpNettyClient client =
         new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(5000000).setIdleTimeout(10000)
-            .setShutdownTimeout(500).setMaxHeaderSize(TEST_MAX_HEADER_SIZE).build();
+            .setShutdownTimeout(500).setMaxHeaderSize(TEST_MAX_HEADER_SIZE).buildRest();
 
     RestRequest r = new RestRequestBuilder(testServer.getResponseWithHeaderSizeURI(headerSize)).build();
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
@@ -270,7 +267,7 @@ public class TestHttpNettyClient
     HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler)
                                   .setRequestTimeout(10000)
                                   .setIdleTimeout(10000)
-                                  .setShutdownTimeout(500).build();
+                                  .setShutdownTimeout(500).buildRest();
 
     RestRequest r = new RestRequestBuilder(testServer.getBadHeaderURI()).build();
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
@@ -300,7 +297,7 @@ public class TestHttpNettyClient
                                   .setRequestTimeout(500)
                                   .setIdleTimeout(10000)
                                   .setShutdownTimeout(500)
-                                  .build();
+                                  .buildRest();
 
     FutureCallback<None> shutdownCallback = new FutureCallback<None>();
     client.shutdown(shutdownCallback);
@@ -373,7 +370,7 @@ public class TestHttpNettyClient
     TestServer testServer = new TestServer();
 
     HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(requestTimeout)
-        .setShutdownTimeout(shutdownTimeout).build();
+        .setShutdownTimeout(shutdownTimeout).buildRest();
 
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
@@ -434,7 +431,7 @@ public class TestHttpNettyClient
     {
       new HttpClientBuilder(_eventLoop, _scheduler)
           .setSSLParameters(new SSLParameters())
-          .build();
+          .buildRest();
     }
     catch (IllegalArgumentException e)
     {
@@ -459,7 +456,7 @@ public class TestHttpNettyClient
       new HttpClientBuilder(_eventLoop, _scheduler)
           .setSSLContext(SSLContext.getDefault())
           .setSSLParameters(sslParameters)
-          .build();
+          .buildRest();
     }
     catch (IllegalArgumentException e)
     {
@@ -482,7 +479,7 @@ public class TestHttpNettyClient
     new HttpClientBuilder(_eventLoop, _scheduler)
         .setSSLContext(SSLContext.getDefault())
         .setSSLParameters(sslParameters)
-        .build();
+        .buildRest();
   }
 
   // Test that cannot set protocols in SSLParameters that don't have any match in
@@ -501,7 +498,7 @@ public class TestHttpNettyClient
       new HttpClientBuilder(_eventLoop, _scheduler)
           .setSSLContext(SSLContext.getDefault())
           .setSSLParameters(sslParameters)
-          .build();
+          .buildRest();
     }
     catch (IllegalArgumentException e)
     {
@@ -525,7 +522,7 @@ public class TestHttpNettyClient
     new HttpClientBuilder(_eventLoop, _scheduler)
         .setSSLContext(SSLContext.getDefault())
         .setSSLParameters(sslParameters)
-        .build();
+        .buildRest();
   }
 
   @Test
@@ -552,7 +549,7 @@ public class TestHttpNettyClient
     HttpNettyClient client =
         new HttpClientBuilder(_eventLoop, _scheduler)
             .setJmxManager(manager)
-            .build();
+            .buildRest();
     // test setPoolStatsProvider
     try
     {
@@ -586,7 +583,7 @@ public class TestHttpNettyClient
     HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler)
           .setSSLContext(context)
           .setSSLParameters(sslParameters)
-          .build();
+          .buildRest();
 
     RestRequest r = new RestRequestBuilder(URI.create("https://www.howsmyssl.com/a/check")).build();
     FutureCallback<RestResponse> cb = new FutureCallback<RestResponse>();
