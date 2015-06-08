@@ -19,7 +19,6 @@ package com.linkedin.restli.internal.server.methods.response;
 
 
 import com.linkedin.restli.common.HttpStatus;
-import com.linkedin.restli.common.ResourceMethod;
 import com.linkedin.restli.internal.server.RestLiResponseEnvelope;
 import com.linkedin.restli.internal.server.RoutingResult;
 import com.linkedin.restli.internal.server.model.ResourceMethodDescriptor;

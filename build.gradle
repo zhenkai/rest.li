@@ -153,7 +153,7 @@ subprojects {
 
   configurations {
     compile {
-      transitive = false
+      transitive = true
     }
     testArtifacts {
       visible = false

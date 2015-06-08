@@ -25,7 +25,6 @@ import com.linkedin.d2.balancer.strategies.LoadBalancerStrategyFactory;
 import com.linkedin.d2.balancer.strategies.degrader.DegraderLoadBalancerStrategyFactoryV3;
 import com.linkedin.d2.balancer.strategies.random.RandomLoadBalancerStrategyFactory;
 import com.linkedin.d2.balancer.util.URIRequest;
-import com.linkedin.d2.discovery.event.PropertyEventThread;
 import com.linkedin.d2.discovery.stores.mock.MockStore;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.transport.common.Client;
