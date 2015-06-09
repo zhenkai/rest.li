@@ -27,6 +27,8 @@ import com.linkedin.r2.message.rest.Request;
 import com.linkedin.r2.message.rest.Response;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +40,8 @@ import java.util.Map;
  */
 /* package private */ class FilterChainImpl implements FilterChain
 {
+  private static final Logger LOG = LoggerFactory.getLogger(FilterChainImpl.class);
+
   private final List<MessageFilter> _streamFilters;
 
   public FilterChainImpl()
@@ -142,6 +146,10 @@ import java.util.Map;
       resFilter = null;
     }
 
+    if (reqFilter == null && resFilter == null)
+    {
+      LOG.warn("Filter " + filter.getClass().getSimpleName() + " is neither stream filter nor message filter. Ignored.");
+    }
     return new ComposedFilter(reqFilter, resFilter);
   }
 
