@@ -1,3 +1,8 @@
 dependencies {
-  compile project(':r2')
+  compile project(':data')
+  compile project(':r2-core')
+  compile externalDependency.commonsCompress
+  compile externalDependency.commonsIo
+  compile externalDependency.snappy
+  testCompile externalDependency.testng
 }

@@ -50,8 +50,6 @@ import com.linkedin.data.template.DynamicRecordMetadata;
 import com.linkedin.data.template.FieldDef;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestException;
-import com.linkedin.r2.transport.common.Client;
-import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.restli.client.ActionRequest;
 import com.linkedin.restli.client.ActionRequestBuilder;
 import com.linkedin.restli.client.AllPartitionsRequestBuilder;
