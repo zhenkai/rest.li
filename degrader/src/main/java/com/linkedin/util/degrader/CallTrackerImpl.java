@@ -311,9 +311,9 @@ public class CallTrackerImpl implements CallTracker
     @Override
     public void record()
     {
-      if (_endTimeRecorded.compareAndSet(false, true))
+      synchronized (_lock)
       {
-        synchronized (_lock)
+        if (_endTimeRecorded.compareAndSet(false, true))
         {
           _endTime = _clock.currentTimeMillis();
         }
