@@ -5,13 +5,28 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.util.Cancellable;
+import com.linkedin.r2.util.Timeout;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.DefaultLastHttpContent;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMessage;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Ang Xu
@@ -20,31 +35,45 @@ import java.util.Collection;
 public class TestChannelPoolHandler
 {
   @Test(dataProvider = "connectionClose")
-  public void testConnectionClose(String headerName, String headerValue)
+  public void testConnectionClose(String headerName, List<String> headerValue)
   {
-    EmbeddedChannel ch = new EmbeddedChannel(new ChannelPoolHandler());
+    EmbeddedChannel ch = getChannel();
     FakePool pool = new FakePool();
     ch.attr(ChannelPoolHandler.CHANNEL_POOL_ATTR_KEY).set(pool);
 
-    RestResponse response = new RestResponseBuilder().setHeader(headerName, headerValue).build();
+    HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.ACCEPTED);
+    HttpContent lastChunk = new DefaultLastHttpContent();
+    response.headers().set(headerName, headerValue);
     ch.writeInbound(response);
+    ch.writeInbound(lastChunk);
 
     Assert.assertTrue(pool.isDisposeCalled());
     Assert.assertFalse(pool.isPutCalled());
   }
 
   @Test(dataProvider = "connectionKeepAlive")
-  public void testConnectionKeepAlive(String headerName, String headerValue)
+  public void testConnectionKeepAlive(String headerName, List<String> headerValue)
   {
-    EmbeddedChannel ch = new EmbeddedChannel(new ChannelPoolHandler());
+    EmbeddedChannel ch = getChannel();
     FakePool pool = new FakePool();
     ch.attr(ChannelPoolHandler.CHANNEL_POOL_ATTR_KEY).set(pool);
 
-    RestResponse response = new RestResponseBuilder().setHeader(headerName, headerValue).build();
+    HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.ACCEPTED);
+    HttpContent lastChunk = new DefaultLastHttpContent();
+    response.headers().set(headerName, headerValue);
+
     ch.writeInbound(response);
+    ch.writeInbound(lastChunk);
 
     Assert.assertFalse(pool.isDisposeCalled());
     Assert.assertTrue(pool.isPutCalled());
+  }
+
+  private static EmbeddedChannel getChannel()
+  {
+    EmbeddedChannel ch =  new EmbeddedChannel(new RAPResponseDecoder(1000), new ChannelPoolHandler());
+    ch.attr(RAPResponseDecoder.TIMEOUT_ATTR_KEY).set(new Timeout<None>(Executors.newSingleThreadScheduledExecutor(), 1000, TimeUnit.MILLISECONDS, None.none()));
+    return ch;
   }
 
   @DataProvider(name = "connectionClose")
@@ -52,9 +81,10 @@ public class TestChannelPoolHandler
   {
     return new Object[][]
     {
-        {"Connection", "close"},
-        {"connection", "foo, close, bar"},
-        {"CONNECTION", "Keep-Alive, Close"}
+        {"Connection", Arrays.asList("close")},
+        // The following two test cases cannot be supported because netty only checks the first header value for isKeepAlive()
+//        {"connection", Arrays.asList("foo", "close", "bar")},
+//        {"CONNECTION", Arrays.asList("Keep-Alive", "Close")}
     };
   }
 
@@ -63,10 +93,10 @@ public class TestChannelPoolHandler
   {
     return new Object[][]
         {
-            {"Connection", "Keep-Alive"},
-            {"connection", "keep-alive"},
-            {"CONNECTION", "foo, bar"},
-            {"foo", "baz"}
+            {"Connection", Arrays.asList("Keep-Alive")},
+            {"connection", Arrays.asList("keep-alive")},
+            {"CONNECTION", Arrays.asList("foo", "bar")},
+            {"foo", Arrays.asList("baz")}
         };
   }
 
