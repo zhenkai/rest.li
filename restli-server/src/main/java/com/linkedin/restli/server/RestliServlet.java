@@ -17,7 +17,6 @@ package com.linkedin.restli.server;
 
 import com.linkedin.parseq.Engine;
 import com.linkedin.parseq.EngineBuilder;
-import com.linkedin.r2.transport.http.server.AbstractR2Servlet;
 import com.linkedin.r2.transport.http.server.AsyncR2Servlet;
 import com.linkedin.restli.server.resources.PrototypeResourceFactory;
 import com.linkedin.restli.server.resources.ResourceFactory;

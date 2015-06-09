@@ -20,9 +20,6 @@ package com.linkedin.d2.balancer.clients;
 import com.linkedin.d2.balancer.clients.TrackerClientTest.TestClient;
 import com.linkedin.d2.balancer.clients.TrackerClientTest.TestTransportCallback;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
-import com.linkedin.r2.message.rest.RestResponse;
 
 import java.net.URI;
 import java.net.URISyntaxException;

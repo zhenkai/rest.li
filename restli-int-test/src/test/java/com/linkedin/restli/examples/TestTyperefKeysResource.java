@@ -18,16 +18,12 @@ package com.linkedin.restli.examples;
 
 
 import com.linkedin.r2.RemoteInvocationException;
-import com.linkedin.r2.transport.common.Client;
-import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
-import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.restli.client.BatchGetEntityRequest;
 import com.linkedin.restli.client.BatchGetKVRequest;
 import com.linkedin.restli.client.BatchGetRequest;
 import com.linkedin.restli.client.CreateIdRequest;
 import com.linkedin.restli.client.CreateRequest;
 import com.linkedin.restli.client.Response;
-import com.linkedin.restli.client.RestClient;
 import com.linkedin.restli.client.RestliRequestOptions;
 import com.linkedin.restli.client.response.BatchKVResponse;
 import com.linkedin.restli.common.BatchResponse;
@@ -40,7 +36,6 @@ import com.linkedin.restli.examples.greetings.client.TyperefKeysBuilders;
 import com.linkedin.restli.examples.greetings.client.TyperefKeysRequestBuilders;
 import com.linkedin.restli.internal.common.TestConstants;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.testng.Assert;

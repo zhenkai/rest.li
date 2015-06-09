@@ -7,7 +7,6 @@ package test.r2.integ;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
-import com.linkedin.r2.sample.echo.ThrowingEchoService;
 
 import java.util.Arrays;
 

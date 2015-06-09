@@ -1,3 +1,12 @@
 dependencies {
-  compile project(':r2')
+  compile project(':pegasus-common')
+  compile project(':data')
+  compile project(':r2-core')
+  compile project(':r2-filter-compression')
+
+  compile externalDependency.commonsLang
+  compile externalDependency.netty
+
+  testCompile project(path: ':r2-core', configuration: 'testArtifacts')
+  testCompile externalDependency.testng
 }
