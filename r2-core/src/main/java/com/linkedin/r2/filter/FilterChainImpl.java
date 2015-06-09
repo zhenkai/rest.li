@@ -146,7 +146,7 @@ import java.util.Map;
       resFilter = null;
     }
 
-    if (reqFilter == null && resFilter == null)
+    if (filter != null && reqFilter == null && resFilter == null)
     {
       LOG.warn("Filter " + filter.getClass().getSimpleName() + " is neither stream filter nor message filter. Ignored.");
     }
