@@ -21,32 +21,78 @@ import com.linkedin.r2.message.streaming.Writer;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.TransportClientFactory;
 import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.server.HttpServer;
+import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import junit.framework.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
  * @author Zhenkai Zhu
  */
-public class TestChannelPoolBehavior extends AbstractStreamTest
+public class TestChannelPoolBehavior
 {
+  private static final int PORT = 8099;
   private static final URI NOT_FOUND_URI = URI.create("/not_found");
   private static final URI NORMAL_URI = URI.create("/normal");
-  private static final long WRITER_DELAY = 100;
+  private static final long WRITER_DELAY = 500;
 
-  @Override
-  protected TransportDispatcher getTransportDispatcher()
+  private HttpServer _server;
+  private TransportClientFactory _clientFactory;
+  private Client _client1;
+  private Client _client2;
+  private ScheduledExecutorService _scheduler;
+
+  @BeforeClass
+  public void setup() throws IOException
+  {
+    _scheduler = Executors.newSingleThreadScheduledExecutor();
+    _clientFactory = new HttpClientFactory();
+    _client1 = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
+    _client2 = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
+    _server = new HttpServerFactory().createServer(PORT, getTransportDispatcher());
+    _server.start();
+  }
+
+  @AfterClass
+  public void tearDown() throws Exception
+  {
+
+    final FutureCallback<None> client1ShutdownCallback = new FutureCallback<None>();
+    _client1.shutdown(client1ShutdownCallback);
+    client1ShutdownCallback.get();
+    final FutureCallback<None> client2ShutdownCallback = new FutureCallback<None>();
+    _client2.shutdown(client2ShutdownCallback);
+    client2ShutdownCallback.get();
+
+    final FutureCallback<None> factoryShutdownCallback = new FutureCallback<None>();
+    _clientFactory.shutdown(factoryShutdownCallback);
+    factoryShutdownCallback.get();
+
+    _scheduler.shutdown();
+    if (_server != null) {
+      _server.stop();
+      _server.waitForStop();
+    }
+  }
+
+  private TransportDispatcher getTransportDispatcher()
   {
     _scheduler = Executors.newSingleThreadScheduledExecutor();
     return new TransportDispatcherBuilder()
@@ -58,8 +104,7 @@ public class TestChannelPoolBehavior extends AbstractStreamTest
   @Test
   public void testChannelBlocked() throws Exception
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
-    client.streamRequest(new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, NOT_FOUND_URI))
+    _client1.streamRequest(new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, NOT_FOUND_URI))
         .build(EntityStreams.newEntityStream(new SlowWriter())), new Callback<StreamResponse>()
     {
       @Override
@@ -75,7 +120,7 @@ public class TestChannelPoolBehavior extends AbstractStreamTest
       }
     });
 
-    Future<RestResponse> responseFuture = _client.restRequest(new RestRequestBuilder(Bootstrap.createHttpURI(PORT, NORMAL_URI)).build());
+    Future<RestResponse> responseFuture = _client1.restRequest(new RestRequestBuilder(Bootstrap.createHttpURI(PORT, NORMAL_URI)).build());
     try
     {
       responseFuture.get(WRITER_DELAY/2 , TimeUnit.MILLISECONDS);
@@ -85,17 +130,12 @@ public class TestChannelPoolBehavior extends AbstractStreamTest
     {
       // expected
     }
-
-    final FutureCallback<None> clientShutdownCallback = new FutureCallback<None>();
-    client.shutdown(clientShutdownCallback);
-    clientShutdownCallback.get();
   }
 
   @Test
   public void testChannelReuse() throws Exception
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
-    client.streamRequest(new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, NOT_FOUND_URI))
+    _client2.streamRequest(new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, NOT_FOUND_URI))
         .build(EntityStreams.newEntityStream(new SlowWriter())), new Callback<StreamResponse>()
     {
       @Override
@@ -111,19 +151,16 @@ public class TestChannelPoolBehavior extends AbstractStreamTest
       }
     });
 
-    Future<RestResponse> responseFuture = _client.restRequest(new RestRequestBuilder(Bootstrap.createHttpURI(PORT, NORMAL_URI)).build());
+    Future<RestResponse> responseFuture = _client2.restRequest(new RestRequestBuilder(Bootstrap.createHttpURI(PORT, NORMAL_URI)).build());
     RestResponse response = responseFuture.get(WRITER_DELAY * 2 , TimeUnit.MILLISECONDS);
     Assert.assertEquals(response.getStatus(), RestStatus.OK);
-    final FutureCallback<None> clientShutdownCallback = new FutureCallback<None>();
-    client.shutdown(clientShutdownCallback);
-    clientShutdownCallback.get();
+
   }
 
-  @Override
-  protected Map<String, String> getClientProperties()
+  private Map<String, String> getClientProperties()
   {
     Map<String, String> clientProperties = new HashMap<String, String>();
-    clientProperties.put(HttpClientFactory.HTTP_POOL_SIZE, "2");
+    clientProperties.put(HttpClientFactory.HTTP_POOL_SIZE, "1");
     clientProperties.put(HttpClientFactory.HTTP_POOL_MIN_SIZE, "1");
     return clientProperties;
   }
