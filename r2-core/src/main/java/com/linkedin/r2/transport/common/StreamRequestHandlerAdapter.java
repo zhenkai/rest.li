@@ -34,7 +34,7 @@ public class StreamRequestHandlerAdapter implements StreamRequestHandler
       public void onError(Throwable e)
       {
         RestResponse restResponse =
-            RestStatus.responseForStatus(RestStatus.INTERNAL_SERVER_ERROR, e.toString());
+            RestStatus.responseForStatus(RestStatus.BAD_REQUEST, "Cannot create RestRequest: " + e.toString());
 
         callback.onSuccess(Messages.toStreamResponse(restResponse));
       }

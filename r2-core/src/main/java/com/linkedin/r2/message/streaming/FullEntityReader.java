@@ -43,8 +43,8 @@ public final class FullEntityReader implements Reader
     }
     catch (Exception ex)
     {
+      _rh.cancel();
       _callback.onError(ex);
-      throw new RuntimeException(ex);
     }
   }
 

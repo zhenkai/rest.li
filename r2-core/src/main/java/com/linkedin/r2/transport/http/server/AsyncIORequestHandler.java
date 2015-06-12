@@ -10,6 +10,8 @@ import javax.servlet.ServletInputStream;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.linkedin.r2.filter.R2Constants.DEFAULT_DATA_CHUNK_SIZE;
+
 /**
  * @author Zhenkai Zhu
  */
@@ -99,7 +101,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
   private void writeIfPossible()
   {
-    byte[] buf = new byte[4096];
+    byte[] buf = new byte[DEFAULT_DATA_CHUNK_SIZE];
     try
     {
       while (_is.isReady() && _wh.remaining() > 0)

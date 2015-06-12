@@ -18,8 +18,24 @@
 package test.r2.message;
 
 
+import com.linkedin.common.callback.Callback;
+import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.RestMethod;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestRequestBuilder;
+import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
+import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
+import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.streaming.ByteStringWriter;
+import com.linkedin.r2.message.streaming.EntityStreams;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.net.URI;
 
 /**
  * @author Chris Pettitt
@@ -27,178 +43,110 @@ import org.testng.annotations.Test;
  */
 public class TestBuilders
 {
-  // TODO [ZZ]: update and uncomment
-//  @Test
-//  public void testChainBuildRestRequestFromRestRequestBuilder()
-//  {
-//    final RestRequest req = new RestRequestBuilder(URI.create("test"))
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setMethod(RestMethod.PUT)
-//            .build()
-//            .builder()
-//              .setEntity(new byte[] {5,6,7,8})
-//              .setHeader("k2", "v2")
-//              .setMethod(RestMethod.POST)
-//              .setURI(URI.create("anotherURI"))
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, req.getEntity().copyBytes());
-//    Assert.assertEquals("v1", req.getHeader("k1"));
-//    Assert.assertEquals("v2", req.getHeader("k2"));
-//    Assert.assertEquals(RestMethod.POST, req.getMethod());
-//    Assert.assertEquals(URI.create("anotherURI"), req.getURI());
-//  }
-//
-//  @Test
-//  public void testChainBuildRestRequestFromRequestBuilder()
-//  {
-//    final RestRequest req = new RestRequestBuilder(URI.create("test"))
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setMethod(RestMethod.PUT)
-//            .build()
-//            .requestBuilder()
-//              .setEntity(new byte[] {5,6,7,8})
-//              .setURI(URI.create("anotherURI"))
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, req.getEntity().copyBytes());
-//    Assert.assertEquals(URI.create("anotherURI"), req.getURI());
-//
-//    Assert.assertTrue(req instanceof RestRequest);
-//    final RestRequest restReq = (RestRequest)req;
-//    Assert.assertEquals("v1", restReq.getHeader("k1"));
-//    Assert.assertEquals(RestMethod.PUT, restReq.getMethod());
-//  }
-//
-//  @Test
-//  public void testChainBuildRestRequestFromRestBuilder()
-//  {
-//    final RestMessage req = new RestRequestBuilder(URI.create("test"))
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setMethod(RestMethod.PUT)
-//            .build()
-//            .restBuilder()
-//              .setEntity(new byte[] {5,6,7,8})
-//              .setHeader("k2", "v2")
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, req.getEntity().copyBytes());
-//    Assert.assertEquals("v1", req.getHeader("k1"));
-//    Assert.assertEquals("v2", req.getHeader("k2"));
-//
-//    Assert.assertTrue(req instanceof RestRequest);
-//    final RestRequest restReq = (RestRequest)req;
-//    Assert.assertEquals(RestMethod.PUT, restReq.getMethod());
-//    Assert.assertEquals(URI.create("test"), restReq.getURI());
-//  }
-//
-//  @Test
-//  public void testChainBuildRestRequestFromMessageBuilder()
-//  {
-//    final MessageBuilder<?> builder = new RestRequestBuilder(URI.create("test"))
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setMethod(RestMethod.PUT)
-//            .build()
-//            .builder();
-//
-//    final Message req = builder
-//              .setEntity(new byte[] {5,6,7,8})
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, req.getEntity().copyBytes());
-//
-//    Assert.assertTrue(req instanceof RestRequest);
-//    final RestRequest restReq = (RestRequest)req;
-//    Assert.assertEquals(RestMethod.PUT, restReq.getMethod());
-//    Assert.assertEquals(URI.create("test"), restReq.getURI());
-//    Assert.assertEquals("v1", restReq.getHeader("k1"));
-//  }
-//
-//  @Test
-//  public void testChainBuildRestResponseFromRestResponseBuilder()
-//  {
-//    final RestResponse res = new RestResponseBuilder()
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setStatus(300)
-//            .build()
-//            .builder()
-//              .setEntity(new byte[] {5,6,7,8})
-//              .setHeader("k2", "v2")
-//              .setStatus(400)
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, res.getEntity().copyBytes());
-//    Assert.assertEquals("v1", res.getHeader("k1"));
-//    Assert.assertEquals("v2", res.getHeader("k2"));
-//    Assert.assertEquals(400, res.getStatus());
-//  }
-//
-//  @Test
-//  public void testChainBuildRestResponseFromResponseBuilder()
-//  {
-//    final Response res = new RestResponseBuilder()
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setStatus(300)
-//            .build()
-//            .responseBuilder()
-//              .setEntity(new byte[] {5,6,7,8})
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, res.getEntity().copyBytes());
-//
-//    Assert.assertTrue(res instanceof RestResponse);
-//    final RestResponse restRes = (RestResponse)res;
-//    Assert.assertEquals("v1", restRes.getHeader("k1"));
-//    Assert.assertEquals(300, restRes.getStatus());
-//  }
-//
-//  @Test
-//  public void testChainBuildRestResponseFromRestBuilder()
-//  {
-//    final RestMessage res = new RestResponseBuilder()
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setStatus(300)
-//            .build()
-//            .restBuilder()
-//              .setEntity(new byte[] {5,6,7,8})
-//              .setHeader("k2", "v2")
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, res.getEntity().copyBytes());
-//    Assert.assertEquals("v1", res.getHeader("k1"));
-//    Assert.assertEquals("v2", res.getHeader("k2"));
-//
-//    Assert.assertTrue(res instanceof RestResponse);
-//    final RestResponse restRes = (RestResponse)res;
-//    Assert.assertEquals(300, restRes.getStatus());
-//  }
-//
-//  @Test
-//  public void testChainBuildRestResponseFromMessageBuilder()
-//  {
-//    final MessageBuilder<?> builder = new RestResponseBuilder()
-//            .setEntity(new byte[] {1,2,3,4})
-//            .setHeader("k1", "v1")
-//            .setStatus(300)
-//            .build()
-//            .builder();
-//
-//    final Message res = builder
-//              .setEntity(new byte[] {5,6,7,8})
-//              .build();
-//
-//    Assert.assertEquals(new byte[] {5,6,7,8}, res.getEntity().copyBytes());
-//
-//    Assert.assertTrue(res instanceof RestResponse);
-//    final RestResponse restRes = (RestResponse)res;
-//    Assert.assertEquals("v1", restRes.getHeader("k1"));
-//    Assert.assertEquals(300, restRes.getStatus());
-//  }
+  @Test
+     public void testChainBuildRestRequestFromRestRequestBuilder()
+{
+  final RestRequest req = new RestRequestBuilder(URI.create("test"))
+      .setEntity(new byte[] {1,2,3,4})
+      .setHeader("k1", "v1")
+      .setMethod(RestMethod.PUT)
+      .build()
+      .builder()
+      .setEntity(new byte[] {5,6,7,8})
+      .setHeader("k2", "v2")
+      .setMethod(RestMethod.POST)
+      .setURI(URI.create("anotherURI"))
+      .build();
+
+  Assert.assertEquals(new byte[] {5,6,7,8}, req.getEntity().copyBytes());
+  Assert.assertEquals("v1", req.getHeader("k1"));
+  Assert.assertEquals("v2", req.getHeader("k2"));
+  Assert.assertEquals(RestMethod.POST, req.getMethod());
+  Assert.assertEquals(URI.create("anotherURI"), req.getURI());
+}
+
+  @Test
+  public void testChainBuildRestResponseFromRestResponseBuilder()
+  {
+    final RestResponse res = new RestResponseBuilder()
+        .setEntity(new byte[] {1,2,3,4})
+        .setHeader("k1", "v1")
+        .setStatus(300)
+        .build()
+        .builder()
+        .setEntity(new byte[] {5,6,7,8})
+        .setHeader("k2", "v2")
+        .setStatus(400)
+        .build();
+
+    Assert.assertEquals(new byte[] {5,6,7,8}, res.getEntity().copyBytes());
+    Assert.assertEquals("v1", res.getHeader("k1"));
+    Assert.assertEquals("v2", res.getHeader("k2"));
+    Assert.assertEquals(400, res.getStatus());
+  }
+
+  @Test
+  public void testChainBuildStreamRequestFromStreamRequestBuilder()
+  {
+    final StreamRequest req = new StreamRequestBuilder(URI.create("test"))
+        .setHeader("k1", "v1")
+        .setMethod(RestMethod.PUT)
+        .build(EntityStreams.newEntityStream(new ByteStringWriter(ByteString.copy(new byte[] {1,2,3,4}))))
+        .builder()
+        .setHeader("k2", "v2")
+        .setMethod(RestMethod.POST)
+        .setURI(URI.create("anotherURI"))
+        .build(EntityStreams.newEntityStream(new ByteStringWriter(ByteString.copy(new byte[] {5,6,7,8}))));
+
+    Messages.toRestRequest(req, new Callback<RestRequest>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        Assert.fail();
+      }
+
+      @Override
+      public void onSuccess(RestRequest result)
+      {
+        Assert.assertEquals(new byte[] {5,6,7,8}, result.getEntity().copyBytes());
+        Assert.assertEquals("v1", req.getHeader("k1"));
+        Assert.assertEquals("v2", req.getHeader("k2"));
+        Assert.assertEquals(RestMethod.POST, req.getMethod());
+        Assert.assertEquals(URI.create("anotherURI"), req.getURI());
+      }
+    });
+
+  }
+
+  @Test
+  public void testChainBuildStreamResponseFromStreamResponseBuilder()
+  {
+    final StreamResponse res = new StreamResponseBuilder()
+        .setHeader("k1", "v1")
+        .setStatus(300)
+        .build(EntityStreams.newEntityStream(new ByteStringWriter(ByteString.copy(new byte[] {1,2,3,4}))))
+        .builder()
+        .setHeader("k2", "v2")
+        .setStatus(400)
+        .build(EntityStreams.newEntityStream(new ByteStringWriter(ByteString.copy(new byte[] {5,6,7,8}))));
+
+    Messages.toRestResponse(res, new Callback<RestResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        Assert.fail();
+      }
+
+      @Override
+      public void onSuccess(RestResponse result)
+      {
+        Assert.assertEquals(new byte[] {5,6,7,8}, result.getEntity().copyBytes());
+        Assert.assertEquals("v1", res.getHeader("k1"));
+        Assert.assertEquals("v2", res.getHeader("k2"));
+        Assert.assertEquals(400, res.getStatus());
+      }
+    });
+  }
 }

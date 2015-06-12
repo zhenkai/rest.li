@@ -1,6 +1,7 @@
 package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
@@ -31,7 +32,7 @@ import java.util.Map;
   private static final int MAX_BUFFERED_CHUNKS = 10;
   // this threshold is to mitigate the effect of the inter-play of Nagle's algorithm & Delayed ACK
   // when sending requests with small entity
-  private static final int FLUSH_THRESHOLD = 8092;
+  private static final int FLUSH_THRESHOLD = R2Constants.DEFAULT_DATA_CHUNK_SIZE;
   private volatile BufferedReader _currentReader;
 
   @Override

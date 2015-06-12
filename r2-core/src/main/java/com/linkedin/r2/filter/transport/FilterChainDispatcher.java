@@ -38,6 +38,13 @@ public class FilterChainDispatcher implements TransportDispatcher
 {
   private final FilterChain _filters;
 
+  /**
+  * Construct a new instance by composing the specified {@link TransportDispatcher} and
+  * {@link FilterChain}.
+  *
+  * @param dispatcher the {@link TransportDispatcher} to be composed.
+  * @param filters the {@link FilterChain} to be composed.
+  */
   public FilterChainDispatcher(TransportDispatcher dispatcher,
                                FilterChain filters)
   {

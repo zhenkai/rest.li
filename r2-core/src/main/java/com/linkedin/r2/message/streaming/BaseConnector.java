@@ -86,12 +86,12 @@ public class BaseConnector implements Reader, Writer
     return rh;
   }
 
-  protected WriteHandle getWriteHandle()
+  protected final WriteHandle getWriteHandle()
   {
     return _wh;
   }
 
-  protected ReadHandle getReadHandle()
+  protected final ReadHandle getReadHandle()
   {
     return _rh;
   }

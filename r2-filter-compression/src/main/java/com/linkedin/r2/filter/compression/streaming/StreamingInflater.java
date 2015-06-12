@@ -17,6 +17,7 @@
 package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 import java.io.IOException;
@@ -33,7 +34,7 @@ import java.util.concurrent.Executor;
  */
 abstract class StreamingInflater extends BufferedReaderInputStream implements Writer
 {
-  private static final int BUF_SIZE = 4096;
+  private static final int BUF_SIZE = R2Constants.DEFAULT_DATA_CHUNK_SIZE;
 
   private final Executor _executor;
   private WriteHandle _wh;
