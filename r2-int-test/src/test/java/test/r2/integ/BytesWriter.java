@@ -16,7 +16,8 @@ import java.util.Arrays;
   private final byte _fill;
   private long _written;
   private WriteHandle _wh;
-  private boolean _error = false;
+  private volatile boolean _error = false;
+  private volatile boolean _isDone = false;
 
   BytesWriter(long total, byte fill)
   {
@@ -46,6 +47,7 @@ import java.util.Arrays;
     if (_written == _total && !_error)
     {
       _wh.done();
+      _isDone = true;
       onFinish();
     }
   }
@@ -54,6 +56,11 @@ import java.util.Arrays;
   public void onAbort(Throwable ex)
   {
     // do nothing
+  }
+
+  public boolean isDone()
+  {
+    return _isDone;
   }
 
   protected void onFinish()
