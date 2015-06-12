@@ -29,6 +29,8 @@ import java.util.Enumeration;
 import java.util.Map;
 
 /**
+ * This class holds the static helper methods for reading request headers, writing response headers, etc.
+ *
  * @author Zhenkai Zhu
  */
 /* package private */class ServletHelper
@@ -174,7 +176,7 @@ import java.util.Map;
       resp.setHeader(e.getKey(), e.getValue());
     }
 
-    StreamResponse streamResponse = null;
+    StreamResponse streamResponse;
     if (response.hasError())
     {
       Throwable e = response.getError();
@@ -182,11 +184,12 @@ import java.util.Map;
       {
         streamResponse = ((StreamException) e).getResponse();
       }
-      if (streamResponse == null)
+      else
       {
         streamResponse = Messages.toStreamResponse(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, e));
       }
-    } else
+    }
+    else
     {
       streamResponse = response.getResponse();
     }

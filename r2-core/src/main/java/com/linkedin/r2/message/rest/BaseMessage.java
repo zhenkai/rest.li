@@ -18,6 +18,8 @@
 package com.linkedin.r2.message.rest;
 
 
+import com.linkedin.util.ArgumentUtil;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +36,8 @@ import java.util.Map;
 
   protected BaseMessage(Map<String, String> headers, List<String> cookies)
   {
-    assert headers != null;
-    assert cookies != null;
+    ArgumentUtil.notNull(headers, "headers");
+    ArgumentUtil.notNull(cookies, "cookies");
     _headers = headers;
     _cookies = cookies;
   }
@@ -89,8 +91,6 @@ import java.util.Map;
   public int hashCode()
   {
     int result = _headers.hashCode();
-    result = 31 * result + _cookies.hashCode();
-
-    return result;
+    return 31 * result + _cookies.hashCode();
   }
 }

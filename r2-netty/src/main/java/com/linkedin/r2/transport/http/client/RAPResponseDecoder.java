@@ -4,6 +4,7 @@ package com.linkedin.r2.transport.http.client;
 import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.RemoteInvocationException;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.EntityStreams;
@@ -55,8 +56,8 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
   private static final FullHttpResponse CONTINUE =
       new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER);
 
-  private static final int BUFFER_HIGH_WATER_MARK = 16 * 1024;
-  private static final int BUFFER_LOW_WATER_MARK = 8 * 1024;
+  private static final int BUFFER_HIGH_WATER_MARK = 3 * R2Constants.DEFAULT_DATA_CHUNK_SIZE;
+  private static final int BUFFER_LOW_WATER_MARK = R2Constants.DEFAULT_DATA_CHUNK_SIZE;
 
   private final long _maxContentLength;
 
@@ -215,10 +216,10 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
     private final int _highWaterMark;
     private final int _lowWaterMark;
     private WriteHandle _wh;
-    private boolean _lastChunkReceived = false;
-    private int _totalBytesWritten = 0;
-    private int _bufferedBytes = 0;
-    private final List<ByteString> _buffer = new LinkedList<ByteString>();
+    private boolean _lastChunkReceived;
+    private int _totalBytesWritten;
+    private int _bufferedBytes;
+    private final List<ByteString> _buffer;
     private final Timeout<None> _timeout;
     private volatile Throwable _failureBeforeInit;
 
@@ -231,6 +232,10 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
       _highWaterMark = highWaterMark;
       _lowWaterMark = lowWaterMark;
       _failureBeforeInit = null;
+      _lastChunkReceived = false;
+      _totalBytesWritten = 0;
+      _bufferedBytes = 0;
+      _buffer = new LinkedList<ByteString>();
 
       // schedule a timeout to close the channel and inform use
       Runnable timeoutTask = new Runnable()

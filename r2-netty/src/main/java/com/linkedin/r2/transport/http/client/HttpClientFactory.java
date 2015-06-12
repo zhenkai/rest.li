@@ -275,7 +275,7 @@ public class HttpClientFactory implements TransportClientFactory
   {
     this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup,
         shutdownCallbackExecutor, jmxManager, requestCompressionThresholdDefault, requestCompressionConfigs,
-        true);
+        false);
   }
 
   public HttpClientFactory(FilterChain filters,
@@ -292,7 +292,7 @@ public class HttpClientFactory implements TransportClientFactory
   {
     this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup,
         shutdownCallbackExecutor, jmxManager, requestCompressionThresholdDefault, requestCompressionConfigs,
-        useClientCompression, true, null);
+        useClientCompression, false, null);
   }
 
   public HttpClientFactory(FilterChain filters,
@@ -330,6 +330,10 @@ public class HttpClientFactory implements TransportClientFactory
     _useClientCompression = useClientCompression;
     _tcpNoDelay = tcpNoDelay;
     _compressionExecutor = compressionExecutor;
+    if (_useClientCompression && _compressionExecutor == null)
+    {
+      throw new IllegalArgumentException("compressionExecutor cannot be null if you want to use client compression");
+    }
   }
 
   @Override
@@ -413,7 +417,7 @@ public class HttpClientFactory implements TransportClientFactory
                                                                                       LIST_SEPARATOR);
     FilterChain filters;
 
-    if (_useClientCompression && _compressionExecutor != null)
+    if (_useClientCompression)
     {
       String httpServiceName = (String) properties.get(HTTP_SERVICE_NAME);
       String requestContentEncodingName = getRequestContentEncodingName(httpRequestServerSupportedEncodings);

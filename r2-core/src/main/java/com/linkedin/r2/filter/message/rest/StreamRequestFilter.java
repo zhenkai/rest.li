@@ -20,14 +20,13 @@ package com.linkedin.r2.filter.message.rest;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 
 import java.util.Map;
 
 /**
- * A filter that processes {@link RestRequest}s.
+ * A filter that processes {@link StreamRequest}s.
  *
  * @author Chris Pettitt
  * @version $Revision$
@@ -35,9 +34,9 @@ import java.util.Map;
 public interface StreamRequestFilter extends Filter
 {
   /**
-   * Method to be invoked for each {@link RestRequest} message.
+   * Method to be invoked for each {@link StreamRequest} message.
    *
-   * @param req the {@link RestRequest} message.
+   * @param req the {@link StreamRequest} message.
    * @param requestContext the {@link RequestContext} of the request.
    * @param wireAttrs the wire attributes of the request.
    * @param nextFilter the next filter in the chain.  Concrete implementations should invoke

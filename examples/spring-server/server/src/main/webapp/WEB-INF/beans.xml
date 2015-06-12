@@ -14,7 +14,7 @@
   <!-- Example of how to add filters,  here we'll enable logging and snappy compression support -->
   <bean id="loggingFilter" class="com.linkedin.r2.filter.logging.SimpleLoggingFilter" />
 
-  <bean id="compressionFilter" class="ServerCompressionFilter" >
+  <bean id="compressionFilter" class="com.linkedin.r2.filter.compression.ServerCompressionFilter" >
     <constructor-arg value="snappy" />
   </bean>
 

@@ -5,6 +5,7 @@ package test.r2.integ;
  */
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 
@@ -38,7 +39,7 @@ import java.util.Arrays;
 
     while(_wh.remaining() >  0 && _written < _total && !_error)
     {
-      int bytesNum = (int)Math.min(4096, _total - _written);
+      int bytesNum = (int)Math.min(R2Constants.DEFAULT_DATA_CHUNK_SIZE, _total - _written);
       _wh.write(generate(bytesNum));
       _written += bytesNum;
       afterWrite(_wh, _written);

@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class AsyncEventIOHandler extends SyncIOHandler
 {
-  private final AtomicBoolean _completed = new AtomicBoolean(false);
   private final AbstractAsyncR2Servlet.WrappedAsyncContext _ctx;
   private volatile boolean _responseWriteStarted = false;
   private boolean _inLoop = false;

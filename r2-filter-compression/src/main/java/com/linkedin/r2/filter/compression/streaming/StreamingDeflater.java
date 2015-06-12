@@ -17,6 +17,7 @@
 package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
@@ -119,7 +120,7 @@ abstract class StreamingDeflater implements Reader, Writer
 
   private class BufferedWriterOutputStream extends OutputStream
   {
-    private static final int BUF_SIZE = 4096;
+    private static final int BUF_SIZE = R2Constants.DEFAULT_DATA_CHUNK_SIZE;
 
     private final Queue<ByteString> _data = new ConcurrentLinkedQueue<ByteString>();
     private final byte[] _buffer = new byte[BUF_SIZE];

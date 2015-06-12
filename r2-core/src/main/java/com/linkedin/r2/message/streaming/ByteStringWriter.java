@@ -1,6 +1,7 @@
 package com.linkedin.r2.message.streaming;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.util.ArgumentUtil;
 
 /**
@@ -35,7 +36,7 @@ public class ByteStringWriter implements Writer
         _wh.done();
         break;
       }
-      int bytesToWrite = Math.min(8092, _content.length() - _offset);
+      int bytesToWrite = Math.min(R2Constants.DEFAULT_DATA_CHUNK_SIZE, _content.length() - _offset);
       _wh.write(_content.slice(_offset, bytesToWrite));
       _offset += bytesToWrite;
     }

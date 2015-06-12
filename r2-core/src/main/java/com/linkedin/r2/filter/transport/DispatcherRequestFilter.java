@@ -91,7 +91,8 @@ public class DispatcherRequestFilter implements StreamRequestFilter
           if (res.hasError())
           {
             nextFilter.onError(res.getError(), requestContext, wireAttrs);
-          } else
+          }
+          else
           {
             nextFilter.onResponse(res.getResponse(), requestContext, wireAttrs);
           }

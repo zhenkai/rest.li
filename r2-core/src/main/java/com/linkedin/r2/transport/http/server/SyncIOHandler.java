@@ -16,6 +16,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.linkedin.r2.filter.R2Constants.DEFAULT_DATA_CHUNK_SIZE;
+
 /**
  * This writer deals with Synchronous IO, which is the case for Servlet API 3.0 & Jetty 8
  *
@@ -30,7 +32,7 @@ public class SyncIOHandler implements Writer, Reader
   private final ServletOutputStream _os;
   private final int _maxBufferedChunks;
   private final BlockingQueue<Event> _eventQueue;
-  private WriteHandle _wh;
+  private volatile WriteHandle _wh;
   private volatile ReadHandle _rh;
   private boolean _forceExit;
   private boolean _requestReadFinished;
@@ -125,7 +127,7 @@ public class SyncIOHandler implements Writer, Reader
         }
         case WriteRequestPossible:
         {
-          byte[] buf = new byte[4096];
+          byte[] buf = new byte[DEFAULT_DATA_CHUNK_SIZE];
           while (_wh.remaining() > 0)
           {
             int actualLen = _is.read(buf);
@@ -173,7 +175,7 @@ public class SyncIOHandler implements Writer, Reader
         }
         case DrainRequest:
         {
-          byte[] buf = new byte[4096];
+          byte[] buf = new byte[DEFAULT_DATA_CHUNK_SIZE];
           for (int i = 0; i < 10; i++)
           {
             int actualLen = _is.read(buf);
@@ -237,10 +239,10 @@ public class SyncIOHandler implements Writer, Reader
     private final EventType _eventType;
     private final Object _data;
 
-    static Event WriteRequestPossibleEvent = new Event(EventType.WriteRequestPossible);
-    static Event FullResponseReceivedEvent = new Event(EventType.FullResponseReceived);
-    static Event DrainRequestEvent = new Event(EventType.DrainRequest);
-    static Event ForceExitEvent = new Event(EventType.ForceExit);
+    static final Event WriteRequestPossibleEvent = new Event(EventType.WriteRequestPossible);
+    static final Event FullResponseReceivedEvent = new Event(EventType.FullResponseReceived);
+    static final Event DrainRequestEvent = new Event(EventType.DrainRequest);
+    static final Event ForceExitEvent = new Event(EventType.ForceExit);
 
     Event(EventType eventType)
     {

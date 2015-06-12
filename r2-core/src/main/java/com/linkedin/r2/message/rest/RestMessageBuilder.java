@@ -20,7 +20,7 @@ package com.linkedin.r2.message.rest;
 import com.linkedin.data.ByteString;
 
 /**
- * An object that builds new messages (rest/rpc, request/response).<p/>
+ * An object that builds new rest messages (request/response).<p/>
  *
  * {@link com.linkedin.r2.message.rest.RestMessage}s in the R2 system are immutable and are safe to use across threads. Builders
  * provide a way to build new Messages, either from scratch or by copying an existing message or

@@ -337,6 +337,7 @@ public final class EntityStreams
           // overflow
           if (_remaining < 0)
           {
+            LOG.warn("chunkNum overflow, setting to Integer.MAX_VALUE");
             _remaining = Integer.MAX_VALUE;
           }
 
