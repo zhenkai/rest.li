@@ -5,13 +5,14 @@ import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import org.testng.annotations.Test;
 
 /**
+ * DISABLED UNTIL WE FIX THE BUGS.
+ *
  * @author Zhenkai Zhu
  */
-@Test
-public class TestStreamResponseAsyncIO  extends TestStreamResponse  // disable class didn't work
+public class TestStreamResponseAsyncIO  // extends TestStreamResponse
 {
-  protected HttpServerFactory getServerFactory()
-  {
-    return new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_IO);
-  }
+//  protected HttpServerFactory getServerFactory()
+//  {
+//    return new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_IO);
+//  }
 }

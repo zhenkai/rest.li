@@ -45,10 +45,9 @@ import javax.servlet.http.HttpServletResponse;
 
 
 /**
- * @author Steven Ihde
- * @author Chris Pettitt
- * @author Fatih Emekci
- * @version $Revision$
+ * WARNING: THIS CLASS IS EXPERIMENTAL AND HAS UNRESOLVED BUGS. DO NOT USE IN PROD.
+ *
+ * @author Zhenkai Zhu
  */
 public abstract class AbstractAsyncIOR2Servlet extends HttpServlet
 {
