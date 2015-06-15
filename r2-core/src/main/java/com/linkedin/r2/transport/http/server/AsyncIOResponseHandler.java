@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * TODO: This class has unresolved bugs that is latent most of times.
+ * E.g. IllegalStateException state=async (or state=unready, or state=ready) would sometimes be thrown.
+ *
  * @author Zhenkai Zhu
  */
 /* package private */class AsyncIOResponseHandler implements WriteListener, Reader

@@ -3,6 +3,8 @@ package com.linkedin.r2.transport.http.server;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
 /**
+ * WARNING: THIS CLASS IS EXPERIMENTAL AND HAS UNRESOLVED BUGS. DO NOT USE IN PROD.
+ *
  * @author Zhenkai Zhu
  */
 public class AsyncIORAPServlet extends AbstractAsyncIOR2Servlet
