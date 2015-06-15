@@ -31,13 +31,14 @@ import java.util.concurrent.BlockingQueue;
  *
  * @author Ang Xu
  */
-public class BufferedReaderInputStream extends InputStream implements Reader
+class BufferedReaderInputStream extends InputStream implements Reader
 {
   private static final int CAPACITY = 3;
   private static final ByteString EOF = ByteString.copy(new byte[1]);
 
   private final BlockingQueue<ByteString> _buffers = new ArrayBlockingQueue<ByteString>(CAPACITY+1);
 
+  private boolean _closed = false;
   private volatile boolean _readFinished = false;
   private volatile Throwable _throwable = null;
 
@@ -92,7 +93,7 @@ public class BufferedReaderInputStream extends InputStream implements Reader
   }
 
   @Override
-  public int available() throws IOException
+  public int available()
   {
     int avail = _buffer == null ? 0 : _buffer.length - _readIndex;
     for (ByteString b : _buffers)
@@ -102,13 +103,21 @@ public class BufferedReaderInputStream extends InputStream implements Reader
     return avail;
   }
 
+  @Override
+  public void close()
+  {
+    _closed = true;
+    _rh.cancel();
+  }
+
   /**
    * Returns true if we have finished reading the backing EntityStream
    * and all buffered bytes have been read.
    */
   private boolean done()
   {
-    return _readFinished && _buffer == null && _buffers.isEmpty();
+    return _closed ||
+        (_readFinished && _buffer == null && _buffers.isEmpty());
   }
 
   /********* Reader Impl *********/
@@ -140,6 +149,5 @@ public class BufferedReaderInputStream extends InputStream implements Reader
     _throwable = e;
     // signal waiters that are waiting on _buffers.take().
     _buffers.add(EOF);
-    //TODO: abort the backing EntityStream
   }
 }

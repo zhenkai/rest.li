@@ -41,7 +41,9 @@ abstract class StreamingDeflater implements Reader, Writer
   private WriteHandle _wh;
   private OutputStream _out;
   private BufferedWriterOutputStream _writerOutputStream;
+  private volatile boolean _readCancelled = false;
 
+  /********* Reader Impl *********/
 
   @Override
   public void onInit(ReadHandle rh)
@@ -52,19 +54,23 @@ abstract class StreamingDeflater implements Reader, Writer
   @Override
   public void onDataAvailable(ByteString data)
   {
-    try
+    if (!_readCancelled)
     {
-      _out.write(data.copyBytes());
-      if (_writerOutputStream.needMore())
+      try
       {
-        _rh.request(1);
+        _out.write(data.copyBytes());
+        if (_writerOutputStream.needMore())
+        {
+          _rh.request(1);
+        }
+      }
+      catch (IOException e)
+      {
+        _wh.error(e);
+        cancel();
       }
     }
-    catch (IOException e)
-    {
-      _wh.error(e);
-      throw new RuntimeException(e);
-    }
+    // otherwise, drop bytes.
   }
 
   @Override
@@ -77,7 +83,6 @@ abstract class StreamingDeflater implements Reader, Writer
     catch (IOException e)
     {
       _wh.error(e);
-      throw new RuntimeException(e);
     }
   }
 
@@ -86,6 +91,8 @@ abstract class StreamingDeflater implements Reader, Writer
   {
     _wh.error(e);
   }
+
+  /********* Writer Impl *********/
 
   @Override
   public void onInit(WriteHandle wh)
@@ -99,7 +106,7 @@ abstract class StreamingDeflater implements Reader, Writer
     catch (IOException e)
     {
       _wh.error(e);
-      throw new RuntimeException(e);
+      cancel();
     }
   }
 
@@ -112,8 +119,13 @@ abstract class StreamingDeflater implements Reader, Writer
   @Override
   public void onAbort(Throwable e)
   {
-    _wh.error(e);
-    //TODO: read out remaining data from ReadHandle
+    cancel();
+  }
+
+  private void cancel()
+  {
+    _rh.cancel();
+    _readCancelled = true;
   }
 
   abstract protected OutputStream createOutputStream(OutputStream out) throws IOException;
