@@ -41,8 +41,7 @@ public class CompositeWriter implements Writer
   public void onInit(WriteHandle wh)
   {
     _wh = wh;
-    EntityStream stream = _entityStreams.next();
-    stream.setReader(_reader);
+    readNextStream();
   }
 
   @Override
@@ -56,13 +55,30 @@ public class CompositeWriter implements Writer
   public void onAbort(Throwable e)
   {
     _aborted = true;
-    _currentRh.request(Integer.MAX_VALUE);
-    while(_entityStreams.hasNext())
+    _currentRh.cancel();
+    drain();
+  }
+
+  private void readNextStream()
+  {
+    if (_entityStreams.hasNext())
+    {
+      EntityStream stream = _entityStreams.next();
+      stream.setReader(_reader);
+    }
+    else
+    {
+      _wh.done();
+    }
+  }
+
+  private void drain()
+  {
+    while (_entityStreams.hasNext())
     {
       EntityStream stream = _entityStreams.next();
       stream.setReader(new DrainReader());
     }
-
   }
 
   private class ReaderImpl implements Reader
@@ -98,15 +114,7 @@ public class CompositeWriter implements Writer
     {
       if (!_aborted)
       {
-        if (_entityStreams.hasNext())
-        {
-          EntityStream stream = _entityStreams.next();
-          stream.setReader(this);
-        }
-        else
-        {
-          _wh.done();
-        }
+        readNextStream();
       }
     }
 
@@ -114,11 +122,7 @@ public class CompositeWriter implements Writer
     public void onError(Throwable e)
     {
       _wh.error(e);
-      while(_entityStreams.hasNext())
-      {
-        EntityStream stream = _entityStreams.next();
-        stream.setReader(new DrainReader());
-      }
+      drain();
     }
   }
 }

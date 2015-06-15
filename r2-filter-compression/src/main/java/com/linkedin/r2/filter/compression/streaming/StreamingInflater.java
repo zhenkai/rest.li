@@ -23,6 +23,7 @@ import com.linkedin.r2.message.streaming.Writer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
+import org.apache.commons.io.IOUtils;
 
 
 /**
@@ -92,8 +93,7 @@ abstract class StreamingInflater extends BufferedReaderInputStream implements Wr
   @Override
   public void onAbort(Throwable e)
   {
-    _wh.error(e);
-    //TODO: read out remaining data from ReadHandle
+    IOUtils.closeQuietly(_in);
   }
 
   abstract protected InputStream createInputStream(InputStream in) throws IOException;
