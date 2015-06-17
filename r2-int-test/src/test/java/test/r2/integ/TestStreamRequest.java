@@ -95,9 +95,8 @@ public class TestStreamRequest extends AbstractStreamTest
     Assert.assertTrue(reader.allBytesCorrect());
   }
 
-  // TODO [ZZ]: is it R2's responsibility to stop the writer from writing more data when server side error happens?
-  // or should the user do it in their callback?
-  @Test
+  // jetty 404 tests singled out
+  @Test(enabled = false)
   public void test404() throws Exception
   {
     final long totalBytes = TINY_BYTES_NUM;
