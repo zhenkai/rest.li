@@ -20,6 +20,8 @@ package com.linkedin.r2.filter;
 import com.linkedin.r2.filter.message.MessageFilter;
 import com.linkedin.r2.filter.message.RequestFilter;
 import com.linkedin.r2.filter.message.ResponseFilter;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.rest.RestResponseFilter;
 import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
@@ -118,6 +120,14 @@ import java.util.Map;
 
   private static MessageFilter adaptStreamFilter(Filter filter)
   {
+    if (filter instanceof RestRequestFilter || filter instanceof RestResponseFilter)
+    {
+      throw new IllegalArgumentException("Filter " + filter.getClass().getSimpleName()
+          + " is RequestRestFilter or RestResponseFilter, which is no longer supported. Consider using "
+          + "StreamRequestFilter and/or StreamResponseFilter instead. If you're sure that your service does not need "
+          + "streaming feature, adapt your Rest filter with StreamFilterAdapters.");
+    }
+
     final RequestFilter reqFilter;
     if (filter instanceof StreamRequestFilter)
     {

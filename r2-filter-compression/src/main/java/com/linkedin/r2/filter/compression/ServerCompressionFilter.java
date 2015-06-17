@@ -112,7 +112,8 @@ public class ServerCompressionFilter implements StreamFilter
       //Process the correct content-encoding types only
       StreamingCompressor compressor = encoding.getCompressor(_executor);
       EntityStream uncompressedStream = compressor.inflate(req.getEntityStream());
-      req = req.builder().build(uncompressedStream);
+      Map<String, String> headers = stripHeaders(req.getHeaders(), HttpConstants.CONTENT_ENCODING);
+      req = req.builder().setHeaders(headers).build(uncompressedStream);
     }
 
     //Get client support for compression and flag compress if need be
