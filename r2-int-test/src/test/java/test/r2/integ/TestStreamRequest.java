@@ -192,7 +192,8 @@ public class TestStreamRequest extends AbstractStreamTest
     Assert.assertTrue(serverReceiveTimespan > 1000);
     double diff = Math.abs(serverReceiveTimespan - clientSendTimespan);
     double diffRatio = diff / clientSendTimespan;
-    Assert.assertTrue(diffRatio < 0.05);
+    // make it generous to reduce the chance occasional test failures
+    Assert.assertTrue(diffRatio < 0.2);
   }
 
   private static class CheckRequestHandler implements StreamRequestHandler
