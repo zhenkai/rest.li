@@ -18,6 +18,7 @@ package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
+import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.WriteHandle;
 import com.linkedin.r2.message.streaming.Writer;
 import java.io.IOException;
@@ -41,15 +42,19 @@ abstract class StreamingInflater extends BufferedReaderInputStream implements Wr
   private WriteHandle _wh;
   private InputStream _in;
 
-  public StreamingInflater(Executor executor)
+  private final EntityStream _underlying;
+
+  public StreamingInflater(EntityStream underlying, Executor executor)
   {
     _executor = executor;
+    _underlying = underlying;
   }
 
   @Override
   public void onInit(WriteHandle wh)
   {
     _wh = wh;
+    _underlying.setReader(this);
   }
 
   @Override
