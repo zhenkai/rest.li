@@ -286,7 +286,7 @@ import org.slf4j.LoggerFactory;
   private void writeRequestWithTimeout(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
                                        TransportCallback<StreamResponse> callback)
   {
-    ExecutionCallback<StreamResponse> executionCallback = new ExecutionCallback<StreamResponse>(_callbackExecutors, callback);
+    ExecutionCallback executionCallback = new ExecutionCallback(_callbackExecutors, callback);
     // By wrapping the callback in a Timeout callback before passing it along, we deny the rest
     // of the code access to the unwrapped callback.  This ensures two things:
     // 1. The user callback will always be invoked, since the Timeout will eventually expire

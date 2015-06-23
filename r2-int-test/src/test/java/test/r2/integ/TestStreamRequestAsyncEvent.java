@@ -27,7 +27,7 @@ public class TestStreamRequestAsyncEvent extends TestStreamRequest
     super.testRequestLarge();
   }
 
-  @Test
+  @Test (enabled = false)
   public void test404() throws Exception
   {
     super.test404();
