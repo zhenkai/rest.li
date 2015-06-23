@@ -17,6 +17,7 @@
 package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.message.streaming.EntityStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -44,9 +45,9 @@ public class SnappyCompressor extends AbstractCompressor
   }
 
   @Override
-  protected StreamingInflater createInflater()
+  protected StreamingInflater createInflater(EntityStream underlying)
   {
-    return new StreamingInflater(_executor)
+    return new StreamingInflater(underlying, _executor)
     {
       @Override
       protected InputStream createInputStream(InputStream in) throws IOException
@@ -57,9 +58,9 @@ public class SnappyCompressor extends AbstractCompressor
   }
 
   @Override
-  protected StreamingDeflater createDeflater()
+  protected StreamingDeflater createDeflater(EntityStream underlying)
   {
-    return new StreamingDeflater()
+    return new StreamingDeflater(underlying)
     {
       @Override
       protected OutputStream createOutputStream(OutputStream out) throws IOException

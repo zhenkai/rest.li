@@ -18,6 +18,7 @@ package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
+import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
 import com.linkedin.r2.message.streaming.WriteHandle;
@@ -42,6 +43,13 @@ abstract class StreamingDeflater implements Reader, Writer
   private OutputStream _out;
   private BufferedWriterOutputStream _writerOutputStream;
   private volatile boolean _readCancelled = false;
+
+  private final EntityStream _underlying;
+
+  public StreamingDeflater(EntityStream underlying)
+  {
+    _underlying = underlying;
+  }
 
   /********* Reader Impl *********/
 
@@ -102,6 +110,7 @@ abstract class StreamingDeflater implements Reader, Writer
       _wh = wh;
       _writerOutputStream = new BufferedWriterOutputStream();
       _out = createOutputStream(_writerOutputStream);
+      _underlying.setReader(this);
     }
     catch (IOException e)
     {
