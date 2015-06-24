@@ -122,6 +122,7 @@ public class HttpClientFactory implements TransportClientFactory
   private final boolean                    _shutdownExecutor;
   private final boolean                    _shutdownCallbackExecutor;
   private final FilterChain                _filters;
+  private final boolean                    _useClientCompression;
   private final Executor                   _compressionExecutor;
 
   private final AtomicBoolean              _finishingShutdown = new AtomicBoolean(false);
@@ -132,7 +133,6 @@ public class HttpClientFactory implements TransportClientFactory
   private final CompressionConfig          _defaultRequestCompressionConfig;
   /** Request compression config for each http service. */
   private final Map<String, CompressionConfig> _requestCompressionConfigs;
-  private final boolean                    _useClientCompression;
   // flag to enable/disable Nagle's algorithm
   private final boolean                    _tcpNoDelay;
 
@@ -259,8 +259,9 @@ public class HttpClientFactory implements TransportClientFactory
                            AbstractJmxManager jmxManager)
   {
     this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup,
-        shutdownCallbackExecutor, jmxManager, Integer.MAX_VALUE, Collections.<String, CompressionConfig>emptyMap());
+        shutdownCallbackExecutor, jmxManager, true);
   }
+
 
   public HttpClientFactory(FilterChain filters,
                            NioEventLoopGroup eventLoopGroup,
@@ -270,12 +271,10 @@ public class HttpClientFactory implements TransportClientFactory
                            ExecutorService callbackExecutorGroup,
                            boolean shutdownCallbackExecutor,
                            AbstractJmxManager jmxManager,
-                           int requestCompressionThresholdDefault,
-                           Map<String, CompressionConfig> requestCompressionConfigs)
+                           boolean tcpNoDelay)
   {
-    this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup,
-        shutdownCallbackExecutor, jmxManager, requestCompressionThresholdDefault, requestCompressionConfigs,
-        false);
+    this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup, shutdownCallbackExecutor,
+        jmxManager, tcpNoDelay, Integer.MAX_VALUE, Collections.<String, CompressionConfig>emptyMap(), null);
   }
 
   public HttpClientFactory(FilterChain filters,
@@ -286,27 +285,9 @@ public class HttpClientFactory implements TransportClientFactory
                            ExecutorService callbackExecutorGroup,
                            boolean shutdownCallbackExecutor,
                            AbstractJmxManager jmxManager,
-                           int requestCompressionThresholdDefault,
-                           Map<String, CompressionConfig> requestCompressionConfigs,
-                           boolean useClientCompression)
-  {
-    this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup,
-        shutdownCallbackExecutor, jmxManager, requestCompressionThresholdDefault, requestCompressionConfigs,
-        useClientCompression, false, null);
-  }
-
-  public HttpClientFactory(FilterChain filters,
-                           NioEventLoopGroup eventLoopGroup,
-                           boolean shutdownFactory,
-                           ScheduledExecutorService executor,
-                           boolean shutdownExecutor,
-                           ExecutorService callbackExecutorGroup,
-                           boolean shutdownCallbackExecutor,
-                           AbstractJmxManager jmxManager,
-                           int requestCompressionThresholdDefault,
-                           Map<String, CompressionConfig> requestCompressionConfigs,
-                           boolean useClientCompression,
                            boolean tcpNoDelay,
+                           int requestCompressionThresholdDefault,
+                           Map<String, CompressionConfig> requestCompressionConfigs,
                            Executor compressionExecutor)
   {
     _filters = filters;
@@ -327,13 +308,9 @@ public class HttpClientFactory implements TransportClientFactory
       throw new IllegalArgumentException("requestCompressionConfigs should not be null.");
     }
     _requestCompressionConfigs = Collections.unmodifiableMap(requestCompressionConfigs);
-    _useClientCompression = useClientCompression;
     _tcpNoDelay = tcpNoDelay;
     _compressionExecutor = compressionExecutor;
-    if (_useClientCompression && _compressionExecutor == null)
-    {
-      throw new IllegalArgumentException("compressionExecutor cannot be null if you want to use client compression");
-    }
+    _useClientCompression = _compressionExecutor != null;
   }
 
   @Override

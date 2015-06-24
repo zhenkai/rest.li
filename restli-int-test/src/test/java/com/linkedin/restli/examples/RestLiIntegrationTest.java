@@ -182,11 +182,10 @@ public class RestLiIntegrationTest
         null,
         false,
         AbstractJmxManager.NULL_JMX_MANAGER,
+        true,
         500,
         // The default compression threshold is between small and large.
         new HashMap<String, CompressionConfig>(),
-        true,
-        true,
         _compressionExecutor);
     _transportClients = new ArrayList<Client>();
     Client client = newTransportClient(Collections.<String, String>emptyMap());
