@@ -20,6 +20,7 @@ package test.r2.perf.client;
 
 import com.linkedin.common.callback.Callbacks;
 import com.linkedin.common.util.None;
+import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.TransportClientFactory;
@@ -29,6 +30,10 @@ import com.linkedin.r2.transport.http.client.HttpClientFactory;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.concurrent.Executors;
+
+import com.linkedin.r2.util.NamedThreadFactory;
+import io.netty.channel.nio.NioEventLoopGroup;
 import test.r2.perf.Generator;
 
 
@@ -38,7 +43,13 @@ import test.r2.perf.Generator;
  */
 public class PerfClients
 {
-  private static final TransportClientFactory FACTORY = new HttpClientFactory();
+  private static final TransportClientFactory FACTORY = new HttpClientFactory(FilterChains.empty(),
+      new NioEventLoopGroup(0 /* use default settings */, new NamedThreadFactory("R2 Nio Event Loop")),
+      true,
+      Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("R2 Netty Scheduler")),
+      true,
+      Executors.newFixedThreadPool(24),
+      true);
   private static int NUM_CLIENTS = 0;
 
   public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize)

@@ -241,10 +241,9 @@ public class TestRequestCompression extends RestLiIntegrationTest
         null,
         false,
         AbstractJmxManager.NULL_JMX_MANAGER,
+        true,
         500, // The default compression threshold is between small and large.
         requestCompressionConfigs,
-        true,
-        true,
         Executors.newCachedThreadPool());
     Map<String, String> properties = new HashMap<String, String>();
 
