@@ -30,6 +30,8 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.linkedin.r2.testutils.filter.RestCountFilter;
+import com.linkedin.r2.testutils.filter.StreamCountFilter;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -111,6 +113,48 @@ public class TestFilterChainImpl
     assertMessageCounts(0, 0, 1, filter3);
   }
 
+  @Test
+  public void testMixChainRequestFilters()
+  {
+    final MessageCountFilter filter1 = new MessageCountFilter();
+    final StreamCountFilter filter2 = new StreamCountFilter();
+    final RestCountFilter filter3 = new RestCountFilter();
+    final FilterChain fc = FilterChains.create(filter1, filter2, filter3);
+
+    fireRestRequest(fc);
+    assertMessageCounts(1, 0, 0, filter1);
+    assertStreamMessageCounts(1, 0, 0, filter2);
+    assertRestMessageCounts(1, 0, 0, filter3);
+  }
+
+  @Test
+  public void testMixChainResponseFilters()
+  {
+    final MessageCountFilter filter1 = new MessageCountFilter();
+    final StreamCountFilter filter2 = new StreamCountFilter();
+    final RestCountFilter filter3 = new RestCountFilter();
+    final FilterChain fc = FilterChains.create(filter1, filter2, filter3);
+
+    fireRestResponse(fc);
+    assertMessageCounts(0, 1, 0, filter1);
+    assertStreamMessageCounts(0, 1, 0, filter2);
+    assertRestMessageCounts(0, 1, 0, filter3);
+  }
+
+  @Test
+  public void testMixChainErrorFilters()
+  {
+    final MessageCountFilter filter1 = new MessageCountFilter();
+    final StreamCountFilter filter2 = new StreamCountFilter();
+    final RestCountFilter filter3 = new RestCountFilter();
+    final FilterChain fc = FilterChains.create(filter1, filter2, filter3);
+
+    fireRestError(fc);
+    assertMessageCounts(0, 0, 1, filter1);
+    assertStreamMessageCounts(0, 0, 1, filter2);
+    assertRestMessageCounts(0, 0, 1, filter3);
+  }
+
   private void fireRestRequest(FilterChain fc)
   {
     fc.onRequest(Messages.toStreamRequest(new RestRequestBuilder(URI.create("src/test/resources/test")).build()),
@@ -147,5 +191,19 @@ public class TestFilterChainImpl
     Assert.assertEquals(req, filter.getReqCount());
     Assert.assertEquals(res, filter.getResCount());
     Assert.assertEquals(err, filter.getErrCount());
+  }
+
+  private void assertStreamMessageCounts(int req, int res, int err, StreamCountFilter filter)
+  {
+    Assert.assertEquals(req, filter.getStreamReqCount());
+    Assert.assertEquals(res, filter.getStreamResCount());
+    Assert.assertEquals(err, filter.getStreamErrCount());
+  }
+
+  private void assertRestMessageCounts(int req, int res, int err, RestCountFilter filter)
+  {
+    Assert.assertEquals(req, filter.getRestReqCount());
+    Assert.assertEquals(res, filter.getRestResCount());
+    Assert.assertEquals(err, filter.getRestErrCount());
   }
 }
