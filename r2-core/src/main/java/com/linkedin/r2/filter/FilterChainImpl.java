@@ -22,6 +22,7 @@ import com.linkedin.r2.filter.message.RequestFilter;
 import com.linkedin.r2.filter.message.ResponseFilter;
 import com.linkedin.r2.filter.message.rest.RestRequestFilter;
 import com.linkedin.r2.filter.message.rest.RestResponseFilter;
+import com.linkedin.r2.filter.message.rest.StreamFilterAdapters;
 import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
@@ -120,14 +121,6 @@ import java.util.Map;
 
   private static MessageFilter adaptStreamFilter(Filter filter)
   {
-    if (filter instanceof RestRequestFilter || filter instanceof RestResponseFilter)
-    {
-      throw new IllegalArgumentException("Filter " + filter.getClass().getSimpleName()
-          + " is RequestRestFilter or RestResponseFilter, which is no longer supported. Consider using "
-          + "StreamRequestFilter and/or StreamResponseFilter instead. If you're sure that your service does not need "
-          + "streaming feature, adapt your Rest filter with StreamFilterAdapters.");
-    }
-
     final RequestFilter reqFilter;
     if (filter instanceof StreamRequestFilter)
     {
@@ -136,6 +129,11 @@ import java.util.Map;
     else if (filter instanceof RequestFilter)
     {
       reqFilter = (RequestFilter) filter;
+    }
+    else if (filter instanceof RestRequestFilter)
+    {
+      reqFilter = adaptStreamRequestFilter((StreamRequestFilter)StreamFilterAdapters.adaptRestFilter(filter));
+      LOG.info("RestRequestFilter [" + filter.getClass().getName() + "] used. This would result in fully buffering requests in memory.");
     }
     else
     {
@@ -151,15 +149,16 @@ import java.util.Map;
     {
       resFilter = (ResponseFilter) filter;
     }
+    else if (filter instanceof RestResponseFilter)
+    {
+      resFilter = adaptStreamResponseFilter((StreamResponseFilter)StreamFilterAdapters.adaptRestFilter(filter));
+      LOG.info("RestResponseFilter [" + filter.getClass().getName() + "] used. This would result in fully buffering responses in memory.");
+    }
     else
     {
       resFilter = null;
     }
 
-    if (filter != null && reqFilter == null && resFilter == null)
-    {
-      LOG.warn("Filter " + filter.getClass().getSimpleName() + " is neither stream filter nor message filter. Ignored.");
-    }
     return new ComposedFilter(reqFilter, resFilter);
   }
 
