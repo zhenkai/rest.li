@@ -5,7 +5,7 @@ import com.linkedin.r2.message.streaming.EntityStream;
 /**
  * @author Zhenkai Zhu
  */
-public interface StreamMessageBuilder<B extends StreamMessageBuilder<B>>
+public interface StreamMessageBuilder<B extends StreamMessageBuilder<B>> extends MessageHeadersBuilder<B>
 {
 
   /**

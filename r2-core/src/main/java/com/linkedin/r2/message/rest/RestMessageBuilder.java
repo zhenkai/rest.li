@@ -45,7 +45,7 @@ import com.linkedin.data.ByteString;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public interface RestMessageBuilder<B extends RestMessageBuilder<B>>
+public interface RestMessageBuilder<B extends RestMessageBuilder<B>> extends MessageHeadersBuilder<B>
 {
   B setEntity(ByteString entity);
 
