@@ -117,26 +117,41 @@ public class FilterUtil
 
   public static void fireRestRequest(FilterChain fc, RestRequest req, Map<String, String> wireAttrs)
   {
+    fireRestRequest(fc, req, emptyRequestContext(), wireAttrs);
+  }
+
+  public static void fireRestRequest(FilterChain fc, RestRequest req, RequestContext requestContext, Map<String, String> wireAttrs)
+  {
     StreamRequest streamRequest = Messages.toStreamRequest(req);
-    wrapFilterChain(fc).onRequest(streamRequest, emptyRequestContext(), wireAttrs);
+    wrapFilterChain(fc).onRequest(streamRequest, requestContext, wireAttrs);
   }
 
   public static void fireRestResponse(FilterChain fc, RestResponse res, Map<String, String> wireAttrs)
   {
+    fireRestResponse(fc, res, emptyRequestContext(), wireAttrs);
+  }
+
+  public static void fireRestResponse(FilterChain fc, RestResponse res, RequestContext requestContext, Map<String, String> wireAttrs)
+  {
     StreamResponse streamResponse = Messages.toStreamResponse(res);
-    wrapFilterChain(fc).onResponse(streamResponse, emptyRequestContext(), wireAttrs);
+    wrapFilterChain(fc).onResponse(streamResponse, requestContext, wireAttrs);
   }
 
   public static void fireRestError(FilterChain fc, Exception ex, Map<String, String> wireAttrs)
   {
+    fireRestError(fc, ex, emptyRequestContext(), wireAttrs);
+  }
+
+  public static void fireRestError(FilterChain fc, Exception ex, RequestContext requestContext, Map<String, String> wireAttrs)
+  {
     if (ex instanceof RestException)
     {
       StreamException streamException = Messages.toStreamException((RestException)ex);
-      wrapFilterChain(fc).onError(streamException, emptyRequestContext(), wireAttrs);
+      wrapFilterChain(fc).onError(streamException, requestContext, wireAttrs);
     }
     else
     {
-      fc.onError(ex, emptyRequestContext(), wireAttrs);
+      fc.onError(ex, requestContext, wireAttrs);
     }
   }
 
