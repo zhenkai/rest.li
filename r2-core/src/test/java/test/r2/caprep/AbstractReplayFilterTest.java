@@ -49,20 +49,7 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
 
     FilterUtil.fireUntypedRequestResponse(fc, Messages.toStreamRequest(req), Messages.toStreamResponse(res));
 
-    Messages.toRestResponse((StreamResponse)captureFilter.getLastRes(), new Callback<RestResponse>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        throw new RuntimeException(e);
-      }
-
-      @Override
-      public void onSuccess(RestResponse result)
-      {
-        Assert.assertEquals(res, result);
-      }
-    });
+    Assert.assertEquals(captureFilter.getLastRes(), res);
   }
 
   @Test
@@ -79,20 +66,7 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
     // We should be able to fire just the request - the response should be replayed from the
     // capture we set up above.
     FilterUtil.fireUntypedRequest(fc, Messages.toStreamRequest(req));
-    Messages.toRestResponse((StreamResponse)captureFilter.getLastRes(), new Callback<RestResponse>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        throw new RuntimeException(e);
-      }
-
-      @Override
-      public void onSuccess(RestResponse result)
-      {
-        Assert.assertEquals(res, result);
-      }
-    });
+    Assert.assertEquals(captureFilter.getLastRes(), res);
   }
 
   @Override

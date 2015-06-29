@@ -20,6 +20,7 @@ package test.r2.caprep;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
@@ -52,21 +53,8 @@ public class TestRestReplayFilter extends AbstractReplayFilterTest
     // capture we set up above. The response should be a RestException since the status code is 404.
     FilterUtil.fireUntypedRequest(fc, Messages.toStreamRequest(req));
 
-    Assert.assertTrue(captureFilter.getLastErr() instanceof StreamException);
-    Messages.toRestResponse(((StreamException)captureFilter.getLastErr()).getResponse(), new Callback<RestResponse>()
-    {
-      @Override
-      public void onError(Throwable e)
-      {
-        throw new RuntimeException(e);
-      }
-
-      @Override
-      public void onSuccess(RestResponse result)
-      {
-        Assert.assertEquals(res, result);
-      }
-    });
+    Assert.assertTrue(captureFilter.getLastErr() instanceof RestException);
+    Assert.assertEquals(((RestException)captureFilter.getLastErr()).getResponse(), res);
   }
 
   @Override
