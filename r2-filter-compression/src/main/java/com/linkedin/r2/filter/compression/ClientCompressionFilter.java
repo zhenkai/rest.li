@@ -217,8 +217,7 @@ public class ClientCompressionFilter implements StreamFilter
   {
     //Set accepted encoding for compressed response
     String operation = (String) requestContext.getLocalAttr(R2Constants.OPERATION);
-    //StreamRequest request = req;
-    if (_acceptedEncodings.length > 0 && shouldCompressResponse(operation))
+    if (operation != null && _acceptedEncodings.length > 0 && shouldCompressResponse(operation))
     {
       req = req.builder().addHeaderValue(HttpConstants.ACCEPT_ENCODING, _acceptEncodingHeader)
           .build(req.getEntityStream());
