@@ -98,7 +98,7 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
       @Override
       public void onTimeout(AsyncEvent event) throws IOException
       {
-        LOG.error("Server timeout");
+        LOG.error("Server timeout for request: " + formatURI(req.getRequestURI()));
         if (startedResponding.compareAndSet(false, true))
         {
           LOG.info("Returning server timeout response");
@@ -117,7 +117,7 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
       @Override
       public void onError(AsyncEvent event) throws IOException
       {
-        LOG.error("Server error");
+        LOG.error("Server error for request: " + formatURI(req.getRequestURI()));
         if (startedResponding.compareAndSet(false, true))
         {
           LOG.info("Returning server error response");
@@ -215,5 +215,11 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
         _ctx.complete();
       }
     }
+  }
+
+  private String formatURI(String uriText)
+  {
+    int queryStringIndex = uriText.lastIndexOf('?');
+    return (queryStringIndex >= 0) ? uriText.substring(0, queryStringIndex) : uriText;
   }
 }
