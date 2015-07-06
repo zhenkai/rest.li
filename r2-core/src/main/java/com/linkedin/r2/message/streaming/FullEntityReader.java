@@ -50,18 +50,7 @@ public final class FullEntityReader implements Reader
 
   public void onDone()
   {
-    ByteString entity;
-
-    try
-    {
-      entity = ByteString.read(_outputStream.toInputStream(), _outputStream.size());
-    }
-    catch (IOException ex)
-    {
-      _callback.onError(ex);
-      return;
-    }
-
+    ByteString entity = ByteString.copy(_outputStream.getBytes(), 0, _outputStream.getBytesCount());
     _callback.onSuccess(entity);
   }
 
@@ -72,9 +61,14 @@ public final class FullEntityReader implements Reader
 
   private static class NoCopyByteArrayOutputStream extends ByteArrayOutputStream
   {
-    public synchronized InputStream toInputStream()
+    byte[] getBytes()
     {
-      return new ByteArrayInputStream(super.buf, 0, super.count);
+      return super.buf;
+    }
+
+    int getBytesCount()
+    {
+      return super.count;
     }
   }
 }
