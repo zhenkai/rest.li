@@ -25,8 +25,10 @@ import java.net.URL;
 import java.util.Map;
 
 /**
-* @author Zhenkai Zhu
-*/
+ * This encoder encodes StreamRequest to Netty's HttpRequest.
+ *
+ * @author Zhenkai Zhu
+ */
 /** package private */class RAPRequestEncoder extends ChannelDuplexHandler
 {
   private static final int MAX_BUFFERED_CHUNKS = 10;
@@ -38,31 +40,19 @@ import java.util.Map;
   @Override
   public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
   {
-    StreamRequest request = (StreamRequest) msg;
-    HttpMethod nettyMethod = HttpMethod.valueOf(request.getMethod());
-    URL url = new URL(request.getURI().toString());
-    String path = url.getFile();
-    // RFC 2616, section 5.1.2:
-    //   Note that the absolute path cannot be empty; if none is present in the original URI,
-    //   it MUST be given as "/" (the server root).
-    if (path.isEmpty())
+    if (msg instanceof StreamRequest)
     {
-      path = "/";
+      StreamRequest request = (StreamRequest) msg;
+      HttpRequest nettyRequest = NettyRequestAdapter.toNettyRequest(request);
+      ctx.write(nettyRequest, promise);
+      _currentReader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS, FLUSH_THRESHOLD);
+      request.getEntityStream().setReader(_currentReader);
     }
-
-    HttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, nettyMethod, path);
-
-    for (Map.Entry<String, String> entry : request.getHeaders().entrySet())
+    else
     {
-      nettyRequest.headers().set(entry.getKey(), entry.getValue());
+      _currentReader = null;
+      ctx.write(msg, promise);
     }
-    nettyRequest.headers().set(HttpHeaders.Names.HOST, url.getAuthority());
-    nettyRequest.headers().set(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
-    nettyRequest.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
-
-    ctx.write(nettyRequest);
-    _currentReader = new BufferedReader(ctx, MAX_BUFFERED_CHUNKS, FLUSH_THRESHOLD);
-    request.getEntityStream().setReader(_currentReader);
   }
 
   @Override

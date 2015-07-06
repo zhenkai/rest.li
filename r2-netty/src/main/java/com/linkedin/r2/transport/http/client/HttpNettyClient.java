@@ -23,7 +23,11 @@ package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.transport.common.MessageType;
@@ -291,7 +295,7 @@ import org.slf4j.LoggerFactory;
     }
   }
 
-  private void writeRequestWithTimeout(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
+  private void writeRequestWithTimeout(final StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
                                        TransportCallback<StreamResponse> callback)
   {
     ExecutionCallback executionCallback = new ExecutionCallback(_callbackExecutors, callback);
@@ -299,17 +303,46 @@ import org.slf4j.LoggerFactory;
     // of the code access to the unwrapped callback.  This ensures two things:
     // 1. The user callback will always be invoked, since the Timeout will eventually expire
     // 2. The user callback is never invoked more than once
-    TimeoutTransportCallback<StreamResponse> timeoutCallback =
+    final TimeoutTransportCallback<StreamResponse> timeoutCallback =
         new TimeoutTransportCallback<StreamResponse>(_scheduler,
                                                    _requestTimeout,
                                                    TimeUnit.MILLISECONDS,
                                                    executionCallback,
                                                    _requestTimeoutMessage);
-    writeRequest(request, requestContext, wireAttrs, timeoutCallback);
+
+    final StreamRequest requestWithWireAttrHeaders = request.builder()
+        .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+        .build(request.getEntityStream());
+
+    // We treat full request (already fully in memory) and real stream request (not fully buffered in memory)
+    // differently. For the latter we have to use chunked transfer encoding. For the former we can avoid
+    // using chunked encoding which has two benefits: 1) slightly save cost of transmitting over the wire; 2) more
+    // importantly legacy R2 servers cannot work with chunked transfer encoding, so this allow the new client
+    // talk to legacy R2 servers without problem if they're just using restRequest (full request).
+    if(!isFullRequest(requestContext))
+    {
+      writeRequest(requestWithWireAttrHeaders, timeoutCallback);
+    }
+    else
+    {
+      Messages.toRestRequest(requestWithWireAttrHeaders, new Callback<RestRequest>()
+      {
+        @Override
+        public void onError(Throwable e)
+        {
+          errorResponse(timeoutCallback, e);
+        }
+
+        @Override
+        public void onSuccess(RestRequest restRequest)
+        {
+          writeRequest(restRequest, timeoutCallback);
+        }
+      });
+    }
   }
 
-  private void writeRequest(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
-                            final TimeoutTransportCallback<StreamResponse> callback)
+  private void writeRequest(final Request request, final TimeoutTransportCallback<StreamResponse> callback)
   {
     State state = _state.get();
     if (state != State.RUNNING)
@@ -330,11 +363,7 @@ import org.slf4j.LoggerFactory;
     if (port == -1) {
       port = "http".equalsIgnoreCase(scheme) ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
-
-    final StreamRequest newRequest = request.builder()
-                                             .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
-                                             .build(request.getEntityStream());
-
+    
     final SocketAddress address;
     try
     {
@@ -413,7 +442,7 @@ import org.slf4j.LoggerFactory;
           return;
         }
 
-        channel.writeAndFlush(newRequest);
+        channel.writeAndFlush(request);
       }
 
       @Override
@@ -438,6 +467,12 @@ import org.slf4j.LoggerFactory;
   static <T> void errorResponse(TransportCallback<T> callback, Throwable e)
   {
     callback.onResponse(TransportResponseImpl.<T>error(e));
+  }
+
+  static boolean isFullRequest(RequestContext requestContext)
+  {
+    Object isFull = requestContext.getLocalAttr(R2Constants.IS_FULL_REQUEST);
+    return isFull != null && (Boolean)isFull;
   }
 
   static Exception toException(Throwable t)
@@ -533,6 +568,7 @@ import org.slf4j.LoggerFactory;
     protected void initChannel(NioSocketChannel ch) throws Exception
     {
       ch.pipeline().addLast("codec", new HttpClientCodec(4096, _maxHeaderSize, _maxChunkSize));
+      ch.pipeline().addLast("rapFullRequestEncoder", new RAPFullRequestEncoder());
       ch.pipeline().addLast("rapEncoder", new RAPRequestEncoder());
       ch.pipeline().addLast("rapDecoder", new RAPResponseDecoder(_maxResponseSize));
       ch.pipeline().addLast("responseHandler", _responseHandler);
