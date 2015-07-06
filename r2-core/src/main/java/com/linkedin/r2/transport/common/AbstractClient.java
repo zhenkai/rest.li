@@ -19,6 +19,7 @@ package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestRequest;
@@ -46,12 +47,10 @@ import java.util.concurrent.Future;
  */
 public abstract class AbstractClient implements Client
 {
-  private static final RequestContext _EMPTY_CONTEXT = new RequestContext();
-
   @Override
   public Future<RestResponse> restRequest(RestRequest request)
   {
-    return restRequest(request, _EMPTY_CONTEXT);
+    return restRequest(request, new RequestContext());
   }
 
   @Override
@@ -65,20 +64,24 @@ public abstract class AbstractClient implements Client
   @Override
   public void restRequest(RestRequest request, Callback<RestResponse> callback)
   {
-    restRequest(request, _EMPTY_CONTEXT, callback);
+    restRequest(request, new RequestContext(), callback);
   }
 
   @Override
   public void streamRequest(StreamRequest request, Callback<StreamResponse> callback)
   {
-    streamRequest(request, _EMPTY_CONTEXT, callback);
+    streamRequest(request, new RequestContext(), callback);
   }
 
   @Override
   public void restRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
   {
     StreamRequest streamRequest = Messages.toStreamRequest(request);
-    streamRequest(streamRequest, requestContext, Messages.toStreamCallback(callback));
+    //make a copy of the caller's RequestContext to make sure we don't modify the caller's copy of request context because
+    // they may reuse it
+    RequestContext newRequestContext = new RequestContext(requestContext);
+    newRequestContext.putLocalAttr(R2Constants.IS_FULL_REQUEST, true);
+    streamRequest(streamRequest, newRequestContext, Messages.toStreamCallback(callback));
   }
 
   @Override
