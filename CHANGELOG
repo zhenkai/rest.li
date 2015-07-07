@@ -1,5 +1,9 @@
+3.0.2
+------
+
 3.0.1
 ------
+RestRequest is sent in full (not chunked)
 
 3.0.0
 ------
