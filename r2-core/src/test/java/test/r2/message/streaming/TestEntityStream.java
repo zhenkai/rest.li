@@ -550,14 +550,7 @@ public class TestEntityStream
     TestObserver observer = new TestObserver();
     final EntityStream es = EntityStreams.newEntityStream(writer);
     es.addObserver(observer);
-    final ControlReader reader = new ControlReader()
-    {
-      @Override
-      public void onInit(ReadHandle rh)
-      {
-        throw new RuntimeException();
-      }
-    };
+    final ControlReader reader = new ControlReader();
 
     ExecutorService executor = Executors.newFixedThreadPool(1);
     executor.submit(new Runnable()
