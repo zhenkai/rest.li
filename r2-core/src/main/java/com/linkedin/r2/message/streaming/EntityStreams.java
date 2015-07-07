@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 ;
 
 /**
@@ -107,10 +108,85 @@ public final class EntityStreams
       }
 
       final WriteHandle wh = new WriteHandleImpl();
-      _writer.onInit(wh);
+      RuntimeException writerInitEx = null;
+      try
+      {
+        _writer.onInit(wh);
+      }
+      catch (RuntimeException ex)
+      {
+        synchronized (_lock)
+        {
+          _state = State.ABORTED;
+        }
+        safeAbortWriter(ex);
+        writerInitEx = ex;
+      }
 
-      final ReadHandle rh = new ReadHandleImpl();
-      _reader.onInit(rh);
+      final AtomicBoolean _notified = new AtomicBoolean(false);
+      final ReadHandle rh;
+      if (writerInitEx == null)
+      {
+        rh = new ReadHandleImpl();
+      }
+      else
+      {
+        final Throwable cause = writerInitEx;
+        rh = new ReadHandle()
+        {
+          @Override
+          public void request(int n)
+          {
+            notifyError();
+          }
+
+          @Override
+          public void cancel()
+          {
+            notifyError();
+          }
+
+          void notifyError()
+          {
+            if (_notified.compareAndSet(false, true))
+            {
+              safeNotifyErrorToObservers(cause);
+              safeNotifyErrorToReader(cause);
+            }
+          }
+        };
+      }
+
+      try
+      {
+        _reader.onInit(rh);
+      }
+      catch (RuntimeException ex)
+      {
+        synchronized (_lock)
+        {
+          if (_state != State.ACTIVE && _state != State.ABORT_REQUESTED && writerInitEx == null)
+          {
+            return;
+          }
+          else
+          {
+            _state = State.ABORTED;
+          }
+        }
+        if (writerInitEx == null)
+        {
+          doCancel(ex, true);
+        }
+        else
+        {
+          if (_notified.compareAndSet(false, true))
+          {
+            safeNotifyErrorToObservers(ex);
+            safeNotifyErrorToReader(ex);
+          }
+        }
+      }
     }
 
     private class WriteHandleImpl implements WriteHandle

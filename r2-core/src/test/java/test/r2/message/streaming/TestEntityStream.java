@@ -503,6 +503,178 @@ public class TestEntityStream
     executor.shutdown();
   }
 
+  @Test
+  public void testReaderInitError() throws Exception
+  {
+    final CountDownLatch latch = new CountDownLatch(1);
+    final TestWriter writer = new TestWriter();
+    TestObserver observer = new TestObserver();
+    final EntityStream es = EntityStreams.newEntityStream(writer);
+    es.addObserver(observer);
+    final ControlReader reader = new ControlReader()
+    {
+      @Override
+      public void onInit(ReadHandle rh)
+      {
+        throw new RuntimeException();
+      }
+    };
+    ExecutorService executor = Executors.newFixedThreadPool(1);
+    executor.submit(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        es.setReader(reader);
+        latch.countDown();
+      }
+    });
+
+    Assert.assertTrue(latch.await(100, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(reader.errorTimes(), 1);
+    Assert.assertEquals(observer.errorTimes(), 1);
+    Assert.assertEquals(writer.abortedTimes(), 1);
+  }
+
+  @Test
+  public void testWriterInitError() throws Exception
+  {
+    final CountDownLatch latch = new CountDownLatch(1);
+    final TestWriter writer = new TestWriter() {
+      @Override
+      public void onInit(WriteHandle wh)
+      {
+        throw new RuntimeException();
+      }
+    };
+    TestObserver observer = new TestObserver();
+    final EntityStream es = EntityStreams.newEntityStream(writer);
+    es.addObserver(observer);
+    final ControlReader reader = new ControlReader()
+    {
+      @Override
+      public void onInit(ReadHandle rh)
+      {
+        throw new RuntimeException();
+      }
+    };
+
+    ExecutorService executor = Executors.newFixedThreadPool(1);
+    executor.submit(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        es.setReader(reader);
+        reader.read(5);
+        latch.countDown();
+      }
+    });
+
+    Assert.assertTrue(latch.await(100, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(reader.errorTimes(), 1);
+    Assert.assertEquals(reader.getChunkCount(), 0);
+    Assert.assertEquals(observer.errorTimes(), 1);
+    Assert.assertEquals(reader.getChunkCount(), 0);
+    Assert.assertEquals(writer.abortedTimes(), 1);
+    Assert.assertEquals(writer.getWritePossibleCount(), 0);
+  }
+
+  @Test
+  public void testWriterAndReaderInitError() throws Exception
+  {
+    final CountDownLatch latch = new CountDownLatch(1);
+    final TestWriter writer = new TestWriter() {
+      @Override
+      public void onInit(WriteHandle wh)
+      {
+        throw new RuntimeException();
+      }
+    };
+    TestObserver observer = new TestObserver();
+    final EntityStream es = EntityStreams.newEntityStream(writer);
+    es.addObserver(observer);
+    final ControlReader reader = new ControlReader()
+    {
+      @Override
+      public void onInit(ReadHandle rh)
+      {
+        throw new RuntimeException();
+      }
+    };
+
+    ExecutorService executor = Executors.newFixedThreadPool(1);
+    executor.submit(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        es.setReader(reader);
+        latch.countDown();
+      }
+    });
+
+    Assert.assertTrue(latch.await(100, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(reader.errorTimes(), 1);
+    Assert.assertEquals(reader.getChunkCount(), 0);
+    Assert.assertEquals(observer.errorTimes(), 1);
+    Assert.assertEquals(reader.getChunkCount(), 0);
+    Assert.assertEquals(writer.abortedTimes(), 1);
+    Assert.assertEquals(writer.getWritePossibleCount(), 0);
+  }
+
+  @Test
+  public void testReaderInitErrorThrowInStreaming() throws Exception
+  {
+    final CountDownLatch latch = new CountDownLatch(1);
+    final TestWriter writer = new TestWriter()
+    {
+      @Override
+      public void onWritePossible()
+      {
+        super.onWritePossible();
+        write();
+      }
+    };
+    TestObserver observer = new TestObserver();
+    final EntityStream es = EntityStreams.newEntityStream(writer);
+    es.addObserver(observer);
+    final ControlReader reader = new ControlReader()
+    {
+      @Override
+      public void onInit(ReadHandle rh)
+      {
+        rh.request(1);
+      }
+
+      @Override
+      public void onDataAvailable(ByteString data)
+      {
+        super.onDataAvailable(data);
+        throw new RuntimeException();
+      }
+    };
+
+    ExecutorService executor = Executors.newFixedThreadPool(1);
+    executor.submit(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        es.setReader(reader);
+        latch.countDown();
+      }
+    });
+
+    Assert.assertTrue(latch.await(100, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(reader.errorTimes(), 1);
+    Assert.assertEquals(reader.getChunkCount(), 1);
+    Assert.assertEquals(observer.errorTimes(), 1);
+    Assert.assertEquals(reader.getChunkCount(), 1);
+    Assert.assertEquals(writer.abortedTimes(), 1);
+    Assert.assertEquals(writer.getWritePossibleCount(), 1);
+  }
+
   private void testRaceBetweenDoneAndCancel(ExecutorService executor) throws Exception
   {
     final CountDownLatch startLatch = new CountDownLatch(1);
