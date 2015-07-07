@@ -1,9 +1,13 @@
+3.0.3
+------
 3.0.2
 ------
+RestRequest is sent in full (not chunked)
+Compression accept-encoding issue fix
 
 3.0.1
 ------
-RestRequest is sent in full (not chunked)
+Compression bug fix
 
 3.0.0
 ------
