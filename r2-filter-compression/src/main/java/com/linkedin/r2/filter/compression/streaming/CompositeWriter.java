@@ -1,7 +1,6 @@
 package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.streaming.DrainReader;
 import com.linkedin.r2.message.streaming.EntityStream;
 import com.linkedin.r2.message.streaming.ReadHandle;
 import com.linkedin.r2.message.streaming.Reader;
@@ -56,7 +55,7 @@ public class CompositeWriter implements Writer
   {
     _aborted = true;
     _currentRh.cancel();
-    drain();
+    cancelAll();
   }
 
   private void readNextStream()
@@ -72,12 +71,12 @@ public class CompositeWriter implements Writer
     }
   }
 
-  private void drain()
+  private void cancelAll()
   {
     while (_entityStreams.hasNext())
     {
       EntityStream stream = _entityStreams.next();
-      stream.setReader(new DrainReader());
+      stream.setReader(new CancelingReader());
     }
   }
 
@@ -122,7 +121,7 @@ public class CompositeWriter implements Writer
     public void onError(Throwable e)
     {
       _wh.error(e);
-      drain();
+      cancelAll();
     }
   }
 }

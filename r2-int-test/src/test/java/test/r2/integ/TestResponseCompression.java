@@ -162,6 +162,13 @@ public class TestResponseCompression extends AbstractStreamTest
   }
 
   @Test
+  public void testNoCompression3()
+      throws InterruptedException, ExecutionException, TimeoutException
+  {
+    testResponseCompression(SMALL_URI, SMALL_BYTES_NUM, "foobar", new NoopCompressor());
+  }
+
+  @Test
   public void testCompressionThreshold()
       throws InterruptedException, ExecutionException, TimeoutException
   {
@@ -172,7 +179,7 @@ public class TestResponseCompression extends AbstractStreamTest
   public void testBadEncoding()
       throws TimeoutException, InterruptedException
   {
-    testEncodingNotAcceptable("foobar");
+    testEncodingNotAcceptable("foobar, identity;q=0");
   }
 
   private void testResponseCompression(URI uri, long bytes, String acceptEncoding, final StreamingCompressor compressor)

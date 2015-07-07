@@ -151,8 +151,6 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
    */
   public static EncodingType chooseBest(List<AcceptEncoding> entries)
   {
-    if (entries.isEmpty()) return null;
-
     Collections.sort(entries);
     HashSet<EncodingType> bannedEncoding = new HashSet<EncodingType>();
 
