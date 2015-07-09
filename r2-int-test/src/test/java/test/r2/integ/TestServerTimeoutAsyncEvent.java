@@ -10,6 +10,7 @@ import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
 import com.linkedin.r2.message.rest.StreamResponseBuilder;
 import com.linkedin.r2.message.streaming.DrainReader;
@@ -22,6 +23,9 @@ import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
+import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
+import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
+import com.linkedin.r2.transport.common.bridge.server.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
@@ -37,6 +41,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,6 +56,7 @@ public class TestServerTimeoutAsyncEvent
   private static final int PORT = 10001;
   private static final URI TIMEOUT_BEFORE_SENDING_RESPONSE_SERVER_URI = URI.create("/timeout-before-sending-response");
   private static final URI TIMEOUT_AFTER_SENDING_RESPONSE_SERVER_URI = URI.create("/timeout-after-sending-response");
+  private static final URI THROW_BUT_SHOULD_NOT_TIMEOUT_URI = URI.create("/throw-but-should-not-timeout");
   private static final int ASYNC_EVENT_TIMEOUT = 500;
   private static final int RESPONSE_SIZE_WRITTEN_SO_FAR = 50 * 1024;
   private HttpClientFactory _clientFactory;
@@ -65,10 +71,27 @@ public class TestServerTimeoutAsyncEvent
     Map<String, Object> clientProperties = new HashMap<String, Object>();
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, String.valueOf(ASYNC_EVENT_TIMEOUT * 20));
     _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
-    Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
+    final Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
     handlers.put(TIMEOUT_BEFORE_SENDING_RESPONSE_SERVER_URI, new TimeoutBeforeRespondingRequestHandler());
     handlers.put(TIMEOUT_AFTER_SENDING_RESPONSE_SERVER_URI, new TimeoutAfterRespondingRequestHandler());
-    TransportDispatcher transportDispatcher = new TransportDispatcherBuilder(handlers).build();
+    handlers.put(THROW_BUT_SHOULD_NOT_TIMEOUT_URI, new ThrowHandler());
+    TransportDispatcher transportDispatcher = new TransportDispatcher()
+    {
+      @Override
+      public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<StreamResponse> callback)
+      {
+        StreamRequestHandler handler = handlers.get(req.getURI());
+        if (handler != null)
+        {
+          handler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
+        }
+        else
+        {
+          req.getEntityStream().setReader(new DrainReader());
+          callback.onResponse(TransportResponseImpl.<StreamResponse>error(new IllegalStateException("Handler not found for URI " + req.getURI())));
+        }
+      }
+    };
     _server = new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_EVENT).createServer(PORT, transportDispatcher, ASYNC_EVENT_TIMEOUT);
     _server.start();
     _asyncExecutor = Executors.newSingleThreadExecutor();
@@ -108,6 +131,40 @@ public class TestServerTimeoutAsyncEvent
     }
   }
 
+  // this test will hang on shutdown if not canceling the request stream in DispatcherRequestFilter when StreamRequestHandler throws
+  @Test
+  public void testServerThrowButShouldNotTimeout() throws Exception
+  {
+    final CountDownLatch latch = new CountDownLatch(2);
+    BytesWriter writer = new BytesWriter(2000 * 1024, (byte)100) {
+      @Override
+      protected void onFinish()
+      {
+        latch.countDown();
+      }
+    };
+    StreamRequest request = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, THROW_BUT_SHOULD_NOT_TIMEOUT_URI)).build(EntityStreams.newEntityStream(writer));
+    _client.streamRequest(request, new Callback<StreamResponse>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        latch.countDown();
+      }
+
+      @Override
+      public void onSuccess(StreamResponse result)
+      {
+        latch.countDown();
+      }
+    });
+
+    Assert.assertTrue(latch.await(ASYNC_EVENT_TIMEOUT * 2, TimeUnit.MILLISECONDS));
+    // Server shouldn't be waiting for the request to finish, which causes timeout
+    // R2 code should have helped to drain the request
+    Assert.assertTrue(writer.isDone());
+  }
+
   @AfterClass
   public void tearDown() throws Exception
   {
@@ -125,6 +182,15 @@ public class TestServerTimeoutAsyncEvent
       _server.waitForStop();
     }
     _asyncExecutor.shutdown();
+  }
+
+  private class ThrowHandler implements StreamRequestHandler
+  {
+    @Override
+    public void handleRequest(final StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
+    {
+      throw new RuntimeException("Throw for test.");
+    }
   }
 
   private class TimeoutBeforeRespondingRequestHandler implements StreamRequestHandler

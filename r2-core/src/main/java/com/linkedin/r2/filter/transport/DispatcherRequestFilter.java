@@ -60,11 +60,12 @@ public class DispatcherRequestFilter implements StreamRequestFilter
                             Map<String, String> wireAttrs,
                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
+    Connector connector = null;
     try
     {
       final AtomicBoolean responded = new AtomicBoolean(false);
       TransportCallback<StreamResponse> callback = createCallback(requestContext, nextFilter, responded);
-      Connector connector = new Connector(responded, nextFilter, requestContext, wireAttrs);
+      connector = new Connector(responded, nextFilter, requestContext, wireAttrs);
       req.getEntityStream().setReader(connector);
       EntityStream newStream = EntityStreams.newEntityStream(connector);
       _dispatcher.handleStreamRequest(req.builder().build(newStream), wireAttrs, requestContext, callback);
@@ -72,6 +73,10 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     catch (Exception e)
     {
       nextFilter.onError(e, requestContext, new HashMap<String, String>());
+      if (connector != null)
+      {
+        connector.cancel();
+      }
     }
   }
 
@@ -127,6 +132,11 @@ public class DispatcherRequestFilter implements StreamRequestFilter
       }
 
       super.onAbort(e);
+    }
+
+    public void cancel()
+    {
+      getReadHandle().cancel();
     }
   }
 }
