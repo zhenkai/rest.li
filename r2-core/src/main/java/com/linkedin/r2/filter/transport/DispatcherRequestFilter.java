@@ -133,10 +133,5 @@ public class DispatcherRequestFilter implements StreamRequestFilter
 
       super.onAbort(e);
     }
-
-    public void cancel()
-    {
-      getReadHandle().cancel();
-    }
   }
 }

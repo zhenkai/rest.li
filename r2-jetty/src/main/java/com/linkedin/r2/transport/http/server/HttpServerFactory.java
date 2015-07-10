@@ -62,9 +62,9 @@ public class HttpServerFactory
   public HttpServer createServer(int port, TransportDispatcher transportDispatcher)
   {
     return createServer(port,
-                        DEFAULT_CONTEXT_PATH,
-                        DEFAULT_THREAD_POOL_SIZE,
-                        transportDispatcher);
+        DEFAULT_CONTEXT_PATH,
+        DEFAULT_THREAD_POOL_SIZE,
+        transportDispatcher);
   }
 
   public HttpServer createServer(int port,
@@ -135,7 +135,9 @@ public class HttpServerFactory
 
   public HttpServer createRAPServer(int port, TransportDispatcher transportDispatcher, int timeout)
   {
-    HttpServlet httpServlet = new RAPServlet(transportDispatcher, timeout);
+    final TransportDispatcher filterDispatcher =
+        new FilterChainDispatcher(transportDispatcher,  _filters);
+    HttpServlet httpServlet = new RAPServlet(filterDispatcher, timeout);
     return new HttpJettyServer(port, httpServlet);
   }
 }

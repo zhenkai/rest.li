@@ -1,5 +1,10 @@
+3.0.4
+------
+
 3.0.3
 ------
+If response finishes streaming or is response is error (not StreamException), cancel the request stream
+
 3.0.2
 ------
 RestRequest is sent in full (not chunked)
