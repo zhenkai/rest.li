@@ -76,6 +76,14 @@ public class BaseConnector implements Reader, Writer
     _rh.cancel();
   }
 
+  public void cancel()
+  {
+    if (_rh != null)
+    {
+      _rh.cancel();
+    }
+  }
+
   protected WriteHandle wrapWriteHandle(WriteHandle wh)
   {
     return wh;

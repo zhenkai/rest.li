@@ -4,11 +4,19 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.filter.FilterChain;
+import com.linkedin.r2.filter.FilterChains;
+import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
+import com.linkedin.r2.filter.transport.FilterChainDispatcher;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.Messages;
 import com.linkedin.r2.message.rest.RestException;
+import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
+import com.linkedin.r2.message.rest.StreamException;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamRequestBuilder;
 import com.linkedin.r2.message.rest.StreamResponse;
@@ -57,7 +65,9 @@ public class TestServerTimeoutAsyncEvent
   private static final URI TIMEOUT_BEFORE_SENDING_RESPONSE_SERVER_URI = URI.create("/timeout-before-sending-response");
   private static final URI TIMEOUT_AFTER_SENDING_RESPONSE_SERVER_URI = URI.create("/timeout-after-sending-response");
   private static final URI THROW_BUT_SHOULD_NOT_TIMEOUT_URI = URI.create("/throw-but-should-not-timeout");
-  private static final int ASYNC_EVENT_TIMEOUT = 500;
+  private static final URI BUGGY_FILTER_URI = URI.create("/buggy-filter");
+  private static final URI STREAM_EXCEPTION_FILTER_URI = URI.create("/stream-exception-filter");
+  private static final int ASYNC_EVENT_TIMEOUT = 1000;
   private static final int RESPONSE_SIZE_WRITTEN_SO_FAR = 50 * 1024;
   private HttpClientFactory _clientFactory;
   private Client _client;
@@ -70,11 +80,14 @@ public class TestServerTimeoutAsyncEvent
     _clientFactory = new HttpClientFactory();
     Map<String, Object> clientProperties = new HashMap<String, Object>();
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, String.valueOf(ASYNC_EVENT_TIMEOUT * 20));
+    clientProperties.put(HttpClientFactory.HTTP_POOL_MIN_SIZE, "1");
+    clientProperties.put(HttpClientFactory.HTTP_POOL_SIZE, "1");
     _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
     final Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
     handlers.put(TIMEOUT_BEFORE_SENDING_RESPONSE_SERVER_URI, new TimeoutBeforeRespondingRequestHandler());
     handlers.put(TIMEOUT_AFTER_SENDING_RESPONSE_SERVER_URI, new TimeoutAfterRespondingRequestHandler());
     handlers.put(THROW_BUT_SHOULD_NOT_TIMEOUT_URI, new ThrowHandler());
+    handlers.put(BUGGY_FILTER_URI, new NormalHandler());
     TransportDispatcher transportDispatcher = new TransportDispatcher()
     {
       @Override
@@ -92,7 +105,8 @@ public class TestServerTimeoutAsyncEvent
         }
       }
     };
-    _server = new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_EVENT).createServer(PORT, transportDispatcher, ASYNC_EVENT_TIMEOUT);
+    FilterChain filterChain = FilterChains.create(new BuggyFilter());
+    _server = new HttpServerFactory(filterChain, HttpJettyServer.ServletType.ASYNC_EVENT).createServer(PORT, transportDispatcher, ASYNC_EVENT_TIMEOUT);
     _server.start();
     _asyncExecutor = Executors.newSingleThreadExecutor();
   }
@@ -131,38 +145,70 @@ public class TestServerTimeoutAsyncEvent
     }
   }
 
-  // this test will hang on shutdown if not canceling the request stream in DispatcherRequestFilter when StreamRequestHandler throws
   @Test
   public void testServerThrowButShouldNotTimeout() throws Exception
   {
-    final CountDownLatch latch = new CountDownLatch(2);
-    BytesWriter writer = new BytesWriter(2000 * 1024, (byte)100) {
-      @Override
-      protected void onFinish()
-      {
-        latch.countDown();
-      }
-    };
-    StreamRequest request = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, THROW_BUT_SHOULD_NOT_TIMEOUT_URI)).build(EntityStreams.newEntityStream(writer));
-    _client.streamRequest(request, new Callback<StreamResponse>()
+    RestRequest request = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, THROW_BUT_SHOULD_NOT_TIMEOUT_URI))
+        .setEntity(new byte[10240]).build();
+
+    _client.restRequest(request);
+    Future<RestResponse> futureResponse = _client.restRequest(request);
+    // if server times out, our second request would fail with TimeoutException because it's blocked by first one
+    try
     {
-      @Override
-      public void onError(Throwable e)
-      {
-        latch.countDown();
-      }
+      futureResponse.get(ASYNC_EVENT_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+      Assert.fail("Should fail with ExecutionException");
+    }
+    catch (ExecutionException ex)
+    {
+      Assert.assertTrue(ex.getCause() instanceof RestException);
+      RestException restException = (RestException)ex.getCause();
+      Assert.assertTrue(restException.getResponse().getEntity().asString("UTF8").contains("Server throw for test."));
+    }
+  }
 
-      @Override
-      public void onSuccess(StreamResponse result)
-      {
-        latch.countDown();
-      }
-    });
+  @Test
+  public void testFilterThrowButShouldNotTimeout() throws Exception
+  {
+    RestRequest request = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, BUGGY_FILTER_URI))
+        .setEntity(new byte[10240]).build();
 
-    Assert.assertTrue(latch.await(ASYNC_EVENT_TIMEOUT * 2, TimeUnit.MILLISECONDS));
-    // Server shouldn't be waiting for the request to finish, which causes timeout
-    // R2 code should have helped to drain the request
-    Assert.assertTrue(writer.isDone());
+    _client.restRequest(request);
+    Future<RestResponse> futureResponse = _client.restRequest(request);
+    // if server times out, our second request would fail with TimeoutException because it's blocked by first one
+    try
+    {
+      futureResponse.get(ASYNC_EVENT_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+      Assert.fail("Should fail with ExecutionException");
+    }
+    catch (ExecutionException ex)
+    {
+      Assert.assertTrue(ex.getCause() instanceof RestException);
+      RestException restException = (RestException)ex.getCause();
+      Assert.assertTrue(restException.getResponse().getEntity().asString("UTF8").contains("Buggy filter throws."));
+    }
+  }
+
+  @Test
+  public void testFilterNotCancelButShouldNotTimeout() throws Exception
+  {
+    RestRequest request = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, STREAM_EXCEPTION_FILTER_URI))
+        .setEntity(new byte[10240]).build();
+
+    _client.restRequest(request);
+    Future<RestResponse> futureResponse = _client.restRequest(request);
+    // if server times out, our second request would fail with TimeoutException because it's blocked by first one
+    try
+    {
+      futureResponse.get(ASYNC_EVENT_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+      Assert.fail("Should fail with ExecutionException");
+    }
+    catch (ExecutionException ex)
+    {
+      Assert.assertTrue(ex.getCause() instanceof RestException);
+      RestException restException = (RestException)ex.getCause();
+      Assert.assertTrue(restException.getResponse().getEntity().asString("UTF8").contains("StreamException in filter."));
+    }
   }
 
   @AfterClass
@@ -189,7 +235,17 @@ public class TestServerTimeoutAsyncEvent
     @Override
     public void handleRequest(final StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
     {
-      throw new RuntimeException("Throw for test.");
+      throw new RuntimeException("Server throw for test.");
+    }
+  }
+
+  private class NormalHandler implements StreamRequestHandler
+  {
+    @Override
+    public void handleRequest(final StreamRequest request, RequestContext requestContext, Callback<StreamResponse> callback)
+    {
+      request.getEntityStream().setReader(new DrainReader());
+      callback.onSuccess(new StreamResponseBuilder().build(EntityStreams.emptyStream()));
     }
   }
 
@@ -276,6 +332,29 @@ public class TestServerTimeoutAsyncEvent
         }
       });
 
+    }
+  }
+
+  private class BuggyFilter implements StreamRequestFilter
+  {
+    @Override
+    public void onRequest(StreamRequest req,
+                          RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
+    {
+      if (req.getURI().equals(BUGGY_FILTER_URI))
+      {
+        throw new RuntimeException("Buggy filter throws.");
+      }
+
+      if (req.getURI().equals(STREAM_EXCEPTION_FILTER_URI))
+      {
+        nextFilter.onError(Messages.toStreamException(RestException.forError(500, "StreamException in filter.")), requestContext, wireAttrs);
+        return;
+      }
+
+      nextFilter.onRequest(req, requestContext, wireAttrs);
     }
   }
 }

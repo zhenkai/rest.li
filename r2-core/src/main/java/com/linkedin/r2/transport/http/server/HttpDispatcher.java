@@ -18,12 +18,17 @@
 package com.linkedin.r2.transport.http.server;
 
 
+import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.BaseConnector;
+import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.streaming.Observer;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
+import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.http.common.HttpBridge;
@@ -73,11 +78,12 @@ public class HttpDispatcher
    */
   public void handleRequest(StreamRequest req,
                             RequestContext context,
-                            TransportCallback<StreamResponse> callback)
+                            final TransportCallback<StreamResponse> callback)
   {
     final Map<String, String> headers = new HashMap<String, String>(req.getHeaders());
     final Map<String, String> wireAttrs = WireAttributeHelper.removeWireAttributes(headers);
 
+    final BaseConnector connector = new BaseConnector();
     try
     {
       MessageType.Type msgType = MessageType.getMessageType(wireAttrs, MessageType.Type.REST);
@@ -85,14 +91,58 @@ public class HttpDispatcher
       {
         default:
         case REST:
-          _dispatcher.handleStreamRequest(HttpBridge.toStreamRequest(req, headers),
+          req.getEntityStream().setReader(connector);
+          StreamRequest newReq = req.builder().build(EntityStreams.newEntityStream(connector));
+
+          // decorate the call back so that if response is error or response finishes streaming,
+          // we cancel the request stream
+          TransportCallback<StreamResponse> decorateCallback = new TransportCallback<StreamResponse>()
+          {
+            @Override
+            public void onResponse(TransportResponse<StreamResponse> response)
+            {
+              // no need to check StreamException because that's handled by HttpBridge.httpToStreamCallback
+              if (response.hasError())
+              {
+                connector.cancel();
+              }
+              else
+              {
+                Observer observer = new Observer()
+                {
+                  @Override
+                  public void onDataAvailable(ByteString data)
+                  {
+                    // do nothing
+                  }
+
+                  @Override
+                  public void onDone()
+                  {
+                    connector.cancel();
+                  }
+
+                  @Override
+                  public void onError(Throwable e)
+                  {
+                    connector.cancel();
+                  }
+                };
+                response.getResponse().getEntityStream().addObserver(observer);
+              }
+
+              callback.onResponse(response);
+            }
+          };
+          _dispatcher.handleStreamRequest(HttpBridge.toStreamRequest(newReq, headers),
                                         wireAttrs,
-                                        context, HttpBridge.httpToStreamCallback(callback)
+                                        context, HttpBridge.httpToStreamCallback(decorateCallback)
           );
       }
     }
     catch (Exception e)
     {
+      connector.cancel();
       callback.onResponse(TransportResponseImpl.<StreamResponse>error(e, Collections.<String, String>emptyMap()));
     }
   }

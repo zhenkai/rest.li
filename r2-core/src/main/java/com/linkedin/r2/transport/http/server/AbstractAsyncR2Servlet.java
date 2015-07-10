@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @SuppressWarnings("serial")
 public abstract class AbstractAsyncR2Servlet extends HttpServlet
 {
-  private static final String TRANSPORT_CALLBACK_IOEXCEPTION = "TransportCallbackIOException";
+  private static final String ASYNC_IOEXCEPTION = "AsyncIOException";
   private static final Logger LOG = LoggerFactory.getLogger(AbstractAsyncR2Servlet.class.getName());
 
   // servlet async context timeout in ms.
@@ -102,7 +102,13 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
         if (startedResponding.compareAndSet(false, true))
         {
           LOG.info("Returning server timeout response");
+          // close connection to be safe
+          resp.addHeader("Connection", "close");
           ServletHelper.writeToServletError(resp, RestStatus.INTERNAL_SERVER_ERROR, "Server timeout");
+        }
+        else
+        {
+          req.setAttribute(ASYNC_IOEXCEPTION, new ServletException("Server timeout"));
         }
         ioHandler.exitLoop();
         wrappedCtx.complete();
@@ -121,7 +127,13 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
         if (startedResponding.compareAndSet(false, true))
         {
           LOG.info("Returning server error response");
+          // close connection to be safe
+          resp.addHeader("Connection", "close");
           ServletHelper.writeToServletError(resp, RestStatus.INTERNAL_SERVER_ERROR, "Server error");
+        }
+        else
+        {
+          req.setAttribute(ASYNC_IOEXCEPTION, new ServletException("Server error"));
         }
         ioHandler.exitLoop();
         wrappedCtx.complete();
@@ -130,7 +142,7 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
       @Override
       public void onComplete(AsyncEvent event) throws IOException
       {
-        Object exception = req.getAttribute(TRANSPORT_CALLBACK_IOEXCEPTION);
+        Object exception = req.getAttribute(ASYNC_IOEXCEPTION);
         if (exception != null)
         {
           throw new IOException((Throwable)exception);
@@ -158,7 +170,7 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
               }
               catch (Exception e)
               {
-                req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+                req.setAttribute(ASYNC_IOEXCEPTION, e);
                 wrappedCtx.complete();
               }
             }
@@ -184,7 +196,7 @@ public abstract class AbstractAsyncR2Servlet extends HttpServlet
         }
         catch (Exception e)
         {
-          req.setAttribute(TRANSPORT_CALLBACK_IOEXCEPTION, e);
+          req.setAttribute(ASYNC_IOEXCEPTION, e);
           wrappedCtx.complete();
         }
       }
