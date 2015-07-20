@@ -44,7 +44,7 @@ public class HttpJettyServer implements HttpServer
   private Server            _server;
   private final HttpServlet _servlet;
 
-  public enum ServletType {RAP, ASYNC_EVENT, ASYNC_IO}
+  public enum ServletType {RAP, ASYNC_EVENT}
 
   public HttpJettyServer(int port, HttpDispatcher dispatcher)
   {
@@ -140,9 +140,6 @@ public class HttpJettyServer implements HttpServer
     HttpServlet httpServlet;
     switch (type)
     {
-      case ASYNC_IO:
-        httpServlet = new AsyncIORAPServlet(dispatcher, timeout);
-        break;
       case ASYNC_EVENT:
         httpServlet = new AsyncR2Servlet(dispatcher, timeout);
         break;
