@@ -174,19 +174,11 @@ public class RestLiIntegrationTest
 
   private void initClient(String uriPrefix)
   {
-    _clientFactory = new HttpClientFactory(FilterChains.empty(),
-        new NioEventLoopGroup(),
-        true,
-        Executors.newSingleThreadScheduledExecutor(),
-        true,
-        null,
-        false,
-        AbstractJmxManager.NULL_JMX_MANAGER,
-        true,
-        500,
-        // The default compression threshold is between small and large.
-        new HashMap<String, CompressionConfig>(),
-        _compressionExecutor);
+    _clientFactory = new HttpClientFactory.Builder()
+        .setRequestCompressionThresholdDefault(500)
+        .setRequestCompressionConfigs(new HashMap<String, CompressionConfig>())
+        .setCompressionExecutor(_compressionExecutor)
+        .build();
     _transportClients = new ArrayList<Client>();
     Client client = newTransportClient(Collections.<String, String>emptyMap());
     _restClient = new RestClient(client, uriPrefix);

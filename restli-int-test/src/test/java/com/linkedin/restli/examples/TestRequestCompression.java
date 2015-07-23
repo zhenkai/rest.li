@@ -233,18 +233,13 @@ public class TestRequestCompression extends RestLiIntegrationTest
     {
       requestCompressionConfigs.put(SERVICE_NAME, requestCompressionConfig);
     }
-    HttpClientFactory httpClientFactory = new HttpClientFactory(FilterChains.empty(),
-        new NioEventLoopGroup(),
-        true,
-        executor,
-        true,
-        null,
-        false,
-        AbstractJmxManager.NULL_JMX_MANAGER,
-        true,
-        500, // The default compression threshold is between small and large.
-        requestCompressionConfigs,
-        Executors.newCachedThreadPool());
+
+    HttpClientFactory httpClientFactory = new HttpClientFactory.Builder()
+        .setScheduleExecutorService(executor)
+        .setRequestCompressionThresholdDefault(500)
+        .setRequestCompressionConfigs(requestCompressionConfigs)
+        .setCompressionExecutor(Executors.newCachedThreadPool())
+        .build();
     Map<String, String> properties = new HashMap<String, String>();
 
     properties.put(HttpClientFactory.HTTP_REQUEST_CONTENT_ENCODINGS, supportedEncodings);

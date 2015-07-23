@@ -314,6 +314,108 @@ public class HttpClientFactory implements TransportClientFactory
     _useClientCompression = _compressionExecutor != null;
   }
 
+  public static class Builder
+  {
+    private NioEventLoopGroup          _eventLoopGroup = null;
+    private ScheduledExecutorService   _executor = null;
+    private ExecutorService            _callbackExecutorGroup = null;
+    private boolean                    _shutdownFactory = true;
+    private boolean                    _shutdownExecutor = true;
+    private boolean                    _shutdownCallbackExecutor = false;
+    private FilterChain                _filters = FilterChains.empty();
+    private Executor                   _compressionExecutor = null;
+    private AbstractJmxManager         _jmxManager = AbstractJmxManager.NULL_JMX_MANAGER;
+
+    private int                        _requestCompressionThresholdDefault = Integer.MAX_VALUE;
+    private Map<String, CompressionConfig> _requestCompressionConfigs = Collections.<String, CompressionConfig>emptyMap();
+    private boolean                    _tcpNoDelay = true;
+
+    public Builder setNioEventLoopGroup(NioEventLoopGroup nioEventLoopGroup)
+    {
+      _eventLoopGroup = nioEventLoopGroup;
+      return this;
+    }
+
+    public Builder setScheduleExecutorService(ScheduledExecutorService scheduleExecutorService)
+    {
+      _executor = scheduleExecutorService;
+      return this;
+    }
+
+    public Builder setCallbackExecutor(ExecutorService callbackExecutor)
+    {
+      _callbackExecutorGroup = callbackExecutor;
+      return this;
+    }
+
+    public Builder setShutDownFactory(boolean shutDownFactory)
+    {
+      _shutdownFactory = shutDownFactory;
+      return this;
+    }
+
+    public Builder setShutdownScheduledExecutorService(boolean shutdown)
+    {
+      _shutdownExecutor = shutdown;
+      return this;
+    }
+
+    public Builder setShutdownCallbackExecutor(boolean shutdown)
+    {
+      _shutdownCallbackExecutor = shutdown;
+      return this;
+    }
+
+    public Builder setFilterChain(FilterChain filterChain)
+    {
+      _filters = filterChain;
+      return this;
+    }
+
+    public Builder setCompressionExecutor(Executor executor)
+    {
+      _compressionExecutor = executor;
+      return this;
+    }
+
+    public Builder setJmxManager(AbstractJmxManager jmxManager)
+    {
+      _jmxManager = jmxManager;
+      return this;
+    }
+
+    public Builder setRequestCompressionThresholdDefault(int thresholdDefault)
+    {
+      _requestCompressionThresholdDefault = thresholdDefault;
+      return this;
+    }
+
+    public Builder setRequestCompressionConfigs(Map<String, CompressionConfig> configs)
+    {
+      _requestCompressionConfigs = configs;
+      return this;
+    }
+
+    public Builder setTcpNoDelay(boolean tcpNoDelay)
+    {
+      _tcpNoDelay = tcpNoDelay;
+      return this;
+    }
+
+    public HttpClientFactory build()
+    {
+      NioEventLoopGroup eventLoopGroup = _eventLoopGroup != null ? _eventLoopGroup
+          : new NioEventLoopGroup(0 /* use default settings */, new NamedThreadFactory("R2 Nio Event Loop"));
+      ScheduledExecutorService scheduledExecutorService = _executor != null ? _executor
+          : Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("R2 Netty Scheduler"));
+
+      return new HttpClientFactory(_filters, eventLoopGroup, _shutdownFactory, scheduledExecutorService,
+          _shutdownExecutor, _callbackExecutorGroup, _shutdownCallbackExecutor, _jmxManager,
+          _tcpNoDelay, _requestCompressionThresholdDefault, _requestCompressionConfigs, _compressionExecutor);
+    }
+
+  }
+
   @Override
   public TransportClient getClient(Map<String, ? extends Object> properties)
   {
