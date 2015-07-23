@@ -82,7 +82,8 @@ public abstract class AbstractClient implements Client
     // they may reuse it
     RequestContext newRequestContext = new RequestContext(requestContext);
     newRequestContext.putLocalAttr(R2Constants.IS_FULL_REQUEST, true);
-    streamRequest(streamRequest, newRequestContext, Messages.toStreamCallback(callback));
+    // here we add back the content-length header for the response because some client code depends on this header
+    streamRequest(streamRequest, newRequestContext, Messages.toStreamCallback(callback, true));
   }
 
   @Override

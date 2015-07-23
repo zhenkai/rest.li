@@ -5,6 +5,7 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.ByteStringWriter;
 import com.linkedin.r2.message.streaming.EntityStreams;
 import com.linkedin.r2.message.streaming.FullEntityReader;
+import com.linkedin.r2.transport.http.common.HttpConstants;
 
 
 /**
@@ -49,6 +50,17 @@ public final class Messages
    */
   public static void toRestResponse(StreamResponse streamResponse, final Callback<RestResponse> callback)
   {
+    toRestResponse(streamResponse, callback, false);
+  }
+
+  /**
+   * Converts a StreamResponse to RestResponse
+   * @param streamResponse the stream request to be converted
+   * @param callback the callback to be invoked when the rest response is constructed
+   * @param addContentLengthHeader whether the rest response should have content-length header
+   */
+  public static void toRestResponse(StreamResponse streamResponse, final Callback<RestResponse> callback, final boolean addContentLengthHeader)
+  {
     final RestResponseBuilder builder = new RestResponseBuilder(streamResponse);
     Callback<ByteString> assemblyCallback = new Callback<ByteString>()
     {
@@ -61,6 +73,10 @@ public final class Messages
       @Override
       public void onSuccess(ByteString result)
       {
+        if (addContentLengthHeader)
+        {
+          builder.setHeader(HttpConstants.CONTENT_LENGTH, String.valueOf(result.length()));
+        }
         RestResponse restResponse = builder.setEntity(result).build();
         callback.onSuccess(restResponse);
       }
@@ -97,6 +113,17 @@ public final class Messages
    */
   public static void toRestException(final StreamException streamException, final Callback<RestException> callback)
   {
+    toRestException(streamException, callback, false);
+  }
+
+  /**
+   * Converts a StreamException to RestException
+   * @param streamException the stream exception to be converted
+   * @param callback the callback to be invoked when the rest exception is constructed
+   * @param addContentLengthHeader whether to add content length header for the rest response
+   */
+  public static void toRestException(final StreamException streamException, final Callback<RestException> callback, final boolean addContentLengthHeader)
+  {
     toRestResponse(streamException.getResponse(), new Callback<RestResponse>()
     {
       @Override
@@ -111,7 +138,7 @@ public final class Messages
         callback.onSuccess(new RestException(result, streamException.getMessage(), streamException.getCause()));
 
       }
-    });
+    }, addContentLengthHeader);
   }
 
   /**
@@ -133,6 +160,19 @@ public final class Messages
    */
   public static Callback<StreamResponse> toStreamCallback(final Callback<RestResponse> callback)
   {
+    return toStreamCallback(callback, false);
+  }
+
+  /**
+   * Creates a Callback of StreamResponse based on a Callback of RestResponse.
+   * If the throwable in the error case is StreamException, it will be converted to RestException.
+   *
+   * @param callback the callback of rest response
+   * @param addContentLengthHeader whether to add content-length header for the rest response
+   * @return callback of stream response
+   */
+  public static Callback<StreamResponse> toStreamCallback(final Callback<RestResponse> callback, final boolean addContentLengthHeader)
+  {
     return new Callback<StreamResponse>()
     {
       @Override
@@ -153,7 +193,7 @@ public final class Messages
             {
               callback.onError(restException);
             }
-          });
+          }, addContentLengthHeader);
         }
         else
         {
@@ -177,7 +217,7 @@ public final class Messages
           {
             callback.onSuccess(restResponse);
           }
-        });
+        }, addContentLengthHeader);
       }
     };
   }
