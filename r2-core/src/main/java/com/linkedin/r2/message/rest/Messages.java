@@ -103,7 +103,7 @@ public final class Messages
   public static StreamResponse toStreamResponse(RestResponse restResponse)
   {
     StreamResponseBuilder builder = new StreamResponseBuilder(restResponse);
-    return builder.build(EntityStreams.newEntityStream(new ByteStringWriter(restResponse.getEntity())));
+    return builder.setHeader(HttpConstants.CONTENT_LENGTH, String.valueOf(restResponse.getEntity().length())).build(EntityStreams.newEntityStream(new ByteStringWriter(restResponse.getEntity())));
   }
 
   /**
