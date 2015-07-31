@@ -30,6 +30,7 @@ public class PerfConfig
   private static final String PERF_HTTP_PORT = "perf.http.port";
   private static final String PERF_CLIENT_NUM_THREADS = "perf.client.num_threads";
   private static final String PERF_CLIENT_NUM_MSGS = "perf.client.num_msgs";
+  private static final String PERF_CLIENT_QPS_PER_THREAD = "perf.client.qps.per_thread";
   private static final String PERF_CLIENT_MSG_SIZE = "perf.client.msg_size";
   private static final String PERF_RELATIVE_URI = "perf.relative_uri";
   private static final String PERF_HOST = "perf.host";
@@ -48,6 +49,7 @@ public class PerfConfig
   private static final int DEFAULT_CLIENT_NUM_MSGS = 500 * 1000;
   private static final int DEFAULT_CLIENT_MSG_SIZE = 1000;
   private static final int DEFAULT_SERVER_MSG_SIZE = 1000;
+  private static final int DEFAULT_CLIENT_QPS_PER_THREAD = -1;
 
   public static int getHttpPort()
   {
@@ -98,6 +100,8 @@ public class PerfConfig
   {
     return getBoolean(PERF_SERVER_PURE_STREAMING);
   }
+
+  public static int getQpsPerThread() { return getInt(PERF_CLIENT_QPS_PER_THREAD);}
 
   private static URI getUri(String propName)
   {
