@@ -6,5 +6,6 @@ package test.r2.perf.client;
 
 public interface RateLimiter
 {
+  void init();
   boolean acquirePermit();
 }

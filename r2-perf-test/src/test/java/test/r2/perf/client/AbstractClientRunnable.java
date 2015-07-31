@@ -63,6 +63,7 @@ import test.r2.perf.Generator;
     }
 
     REQ nextMsg;
+    _rateLimiter.init();
     while ((nextMsg = _workGen.nextMessage()) != null)
     {
       _rateLimiter.acquirePermit();
