@@ -38,9 +38,10 @@ import test.r2.perf.Generator;
   public RestClientRunnable(Client client,
                         AtomicReference<Stats> stats,
                         CountDownLatch startLatch,
-                        Generator<RestRequest> reqGen)
+                        Generator<RestRequest> reqGen,
+                        RateLimiter rateLimiter)
   {
-    super(stats, startLatch, reqGen);
+    super(stats, startLatch, reqGen, rateLimiter);
     _client = client;
   }
 

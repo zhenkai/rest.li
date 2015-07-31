@@ -53,22 +53,22 @@ public class PerfClients
       true);
   private static int NUM_CLIENTS = 0;
 
-  public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize)
+  public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize, int qps)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
     final Client client = new TransportClientAdapter(transportClient);
     final Generator<RestRequest> reqGen = new RestRequestGenerator(uri, numMsgs, msgSize);
-    final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen);
+    final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen, qps);
 
     return new FactoryClient(crf, numThreads);
   }
 
-  public static PerfClient httpStream(URI uri, int numThreads, int numMsgs, int msgSize)
+  public static PerfClient httpStream(URI uri, int numThreads, int numMsgs, int msgSize, int qps)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
     final Client client = new TransportClientAdapter(transportClient);
     final Generator<StreamRequest> reqGen = new StreamRequestGenerator(uri, numMsgs, msgSize);
-    final ClientRunnableFactory crf = new StreamClientRunnableFactory(client, reqGen);
+    final ClientRunnableFactory crf = new StreamClientRunnableFactory(client, reqGen, qps);
 
     return new FactoryClient(crf, numThreads);
   }

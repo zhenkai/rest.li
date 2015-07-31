@@ -22,6 +22,7 @@ import com.linkedin.common.callback.FutureCallback;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+
 import test.r2.perf.Generator;
 
 
@@ -34,14 +35,17 @@ import test.r2.perf.Generator;
   private final AtomicReference<Stats> _stats;
   private final CountDownLatch _startLatch;
   private final Generator<REQ> _workGen;
+  private final RateLimiter _rateLimiter;
 
   public AbstractClientRunnable(AtomicReference<Stats> stats,
                                 CountDownLatch startLatch,
-                                Generator<REQ> reqGen)
+                                Generator<REQ> reqGen,
+                                RateLimiter rateLimiter)
   {
     _stats = stats;
     _startLatch = startLatch;
     _workGen = reqGen;
+    _rateLimiter = rateLimiter;
   }
 
   @Override
@@ -61,6 +65,7 @@ import test.r2.perf.Generator;
     REQ nextMsg;
     while ((nextMsg = _workGen.nextMessage()) != null)
     {
+      _rateLimiter.acquirePermit();
       final FutureCallback<RES> callback = new FutureCallback<RES>();
 
       long start = System.nanoTime();

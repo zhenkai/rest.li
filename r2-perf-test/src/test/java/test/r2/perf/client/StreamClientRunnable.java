@@ -21,9 +21,10 @@ public class StreamClientRunnable extends AbstractClientRunnable<StreamRequest, 
   public StreamClientRunnable(Client client,
                               AtomicReference<Stats> stats,
                               CountDownLatch startLatch,
-                              Generator<StreamRequest> reqGen)
+                              Generator<StreamRequest> reqGen,
+                              RateLimiter rateLimiter)
   {
-    super(stats, startLatch, reqGen);
+    super(stats, startLatch, reqGen, rateLimiter);
     _client = client;
   }
 
