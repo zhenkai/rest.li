@@ -55,7 +55,6 @@ public class RestClientRunnableFactory implements ClientRunnableFactory
     if (_qps > 0)
     {
       rateLimiter = new QpsRateLimiter(_qps, _scheduler);
-      ((QpsRateLimiter)rateLimiter).init();
     }
     else
     {
@@ -66,6 +65,9 @@ public class RestClientRunnableFactory implements ClientRunnableFactory
         {
           return true;
         }
+
+        @Override
+        public void init() {}
       };
     }
     return new RestClientRunnable(_client, stats, startLatch, _reqGen, rateLimiter);

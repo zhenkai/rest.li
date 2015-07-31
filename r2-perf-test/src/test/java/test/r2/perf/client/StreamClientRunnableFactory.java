@@ -38,7 +38,6 @@ public class StreamClientRunnableFactory implements ClientRunnableFactory
     if (_qps > 0)
     {
       rateLimiter = new QpsRateLimiter(_qps, _scheduler);
-      ((QpsRateLimiter)rateLimiter).init();
     }
     else
     {
@@ -49,6 +48,9 @@ public class StreamClientRunnableFactory implements ClientRunnableFactory
         {
           return true;
         }
+
+        @Override
+        public void init() {}
       };
     }
     return new StreamClientRunnable(_client, stats, startLatch, _reqGen, rateLimiter);
