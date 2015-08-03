@@ -1,0 +1,19 @@
+{
+  "testGroup": "identical",
+  "tests":
+  [
+    {
+      "name": "200",
+      "clientProperties": "-Dperf.client.msg_size=200 -Dperf.client.num_msgs=1000000",
+      "serverProperties": "-Dperf.client.msg_size=200"
+    },
+    {
+      "name": "1000"
+    },
+    {
+      "name": "2K",
+      "clientProperties": "-Dperf.client.msg_size=2000 -Dperf.client.num_msgs=1000000",
+      "serverProperties": "-Dperf.client.msg_size=2000"
+    }
+  ]
+}
