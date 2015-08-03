@@ -16,7 +16,7 @@ from time import strftime, sleep
 logger = logging.getLogger('r2-perf-test')
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setLevel(logging.INFO)
+stream_handler.setLevel(logging.DEBUG)
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
@@ -42,20 +42,22 @@ def read_runbook(runbooks):
 		with open(runbook) as json_file:
 		 	script = json.load(json_file)
 		 	test_group_name = script['testGroup']
+		 	common_client_properties = script.get('commonClientProperties', '')
+		 	common_server_properties = script.get('commonServerProperties', '')
 		 	tests = script['tests']
 		 	test_list = []
 		 	for test in tests:
 		 		name = test['name']
 		 		client_properties = test.get('clientProperties', '')
 		 		server_properties = test.get('serverProperties', '')
-		 		test_instance = Test(name, client_properties, server_properties)
+		 		test_instance = Test(name, ' '.join((client_properties, common_client_properties)), ' '.join((server_properties, common_server_properties)))
 		 		test_list.append(test_instance)
 		 	test_group = TestGroup(test_group_name, test_list)
 		 	test_groups.append(test_group)
 
 	return test_groups
 
-def run(directory, test_group, gradle, cwd):
+def run(directory, test_group, gradle, cwd, verbose):
 	logger.info("processing test group: {0}".format(test_group.name))
 	file_path = os.path.join(directory, test_group.name)
 	with open(file_path, "w") as out:
@@ -73,14 +75,17 @@ def run(directory, test_group, gradle, cwd):
 			i = 0
 			while not poke(8082):
 				i = i + 1
-				assert i < 120, "Server didn't start in 120 seconds"
+				assert i < 300, "Server didn't start within 5 minutes."
 				sleep(1)
 
-			logger.info("starting client...")
+			logger.info("started server...")
+			logger.info("starting client and running test...")
 			client_process = run_gradle(gradle, 'runHttpRestClient', test.client_properties, cwd)
 			test_done = False
 			for raw_line in client_process.stdout:
 				line = raw_line.rstrip(os.linesep)
+				if verbose:
+					logger.debug(line)
 				if error_or_warn.search(line):
 					logger.warn("client error or warn: " + line)
 				elif done.search(line):
@@ -102,6 +107,7 @@ def run(directory, test_group, gradle, cwd):
 def run_gradle(gradle, gradle_cmd, properties, cwd):
 	raw_cmd = "{0} {1} {2}".format(gradle, gradle_cmd, properties)
 	args = shlex.split(raw_cmd)
+	logger.info(args)
 	return Popen(args, cwd=cwd, stdout=PIPE, stderr=PIPE)
 
 if __name__ == '__main__':
@@ -110,8 +116,10 @@ if __name__ == '__main__':
 	parser.add_argument('--out', type=str, default='./out', help='output dir')
 	parser.add_argument('--gradle', type=str, default='ligradle', help='gradle to run')
 	parser.add_argument('--cwd', type=str, default='.', help='child process work directory')
+	parser.add_argument('--verbose', dest='verbose', action='store_true')
 
 	args = parser.parse_args()
+
 	directory = args.out
 	if not os.path.exists(directory):
 		os.makedirs(directory)
@@ -125,7 +133,7 @@ if __name__ == '__main__':
 	os.setpgrp() # create new process group, become its leader
 	try:
 		for test_group in test_groups:
-			run(directory, test_group, args.gradle, args.cwd)
+			run(directory, test_group, args.gradle, args.cwd, args.verbose)
 	finally:
 		os.killpg(0, SIGKILL) # kill all processes in this group
 
