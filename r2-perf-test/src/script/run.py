@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import re
-from subprocess import Popen, PIPE, call
+from subprocess import Popen, PIPE, check_call
 import shlex
 from signal import SIGKILL
 import socket
@@ -26,7 +26,7 @@ empty = re.compile("^\s*$")
 server_started = re.compile("=== Starting Http server ===")
 
 Test = namedtuple("Test", ["name", "client_properties", "server_properties"])
-TestGroup = namedtuple("TestGroup", ["name", "tests"])
+TestGroup = namedtuple("TestGroup", ["name", "branch", "tests"])
 
 def poke(port):
 	s = socket.socket()
@@ -44,6 +44,7 @@ def read_runbook(runbooks):
 		 	test_group_name = script['testGroup']
 		 	common_client_properties = script.get('commonClientProperties', '')
 		 	common_server_properties = script.get('commonServerProperties', '')
+		 	test_branch = script.get('branch')
 		 	tests = script['tests']
 		 	test_list = []
 		 	for test in tests:
@@ -52,13 +53,12 @@ def read_runbook(runbooks):
 		 		server_properties = test.get('serverProperties', '')
 		 		test_instance = Test(name, ' '.join((client_properties, common_client_properties)), ' '.join((server_properties, common_server_properties)))
 		 		test_list.append(test_instance)
-		 	test_group = TestGroup(test_group_name, test_list)
+		 	test_group = TestGroup(test_group_name, test_branch, test_list)
 		 	test_groups.append(test_group)
 
 	return test_groups
 
 def run(directory, test_group, gradle, cwd, verbose):
-	logger.info("processing test group: {0}".format(test_group.name))
 	file_path = os.path.join(directory, test_group.name)
 	with open(file_path, "w") as out:
 		def write_to_file(msg):
@@ -133,7 +133,20 @@ if __name__ == '__main__':
 	os.setpgrp() # create new process group, become its leader
 	try:
 		for test_group in test_groups:
-			run(directory, test_group, args.gradle, args.cwd, args.verbose)
+			logger.info("processing test group: {0}".format(test_group.name))
+			if test_group.branch:
+				check_call(['git', 'checkout', test_group.branch])
+				logger.info("checked out branch {0}".format(test_group.branch))
+			try:
+				run(directory, test_group, args.gradle, args.cwd, args.verbose)
+			finally:
+				if test_group.branch:
+					check_call(['git', 'checkout', '@{-1}'])
+					logger.info("resumed git repo to previous branch")
+	except:
+		e = sys.exc_info()[0]
+		logger.exception(e)
+		raise e
 	finally:
 		os.killpg(0, SIGKILL) # kill all processes in this group
 
