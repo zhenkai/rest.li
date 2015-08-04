@@ -22,8 +22,8 @@ dependencies {
     description = "Runs the ${proto} server"
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
     systemProperties += props
-    maxHeapSize = "512m"
-    minHeapSize = "512m"
+    maxHeapSize = "8g"
+    minHeapSize = "8g"
   }.doFirst { println "\n=== Starting ${proto} server ===\n" }
 
   // Define client tasks
@@ -35,8 +35,8 @@ dependencies {
       description = "Runs ${proto} client for ${style.toUpperCase()}"
       classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
       systemProperties += props
-      maxHeapSize = "512m"
-      minHeapSize = "512m"
+      maxHeapSize = "8g"
+      minHeapSize = "8g"
     }.doFirst { println "\n=== Starting ${proto} ${style.toUpperCase()} client ===\n" }
   }
 }
