@@ -60,64 +60,55 @@ def read_runbook(runbooks):
 
 	return test_groups
 
-def run(directory, test_group, gradle, cwd, verbose, gc_dir):
+def run(directory, test_group, gradle, cwd, verbose, build_dir):
 	file_path = os.path.join(directory, test_group.name)
 	gc_out_dir = os.path.join(directory, "{0}-gc".format(test_group.name))
+	result_out_dir = os.path.join(directory, "{0}-result".format(test_group.name))
 	if not os.path.exists(gc_out_dir):
 		os.makedirs(gc_out_dir)
-	with open(file_path, "w", 1) as out:
-		def write_to_file(msg):
-			print(msg, file=out)
+	if not os.path.exists(result_out_dir):
+		os.makedirs(result_out_dir)
 
-		for test in test_group.tests:
-			for stage in ("1", "2"):
-				test_name = "{0}-{1}".format(test.name, stage)
-				logger.info("processing test: {0}".format(test_name))
-				write_to_file(test_name)
-				write_to_file("client properties: {0}".format(test.client_properties))
-				write_to_file("server properties: {0}".format(test.server_properties))
-				logger.info("starting server...")
-				server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, cwd)
 
-				i = 0
-				while not poke(8082):
-					i = i + 1
-					assert i < 300, "Server didn't start within 5 minutes."
-					sleep(1)
+	for test in test_group.tests:
+		for stage in ("1", "2"):
+			test_name = "{0}-{1}".format(test.name, stage)
+			logger.info("processing test: {0}".format(test_name))
+			logger.info(test_name)
+			logger.info("client properties: {0}".format(test.client_properties))
+			logger.info("server properties: {0}".format(test.server_properties))
+			logger.info("starting server...")
+			server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, cwd)
 
-				logger.info("started server...")
-				logger.info("starting client and running test...")
-				client_process = run_gradle(gradle, 'runHttpRestClient', test.client_properties, cwd)
-				test_done = False
-				test_has_error = False
+			i = 0
+			while not poke(8082):
+				i = i + 1
+				assert i < 300, "Server didn't start within 5 minutes."
+				sleep(1)
+
+			logger.info("started server...")
+			logger.info("starting client and running test...")
+			client_process = run_gradle(gradle, 'runHttpRestClient', test.client_properties, cwd)
+			if verbose:
 				for raw_line in client_process.stdout:
 					line = raw_line.rstrip(os.linesep)
-					if verbose:
-						logger.debug(line)
-					if error_or_warn.search(line):
-						logger.warn("client error or warn: " + line)
-						test_has_error = True
-					elif done.search(line):
-						test_done = True
+					if not empty.match(line):
+						logger.info(line)
 
-					if test_done and not empty.match(line):
-						write_to_file(line)
+			client_process.wait()
+			logger.info("stopped client...")
+			server_process.kill()
+			server_process.wait()
+			logger.info("stopped server...")
 
-				if test_has_error:
-					write_to_file("This test has error or warning")
+			logger.info("copying results...")
+			for result_file in glob.glob(os.path.join(build_dir, 'r2-perf-test/*.output')):
+				shutil.move(result_file, os.path.join(result_out_dir, "{0}-{1}".format(test_name, os.path.basename(result_file))))
+			logger.info("copying gc logs...")
+			for gc_file in glob.glob(os.path.join(build_dir, 'r2-perf-test/logs/gc/*.log')):
+				shutil.copy(gc_file, os.path.join(gc_out_dir, "{0}-{1}".format(test_name, os.path.basename(gc_file))))
 
-				client_process.wait()
-				logger.info("stopped client...")
-				server_process.kill()
-				server_process.wait()
-				logger.info("stopped server...")
-				write_to_file("============================")
-
-				logger.info("copying gc logs...")
-				for gc_file in glob.glob(os.path.join(gc_dir, '*.log')):
-					shutil.copy(gc_file, os.path.join(gc_out_dir, "{0}-{1}".format(test_name, os.path.basename(gc_file))))
-
-		logger.info("finished processing of test group: {0}".format(test_group.name))
+	logger.info("finished processing of test group: {0}".format(test_group.name))
 
 
 def run_gradle(gradle, gradle_cmd, properties, cwd):
@@ -132,7 +123,7 @@ if __name__ == '__main__':
 	parser.add_argument('--out', type=str, default='./out', help='output dir')
 	parser.add_argument('--gradle', type=str, default='ligradle', help='gradle to run')
 	parser.add_argument('--cwd', type=str, default='.', help='child process work directory')
-	parser.add_argument('--gc-dir', dest='gc_dir', type=str, default='../build/r2-perf-test/logs/gc', help='gc log directory')
+	parser.add_argument('--build-dir', dest='build_dir', type=str, default='../build', help='build directory')
 	parser.add_argument('--verbose', dest='verbose', action='store_true')
 
 	args = parser.parse_args()
@@ -156,7 +147,7 @@ if __name__ == '__main__':
 				check_call(['git', 'checkout', test_group.branch])
 				logger.info("checked out branch {0}".format(test_group.branch))
 			try:
-				run(directory, test_group, args.gradle, args.cwd, args.verbose, args.gc_dir)
+				run(directory, test_group, args.gradle, args.cwd, args.verbose, args.build_dir)
 			finally:
 				if test_group.branch:
 					check_call(['git', 'checkout', '@{-1}'])

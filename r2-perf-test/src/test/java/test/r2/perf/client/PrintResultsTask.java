@@ -18,7 +18,12 @@
 package test.r2.perf.client;
 
 import com.linkedin.common.stats.LongStats;
+import test.r2.perf.PerfConfig;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -42,22 +47,44 @@ public class PrintResultsTask implements Runnable
     double timePerReq = stats.getSuccessCount() != 0 ? elapsedTime/(double)stats.getSuccessCount() : 0;
     double reqPerSec = timePerReq != 0 ? 1000.0 / timePerReq : 0;
 
-    System.out.println();
-    System.out.println();
-    System.out.println("DONE");
-    System.out.println();
-    System.out.println("Results");
-    System.out.println("-------");
-    System.out.println("    Total Requests: " + stats.getSentCount());
-    System.out.println("    Elapsed: " + elapsedTime);
-    System.out.println("    Mean latency (in millis): " + snapshot.getAverage() / 10E6);
-    System.out.println("    Reqs / Sec: " + reqPerSec);
-    System.out.println("    Errors: " + stats.getErrorCount());
-    System.out.println("    Min latency: " + snapshot.getMinimum() / 10E6);
-    System.out.println("    50% latency: " + snapshot.get50Pct() / 10E6);
-    System.out.println("    90% latency: " + snapshot.get90Pct() / 10E6);
-    System.out.println("    95% latency: " + snapshot.get95Pct() / 10E6);
-    System.out.println("    99% latency: " + snapshot.get99Pct() / 10E6);
-    System.out.println("    Max latency: " + snapshot.getMaximum() / 10E6);
+    StringBuilder sb = new StringBuilder();
+    sb.append("\n");
+    sb.append("\n");
+    sb.append("DONE\n");
+    sb.append("\n");
+    sb.append("Results\n");
+    sb.append("-------\n");
+    sb.append("    Total Requests: " + stats.getSentCount() + "\n");
+    sb.append("    Elapsed: " + elapsedTime + "\n");
+    sb.append("    Mean latency (in millis): " + snapshot.getAverage() / 10E6 + "\n");
+    sb.append("    Reqs / Sec: " + reqPerSec + "\n");
+    sb.append("    Errors: " + stats.getErrorCount() + "\n");
+    sb.append("    Min latency: " + snapshot.getMinimum() / 10E6 + "\n");
+    sb.append("    50% latency: " + snapshot.get50Pct() / 10E6 + "\n");
+    sb.append("    90% latency: " + snapshot.get90Pct() / 10E6 + "\n");
+    sb.append("    95% latency: " + snapshot.get95Pct() / 10E6 + "\n");
+    sb.append("    99% latency: " + snapshot.get99Pct() / 10E6 + "\n");
+    sb.append("    Max latency: " + snapshot.getMaximum() / 10E6 + "\n");
+
+    String result = sb.toString();
+    System.out.print(result);
+
+    try
+    {
+      File file = new File(PerfConfig.getOutputDir() + "/result.output");
+      if (!file.exists())
+      {
+        file.createNewFile();
+      }
+      FileOutputStream os = new FileOutputStream(file, false);
+      PrintWriter printWriter = new PrintWriter(os);
+      printWriter.print(result);
+      printWriter.close();
+    }
+    catch (IOException e)
+    {
+      e.printStackTrace();
+    }
+
   }
 }

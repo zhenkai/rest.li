@@ -38,9 +38,11 @@ public class PerfConfig
   private static final String PERF_CLIENT_PURE_STREAMING = "perf.client.pure_streaming";
   private static final String PERF_SERVER_PURE_STREAMING = "perf.server.pure_streaming";
   private static final String PERF_WARM_UP_MS = "perf.warm.up.ms";
+  private static final String PERF_OUTPUT_DIR = "perf.output.dir";
 
   // Default property values
   private static final String DEFAULT_HOST = "localhost";
+  private static final String DEFAULT_OUTPUT_DIR = "../build/r2-perf-test";
 
   private static final int DEFAULT_HTTP_PORT = 8082;
 
@@ -86,6 +88,11 @@ public class PerfConfig
   public static String getHost()
   {
     return getString(PERF_HOST);
+  }
+
+  public static String getOutputDir()
+  {
+    return getString(PERF_OUTPUT_DIR);
   }
 
   public static URI getHttpUri()
