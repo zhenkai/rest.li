@@ -65,7 +65,7 @@ def run(directory, test_group, gradle, cwd, verbose, gc_dir):
 	gc_out_dir = os.path.join(directory, "{0}-gc".format(test_group.name))
 	if not os.path.exists(gc_out_dir):
 		os.makedirs(gc_out_dir)
-	with open(file_path, "w") as out:
+	with open(file_path, "w", 1) as out:
 		def write_to_file(msg):
 			print(msg, file=out)
 
