@@ -53,31 +53,33 @@ public class PerfClients
       true);
   private static int NUM_CLIENTS = 0;
 
-  public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize, int qps)
+  public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize, int qps, int warmUpMs)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
     final Client client = new TransportClientAdapter(transportClient);
     final Generator<RestRequest> reqGen = new RestRequestGenerator(uri, numMsgs, msgSize);
-    final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen, qps);
+    final Generator<RestRequest> warmUpReqGen = new RestRequestGenerator(uri, Integer.MAX_VALUE, msgSize);
+    final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen, warmUpReqGen, qps);
 
-    return new FactoryClient(crf, numThreads);
+    return new FactoryClient(crf, numThreads, warmUpMs);
   }
 
-  public static PerfClient httpStream(URI uri, int numThreads, int numMsgs, int msgSize, int qps)
+  public static PerfClient httpStream(URI uri, int numThreads, int numMsgs, int msgSize, int qps, int warmUpMs)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
     final Client client = new TransportClientAdapter(transportClient);
     final Generator<StreamRequest> reqGen = new StreamRequestGenerator(uri, numMsgs, msgSize);
-    final ClientRunnableFactory crf = new StreamClientRunnableFactory(client, reqGen, qps);
+    final Generator<StreamRequest> warmUpReqGen = new StreamRequestGenerator(uri, Integer.MAX_VALUE, msgSize);
+    final ClientRunnableFactory crf = new StreamClientRunnableFactory(client, reqGen, warmUpReqGen, qps);
 
-    return new FactoryClient(crf, numThreads);
+    return new FactoryClient(crf, numThreads, warmUpMs);
   }
 
   private static class FactoryClient extends PerfClient
   {
-    public FactoryClient(ClientRunnableFactory runnableFactory, int numThreads)
+    public FactoryClient(ClientRunnableFactory runnableFactory, int numThreads, int warmUpMs)
     {
-      super(runnableFactory, numThreads);
+      super(runnableFactory, numThreads, warmUpMs);
       synchronized (PerfClients.class)
       {
         NUM_CLIENTS++;

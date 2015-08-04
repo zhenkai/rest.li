@@ -8,6 +8,7 @@ import test.r2.perf.Generator;
 import test.r2.perf.PerfStreamReader;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -21,10 +22,12 @@ public class StreamClientRunnable extends AbstractClientRunnable<StreamRequest, 
   public StreamClientRunnable(Client client,
                               AtomicReference<Stats> stats,
                               CountDownLatch startLatch,
+                              AtomicBoolean warmUpFinished,
                               Generator<StreamRequest> reqGen,
+                              Generator<StreamRequest> warmUpReqGen,
                               RateLimiter rateLimiter)
   {
-    super(stats, startLatch, reqGen, rateLimiter);
+    super(stats, warmUpFinished, startLatch, reqGen, warmUpReqGen, rateLimiter);
     _client = client;
   }
 

@@ -1,75 +1,28 @@
 package test.r2.perf.client;
 
-import com.linkedin.common.callback.FutureCallback;
-import com.linkedin.common.util.None;
-import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.transport.common.Client;
 import test.r2.perf.Generator;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @auther Zhenkai Zhu
  */
 
-public class StreamClientRunnableFactory implements ClientRunnableFactory
+public class StreamClientRunnableFactory extends AbstractClientRunnableFactory<StreamRequest>
 {
-  private final Client _client;
-  private final Generator<StreamRequest> _reqGen;
-  private final ScheduledExecutorService _scheduler;
-  private final int _qps;
-
-  public StreamClientRunnableFactory(Client client, Generator<StreamRequest> reqGen, int qps)
+  public StreamClientRunnableFactory(Client client, Generator<StreamRequest> reqGen, Generator<StreamRequest> warmUpReqGen, int qps)
   {
-    _client = client;
-    _reqGen = reqGen;
-    _qps = qps;
-    _scheduler = qps > 0? Executors.newScheduledThreadPool(24) : null;
+    super(client, reqGen, warmUpReqGen, qps);
   }
 
   @Override
-  public Runnable create(AtomicReference<Stats> stats, CountDownLatch startLatch)
+  protected Runnable create(Client client, AtomicReference<Stats> stats, AtomicBoolean warmUpFinished, CountDownLatch startLatch, Generator<StreamRequest> reqGen,
+                            Generator<StreamRequest> warmUpReqGen, RateLimiter rateLimiter)
   {
-    final RateLimiter rateLimiter;
-    if (_qps > 0)
-    {
-      rateLimiter = new QpsRateLimiter(_qps, _scheduler);
-    }
-    else
-    {
-      rateLimiter = new RateLimiter()
-      {
-        @Override
-        public boolean acquirePermit()
-        {
-          return true;
-        }
-
-        @Override
-        public void init() {}
-      };
-    }
-    return new StreamClientRunnable(_client, stats, startLatch, _reqGen, rateLimiter);
-  }
-
-  @Override
-  public void shutdown()
-  {
-    final FutureCallback<None> callback = new FutureCallback<None>();
-    _client.shutdown(callback);
-
-    try
-    {
-      callback.get();
-    }
-    catch (Exception e)
-    {
-      // Print out error and continue
-      e.printStackTrace();
-    }
+    return new StreamClientRunnable(client, stats, startLatch, warmUpFinished, reqGen, warmUpReqGen, rateLimiter);
   }
 }

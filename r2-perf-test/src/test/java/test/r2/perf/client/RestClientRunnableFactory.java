@@ -17,14 +17,11 @@
 /* $Id$ */
 package test.r2.perf.client;
 
-import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.transport.common.Client;
-import com.linkedin.common.util.None;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import test.r2.perf.Generator;
 
@@ -33,64 +30,17 @@ import test.r2.perf.Generator;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class RestClientRunnableFactory implements ClientRunnableFactory
+public class RestClientRunnableFactory extends AbstractClientRunnableFactory<RestRequest>
 {
-  private final Client _client;
-  private final Generator<RestRequest> _reqGen;
-  private final ScheduledExecutorService _scheduler;
-  private final int _qps;
-
-  public RestClientRunnableFactory(Client client, Generator<RestRequest> reqGen, int qps)
+  public RestClientRunnableFactory(Client client, Generator<RestRequest> reqGen, Generator<RestRequest> warmUpReqGen, int qps)
   {
-    _client = client;
-    _reqGen = reqGen;
-    _qps = qps;
-    _scheduler = qps > 0? Executors.newScheduledThreadPool(24) : null;
+    super(client, reqGen, warmUpReqGen, qps);
   }
 
   @Override
-  public Runnable create(AtomicReference<Stats> stats, CountDownLatch startLatch)
+  protected Runnable create(Client client, AtomicReference<Stats> stats, AtomicBoolean warmUpFinished, CountDownLatch startLatch, Generator<RestRequest> reqGen,
+                                     Generator<RestRequest> warmUpReqGen, RateLimiter rateLimiter)
   {
-    final RateLimiter rateLimiter;
-    if (_qps > 0)
-    {
-      rateLimiter = new QpsRateLimiter(_qps, _scheduler);
-    }
-    else
-    {
-      rateLimiter = new RateLimiter()
-      {
-        @Override
-        public boolean acquirePermit()
-        {
-          return true;
-        }
-
-        @Override
-        public void init() {}
-      };
-    }
-    return new RestClientRunnable(_client, stats, startLatch, _reqGen, rateLimiter);
-  }
-
-  @Override
-  public void shutdown()
-  {
-    final FutureCallback<None> callback = new FutureCallback<None>();
-    _client.shutdown(callback);
-
-    try
-    {
-      callback.get();
-    }
-    catch (Exception e)
-    {
-      // Print out error and continue
-      e.printStackTrace();
-    }
-    if (_scheduler != null )
-    {
-      _scheduler.shutdown();
-    }
+    return new RestClientRunnable(client, stats, startLatch, warmUpFinished, reqGen, warmUpReqGen, rateLimiter);
   }
 }

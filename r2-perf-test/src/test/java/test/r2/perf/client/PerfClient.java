@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -32,11 +33,13 @@ public class PerfClient
 {
   private final ClientRunnableFactory _runnableFactory;
   private final int _numThreads;
+  private final long _warmUpMs;
 
-  public PerfClient(ClientRunnableFactory runnableFactory, int numThreads)
+  public PerfClient(ClientRunnableFactory runnableFactory, int numThreads, long warmUpMs)
   {
     _runnableFactory = runnableFactory;
     _numThreads = numThreads;
+    _warmUpMs = warmUpMs;
   }
 
   public void run() throws Exception
@@ -45,9 +48,10 @@ public class PerfClient
     statsRef.set(new Stats(System.currentTimeMillis()));
     final CountDownLatch startLatch = new CountDownLatch(1);
     final List<Thread> workers = new ArrayList<Thread>();
+    final AtomicBoolean warmUpFinished = new AtomicBoolean(false);
     for (int i = 0; i < _numThreads; i++)
     {
-      final Thread t = new Thread(_runnableFactory.create(statsRef,
+      final Thread t = new Thread(_runnableFactory.create(statsRef, warmUpFinished,
                                                          startLatch));
       t.start();
       workers.add(t);
@@ -63,7 +67,6 @@ public class PerfClient
     };
 
     Runtime.getRuntime().addShutdownHook(shutdownTask);
-    startLatch.countDown();
 
     Timer statsTimer = new Timer(true);
     statsTimer.schedule(new TimerTask()
@@ -77,7 +80,18 @@ public class PerfClient
 
     try
     {
-      Thread.sleep(15000);
+      Thread.sleep(_warmUpMs);
+    }
+    catch (InterruptedException e)
+    {
+      // TODO
+    }
+
+    warmUpFinished.set(true);
+
+    try
+    {
+      Thread.sleep(3000);
     }
     catch (InterruptedException e)
     {
@@ -86,6 +100,7 @@ public class PerfClient
 
     // Reset the stats after the warmup period
     statsRef.set(new Stats(System.currentTimeMillis(), true));
+    startLatch.countDown();
 
     for (Thread worker : workers)
     {
