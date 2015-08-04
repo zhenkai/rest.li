@@ -1,0 +1,28 @@
+{
+  "testGroup": "stream-only",
+  "commonClientProperties": "-Dperf.client.pure_streaming=true",
+  "commonServerProperties": "-Dperf.server.pure_streaming=true",
+  "tests":
+  [
+    {
+      "name": "2K",
+      "clientProperties": "-Dperf.client.msg_size=2000 -Dperf.client.num_msgs=10000000",
+      "serverProperties": "-Dperf.server.msg_size=2000"
+    },
+    {
+      "name": "20K",
+      "clientProperties": "-Dperf.client.msg_size=20000 -Dperf.client.num_msgs=6000000",
+      "serverProperties": "-Dperf.server.msg_size=20000"
+    },
+    {
+      "name": "200K",
+      "clientProperties": "-Dperf.client.msg_size=200000 -Dperf.client.num_msgs=1000000",
+      "serverProperties": "-Dperf.server.msg_size=200000"
+    },
+    {
+      "name": "200K",
+      "clientProperties": "-Dperf.client.msg_size=200000 -Dperf.client.num_msgs=200000",
+      "serverProperties": "-Dperf.server.msg_size=200000"
+    }
+  ]
+}

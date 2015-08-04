@@ -20,7 +20,9 @@ package test.r2.perf.client;
 
 import com.linkedin.common.callback.Callbacks;
 import com.linkedin.common.util.None;
+import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.TransportClientFactory;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
@@ -29,6 +31,10 @@ import com.linkedin.r2.transport.http.client.HttpClientFactory;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.concurrent.Executors;
+
+import com.linkedin.r2.util.NamedThreadFactory;
+import io.netty.channel.nio.NioEventLoopGroup;
 import test.r2.perf.Generator;
 
 
@@ -38,24 +44,42 @@ import test.r2.perf.Generator;
  */
 public class PerfClients
 {
-  private static final TransportClientFactory FACTORY = new HttpClientFactory();
+  private static final TransportClientFactory FACTORY = new HttpClientFactory(FilterChains.empty(),
+      new NioEventLoopGroup(0 /* use default settings */, new NamedThreadFactory("R2 Nio Event Loop")),
+      true,
+      Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("R2 Netty Scheduler")),
+      true,
+      Executors.newFixedThreadPool(24),
+      true);
   private static int NUM_CLIENTS = 0;
 
-  public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize)
+  public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize, int qps, int warmUpMs)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
     final Client client = new TransportClientAdapter(transportClient);
     final Generator<RestRequest> reqGen = new RestRequestGenerator(uri, numMsgs, msgSize);
-    final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen);
+    final Generator<RestRequest> warmUpReqGen = new RestRequestGenerator(uri, Integer.MAX_VALUE, msgSize);
+    final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen, warmUpReqGen, qps);
 
-    return new FactoryClient(crf, numThreads);
+    return new FactoryClient(crf, numThreads, warmUpMs);
+  }
+
+  public static PerfClient httpStream(URI uri, int numThreads, int numMsgs, int msgSize, int qps, int warmUpMs)
+  {
+    final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
+    final Client client = new TransportClientAdapter(transportClient);
+    final Generator<StreamRequest> reqGen = new StreamRequestGenerator(uri, numMsgs, msgSize);
+    final Generator<StreamRequest> warmUpReqGen = new StreamRequestGenerator(uri, Integer.MAX_VALUE, msgSize);
+    final ClientRunnableFactory crf = new StreamClientRunnableFactory(client, reqGen, warmUpReqGen, qps);
+
+    return new FactoryClient(crf, numThreads, warmUpMs);
   }
 
   private static class FactoryClient extends PerfClient
   {
-    public FactoryClient(ClientRunnableFactory runnableFactory, int numThreads)
+    public FactoryClient(ClientRunnableFactory runnableFactory, int numThreads, int warmUpMs)
     {
-      super(runnableFactory, numThreads);
+      super(runnableFactory, numThreads, warmUpMs);
       synchronized (PerfClients.class)
       {
         NUM_CLIENTS++;

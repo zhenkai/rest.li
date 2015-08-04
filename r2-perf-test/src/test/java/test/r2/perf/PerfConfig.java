@@ -30,10 +30,14 @@ public class PerfConfig
   private static final String PERF_HTTP_PORT = "perf.http.port";
   private static final String PERF_CLIENT_NUM_THREADS = "perf.client.num_threads";
   private static final String PERF_CLIENT_NUM_MSGS = "perf.client.num_msgs";
+  private static final String PERF_CLIENT_QPS_PER_THREAD = "perf.client.qps.per_thread";
   private static final String PERF_CLIENT_MSG_SIZE = "perf.client.msg_size";
   private static final String PERF_RELATIVE_URI = "perf.relative_uri";
   private static final String PERF_HOST = "perf.host";
   private static final String PERF_SERVER_MSG_SIZE = "perf.server.msg_size";
+  private static final String PERF_CLIENT_PURE_STREAMING = "perf.client.pure_streaming";
+  private static final String PERF_SERVER_PURE_STREAMING = "perf.server.pure_streaming";
+  private static final String PERF_WARM_UP_MS = "perf.warm.up.ms";
 
   // Default property values
   private static final String DEFAULT_HOST = "localhost";
@@ -46,6 +50,8 @@ public class PerfConfig
   private static final int DEFAULT_CLIENT_NUM_MSGS = 500 * 1000;
   private static final int DEFAULT_CLIENT_MSG_SIZE = 1000;
   private static final int DEFAULT_SERVER_MSG_SIZE = 1000;
+  private static final int DEFAULT_CLIENT_QPS_PER_THREAD = -1;
+  private static final int DEFAULT_WARM_UP_MS = 300 * 1000;
 
   public static int getHttpPort()
   {
@@ -87,6 +93,20 @@ public class PerfConfig
     return URI.create("http://" + getHost() + ":" + getHttpPort() + getRelativeUri());
   }
 
+  public static boolean isClientPureStreaming()
+  {
+    return getBoolean(PERF_CLIENT_PURE_STREAMING);
+  }
+
+  public static boolean isServerPureStreaming()
+  {
+    return getBoolean(PERF_SERVER_PURE_STREAMING);
+  }
+
+  public static int getQpsPerThread() { return getInt(PERF_CLIENT_QPS_PER_THREAD);}
+
+  public static int getPerfWarmUPMs() { return getInt(PERF_WARM_UP_MS);}
+
   private static URI getUri(String propName)
   {
     final String propVal = System.getProperty(propName);
@@ -103,6 +123,12 @@ public class PerfConfig
   {
     final String propVal = System.getProperty(propName);
     return propVal != null ? Integer.parseInt(propVal) : PerfConfig.<Integer>getDefaultValue(propName);
+  }
+
+  private static boolean getBoolean(String propName)
+  {
+    final String propVal = System.getProperty(propName);
+    return propVal != null && Boolean.parseBoolean(propVal);
   }
 
   @SuppressWarnings("unchecked")

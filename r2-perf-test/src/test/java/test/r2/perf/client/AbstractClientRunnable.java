@@ -21,7 +21,9 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import test.r2.perf.Generator;
 
 
@@ -34,19 +36,34 @@ import test.r2.perf.Generator;
   private final AtomicReference<Stats> _stats;
   private final CountDownLatch _startLatch;
   private final Generator<REQ> _workGen;
+  private final Generator<REQ> _warmUpReqGen;
+  private final RateLimiter _rateLimiter;
+  private final AtomicBoolean _warmUpFinished;
 
   public AbstractClientRunnable(AtomicReference<Stats> stats,
+                                AtomicBoolean warmUpFinished,
                                 CountDownLatch startLatch,
-                                Generator<REQ> reqGen)
+                                Generator<REQ> reqGen,
+                                Generator<REQ> warmUpReqGen,
+                                RateLimiter rateLimiter)
   {
     _stats = stats;
+    _warmUpFinished = warmUpFinished;
     _startLatch = startLatch;
     _workGen = reqGen;
+    _warmUpReqGen = warmUpReqGen;
+    _rateLimiter = rateLimiter;
   }
 
   @Override
   public void run()
   {
+    REQ warmUpNextMsg;
+    while((warmUpNextMsg = _warmUpReqGen.nextMessage()) != null && !_warmUpFinished.get())
+    {
+      sendMessageWithStats(warmUpNextMsg);
+    }
+
     try
     {
       _startLatch.await();
@@ -59,28 +76,36 @@ import test.r2.perf.Generator;
     }
 
     REQ nextMsg;
+
+    _rateLimiter.init();
     while ((nextMsg = _workGen.nextMessage()) != null)
     {
-      final FutureCallback<RES> callback = new FutureCallback<RES>();
+      _rateLimiter.acquirePermit();
+      sendMessageWithStats(nextMsg);
+    }
+  }
 
-      long start = System.nanoTime();
+  private void sendMessageWithStats(REQ msg)
+  {
+    final FutureCallback<RES> callback = new FutureCallback<RES>();
 
-      sendMessage(nextMsg, callback);
+    long start = System.nanoTime();
 
-      final Stats stats = _stats.get();
+    sendMessage(msg, callback);
 
-      stats.sent();
+    final Stats stats = _stats.get();
 
-      try
-      {
-        callback.get();
-        long elapsed = System.nanoTime() - start;
-        stats.success(elapsed);
-      }
-      catch (Exception e)
-      {
-        stats.error(e);
-      }
+    stats.sent();
+
+    try
+    {
+      callback.get();
+      long elapsed = System.nanoTime() - start;
+      stats.success(elapsed);
+    }
+    catch (Exception e)
+    {
+      stats.error(e);
     }
   }
 
