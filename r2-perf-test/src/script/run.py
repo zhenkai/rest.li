@@ -65,41 +65,48 @@ def run(directory, test_group, gradle, cwd, verbose):
 			print(msg, file=out)
 
 		for test in test_group.tests:
-			logger.info("processing test: {0}".format(test.name))
-			write_to_file(test.name)
-			write_to_file("client properties: {0}".format(test.client_properties))
-			write_to_file("server properties: {0}".format(test.server_properties))
-			logger.info("starting server...")
-			server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, cwd)
+			for stage in ("warm-up-1", "warm-up-2", "1", "2", "3"):
+				test_name = "{0}-{1}".format(test.name, stage)
+				logger.info("processing test: {0}".format(test_name))
+				write_to_file(test_name)
+				write_to_file("client properties: {0}".format(test.client_properties))
+				write_to_file("server properties: {0}".format(test.server_properties))
+				logger.info("starting server...")
+				server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, cwd)
 
-			i = 0
-			while not poke(8082):
-				i = i + 1
-				assert i < 300, "Server didn't start within 5 minutes."
-				sleep(1)
+				i = 0
+				while not poke(8082):
+					i = i + 1
+					assert i < 300, "Server didn't start within 5 minutes."
+					sleep(1)
 
-			logger.info("started server...")
-			logger.info("starting client and running test...")
-			client_process = run_gradle(gradle, 'runHttpRestClient', test.client_properties, cwd)
-			test_done = False
-			for raw_line in client_process.stdout:
-				line = raw_line.rstrip(os.linesep)
-				if verbose:
-					logger.debug(line)
-				if error_or_warn.search(line):
-					logger.warn("client error or warn: " + line)
-				elif done.search(line):
-					test_done = True
+				logger.info("started server...")
+				logger.info("starting client and running test...")
+				client_process = run_gradle(gradle, 'runHttpRestClient', test.client_properties, cwd)
+				test_done = False
+				test_has_error = False
+				for raw_line in client_process.stdout:
+					line = raw_line.rstrip(os.linesep)
+					if verbose:
+						logger.debug(line)
+					if error_or_warn.search(line):
+						logger.warn("client error or warn: " + line)
+						test_has_error = True
+					elif done.search(line):
+						test_done = True
 
-				if test_done and not empty.match(line):
-					write_to_file(line)
+					if test_done and not empty.match(line):
+						write_to_file(line)
 
-			client_process.wait()
-			logger.info("stopped client...")
-			server_process.kill()
-			server_process.wait()
-			logger.info("stopped server...")
-			write_to_file("============================")
+				if test_has_error:
+					write_to_file("This test has error or warning")
+
+				client_process.wait()
+				logger.info("stopped client...")
+				server_process.kill()
+				server_process.wait()
+				logger.info("stopped server...")
+				write_to_file("============================")
 
 		logger.info("finished processing of test group: {0}".format(test_group.name))
 
