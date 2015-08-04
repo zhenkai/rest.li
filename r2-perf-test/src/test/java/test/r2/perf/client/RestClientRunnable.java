@@ -23,6 +23,7 @@ import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.transport.common.Client;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import test.r2.perf.Generator;
 
@@ -38,10 +39,12 @@ import test.r2.perf.Generator;
   public RestClientRunnable(Client client,
                         AtomicReference<Stats> stats,
                         CountDownLatch startLatch,
+                        AtomicBoolean warmUpFinished,
                         Generator<RestRequest> reqGen,
+                        Generator<RestRequest> warmUpReqGen,
                         RateLimiter rateLimiter)
   {
-    super(stats, startLatch, reqGen, rateLimiter);
+    super(stats, warmUpFinished, startLatch, reqGen, warmUpReqGen, rateLimiter);
     _client = client;
   }
 

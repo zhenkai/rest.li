@@ -65,7 +65,7 @@ def run(directory, test_group, gradle, cwd, verbose):
 			print(msg, file=out)
 
 		for test in test_group.tests:
-			for stage in ("warm-up-1", "warm-up-2", "1", "2", "3"):
+			for stage in ("1", "2"):
 				test_name = "{0}-{1}".format(test.name, stage)
 				logger.info("processing test: {0}".format(test_name))
 				write_to_file(test_name)

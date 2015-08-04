@@ -37,6 +37,7 @@ public class PerfConfig
   private static final String PERF_SERVER_MSG_SIZE = "perf.server.msg_size";
   private static final String PERF_CLIENT_PURE_STREAMING = "perf.client.pure_streaming";
   private static final String PERF_SERVER_PURE_STREAMING = "perf.server.pure_streaming";
+  private static final String PERF_WARM_UP_MS = "perf.warm.up.ms";
 
   // Default property values
   private static final String DEFAULT_HOST = "localhost";
@@ -50,6 +51,7 @@ public class PerfConfig
   private static final int DEFAULT_CLIENT_MSG_SIZE = 1000;
   private static final int DEFAULT_SERVER_MSG_SIZE = 1000;
   private static final int DEFAULT_CLIENT_QPS_PER_THREAD = -1;
+  private static final int DEFAULT_WARM_UP_MS = 300 * 1000;
 
   public static int getHttpPort()
   {
@@ -102,6 +104,8 @@ public class PerfConfig
   }
 
   public static int getQpsPerThread() { return getInt(PERF_CLIENT_QPS_PER_THREAD);}
+
+  public static int getPerfWarmUPMs() { return getInt(PERF_WARM_UP_MS);}
 
   private static URI getUri(String propName)
   {
