@@ -11,7 +11,7 @@ import shlex
 from signal import SIGKILL
 import socket
 import sys
-from time import strftime, sleep
+from time import strftime, sleep, time
 
 logger = logging.getLogger('r2-perf-test')
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -137,6 +137,7 @@ if __name__ == '__main__':
 	logger.setLevel(logging.INFO)
 
 	test_groups = read_runbook(args.runbooks)
+	start = time()
 	os.setpgrp() # create new process group, become its leader
 	try:
 		for test_group in test_groups:
@@ -150,6 +151,8 @@ if __name__ == '__main__':
 				if test_group.branch:
 					check_call(['git', 'checkout', '@{-1}'])
 					logger.info("resumed git repo to previous branch")
+		stop = time()
+		print("Took {0} seconds to finish tests".format(stop-start))
 	except:
 		e = sys.exc_info()[0]
 		logger.exception(e)
