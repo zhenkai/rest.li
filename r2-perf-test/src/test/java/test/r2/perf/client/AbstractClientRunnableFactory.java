@@ -63,6 +63,10 @@ public abstract class AbstractClientRunnableFactory<T> implements ClientRunnable
   @Override
   public void shutdown()
   {
+    if (_scheduler != null)
+    {
+      _scheduler.shutdownNow();
+    }
     final FutureCallback<None> callback = new FutureCallback<None>();
     _client.shutdown(callback);
 
