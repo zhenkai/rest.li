@@ -97,6 +97,7 @@ public class SyncIOHandler implements Writer, Reader
   public void loop() throws ServletException, IOException
   {
     final long startTime = System.currentTimeMillis();
+    byte[] buf = new byte[DEFAULT_DATA_CHUNK_SIZE];
 
     while(shouldContinue() && !_forceExit)
     {
@@ -127,7 +128,6 @@ public class SyncIOHandler implements Writer, Reader
         }
         case WriteRequestPossible:
         {
-          byte[] buf = new byte[DEFAULT_DATA_CHUNK_SIZE];
           while (_wh.remaining() > 0)
           {
             int actualLen = _is.read(buf);
@@ -175,7 +175,6 @@ public class SyncIOHandler implements Writer, Reader
         }
         case DrainRequest:
         {
-          byte[] buf = new byte[DEFAULT_DATA_CHUNK_SIZE];
           for (int i = 0; i < 10; i++)
           {
             int actualLen = _is.read(buf);
