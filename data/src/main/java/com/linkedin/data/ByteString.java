@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * An immutable sequence of bytes.
@@ -463,6 +464,50 @@ public final class ByteString
     }
     sb.append(")");
     return sb.toString();
+  }
+
+  /**
+   * A builder to assemble multiple ByteStrings into one ByteString. To ensure the immutability of the resulting
+   * ByteString, a builder instance cannot be reused.
+   *
+   * The byte array of NoCopyByteArrayOutputStream is used directly to construct ByteString instead of doing a copy.
+   * However, because the outputstream cannot be accessed after build(), the resulting
+   * ByteString is immutable.
+   *
+   * This class is not thread safe
+   */
+  public static class OneTimeBuilder
+  {
+    private final NoCopyByteArrayOutputStream _os;
+    private boolean _built;
+
+    public OneTimeBuilder()
+    {
+      _os = new NoCopyByteArrayOutputStream();
+      _built = false;
+    }
+
+    public OneTimeBuilder append(ByteString dataChunk) throws IOException
+    {
+      check();
+      dataChunk.write(_os);
+      return this;
+    }
+
+    public ByteString build()
+    {
+      check();
+      _built = true;
+      return new ByteString(_os.getBytes(), 0, _os.getBytesCount());
+    }
+
+    private void check()
+    {
+      if (_built)
+      {
+        throw new IllegalArgumentException("Builder cannot be used after built");
+      }
+    }
   }
 
   /**

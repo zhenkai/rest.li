@@ -15,7 +15,7 @@ import java.io.InputStream;
  */
 public final class FullEntityReader implements Reader
 {
-  private final NoCopyByteArrayOutputStream _outputStream = new NoCopyByteArrayOutputStream();
+  private final ByteString.OneTimeBuilder _builder;
   private final Callback<ByteString> _callback;
 
   private ReadHandle _rh;
@@ -26,6 +26,7 @@ public final class FullEntityReader implements Reader
   public FullEntityReader(Callback<ByteString> callback)
   {
     _callback = callback;
+    _builder = new ByteString.OneTimeBuilder();
   }
 
   public void onInit(ReadHandle rh)
@@ -38,7 +39,7 @@ public final class FullEntityReader implements Reader
   {
     try
     {
-      data.write(_outputStream);
+      _builder.append(data);
       _rh.request(1);
     }
     catch (Exception ex)
@@ -50,25 +51,12 @@ public final class FullEntityReader implements Reader
 
   public void onDone()
   {
-    ByteString entity = ByteString.copy(_outputStream.getBytes(), 0, _outputStream.getBytesCount());
+    ByteString entity = _builder.build();
     _callback.onSuccess(entity);
   }
 
   public void onError(Throwable ex)
   {
     _callback.onError(ex);
-  }
-
-  private static class NoCopyByteArrayOutputStream extends ByteArrayOutputStream
-  {
-    byte[] getBytes()
-    {
-      return super.buf;
-    }
-
-    int getBytesCount()
-    {
-      return super.count;
-    }
   }
 }
