@@ -90,12 +90,14 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 			logger.info("starting client and running test...")
 			client_process = run_gradle(gradle, 'runHttpRestClient', test.client_properties, cwd)
 			if verbose:
-				for raw_line in client_process.stdout:
-					line = raw_line.rstrip(os.linesep)
-					if not empty.match(line):
-						logger.info(line)
+				while client_process.poll() is None:
+					output = client_process.stdout.readline()
+					if output:
+						logger.info(output.rstrip())
+			else:
+				client_process.wait()
 
-			client_process.wait()
+
 			logger.info("stopped client...")
 			server_process.kill()
 			server_process.wait()
