@@ -17,7 +17,7 @@
 package com.linkedin.r2.filter.compression;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.r2.filter.compression.streaming.CompositeWriter;
+import com.linkedin.r2.message.streaming.CompositeWriter;
 import com.linkedin.r2.filter.compression.streaming.PartialReader;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
 import com.linkedin.r2.filter.message.rest.StreamFilter;

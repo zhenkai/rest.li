@@ -68,7 +68,7 @@ public class TestRequestCompression
   private static final int PORT = 11940;
   private static final byte BYTE = 50;
   private static final int THRESHOLD = 4096;
-  private static final int NUM_BYTES = 1024 * 1024 * 32;
+  private static final int NUM_BYTES = 1024 * 1024 * 16;
 
 
 

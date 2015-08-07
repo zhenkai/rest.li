@@ -22,7 +22,7 @@ import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.CompressionOption;
-import com.linkedin.r2.filter.compression.streaming.CompositeWriter;
+import com.linkedin.r2.message.streaming.CompositeWriter;
 import com.linkedin.r2.filter.compression.streaming.PartialReader;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
 import com.linkedin.r2.filter.message.rest.StreamFilter;

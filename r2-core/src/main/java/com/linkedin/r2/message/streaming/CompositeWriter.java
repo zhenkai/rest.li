@@ -1,4 +1,4 @@
-package com.linkedin.r2.filter.compression.streaming;
+package com.linkedin.r2.message.streaming;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.EntityStream;
@@ -24,6 +24,11 @@ public class CompositeWriter implements Writer
 
   private ReadHandle _currentRh;
   private ReaderImpl _reader = new ReaderImpl();
+
+  public CompositeWriter(Writer... writers)
+  {
+    this(toEntityStreams(writers));
+  }
 
   public CompositeWriter(EntityStream... entityStreams)
   {
@@ -123,5 +128,15 @@ public class CompositeWriter implements Writer
       _wh.error(e);
       cancelAll();
     }
+  }
+
+  private static EntityStream[] toEntityStreams(Writer... writers)
+  {
+    EntityStream[] entityStreams = new EntityStream[writers.length];
+    for (int i = 0; i < writers.length; ++i)
+    {
+      entityStreams[i] = EntityStreams.newEntityStream(writers[i]);
+    }
+    return entityStreams;
   }
 }

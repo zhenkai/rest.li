@@ -1,4 +1,4 @@
-package com.linkedin.r2.filter.compression.streaming;
+package com.linkedin.r2.message.streaming;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.streaming.ReadHandle;
