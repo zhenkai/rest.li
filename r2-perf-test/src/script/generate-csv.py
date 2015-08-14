@@ -6,7 +6,7 @@ import glob
 import os
 import re
 
-Result = namedtuple('Result', ['group', 'name', 'mean', 'qps', 'ninty'])
+Result = namedtuple('Result', ['group', 'name', 'median', 'qps', 'ninty'])
 
 def parse(test_output_dir):
 	group_name = re.sub('-result', '', os.path.basename(os.path.normpath(test_output_dir)))
@@ -17,18 +17,18 @@ def parse(test_output_dir):
 		with open(output_file, 'r') as src:
 			for raw_line in src:
 				line = raw_line.strip()
-				if line.find('Mean') > -1:
-					mean = get_float(line)
+				if line.find('50%') > -1:
+					median = get_float(line)
 				elif line.find('90%') > -1:
 					ninty = get_float(line)
 				elif line.find('Reqs') > -1:
 					qps = get_float(line)
 
-			result = Result(group_name, test_name, mean, qps, ninty)
+			result = Result(group_name, test_name, median, qps, ninty)
 
 			if results.get(result.name):
 				prev_result = results.get(result.name)
-				results[result.name] = Result(group_name, test_name, (mean + prev_result.mean)/2, (qps + prev_result.qps)/2, (ninty + prev_result.ninty)/2 )
+				results[result.name] = Result(group_name, test_name, (median + prev_result.median)/2, (qps + prev_result.qps)/2, (ninty + prev_result.ninty)/2 )
 			else:
 				results[result.name] = result
 
@@ -41,7 +41,7 @@ def get_float(line):
 def generate(baseline_group_name, baseline, results, out_dir):
 	if not os.path.exists(out_dir):
 		os.makedirs(out_dir)
-	for field in ['mean', 'qps', 'ninty']:
+	for field in ['median', 'qps', 'ninty']:
 		file_name = os.path.join(out_dir, field)
 		with open(file_name, 'w') as out:
 			headers = []
@@ -81,10 +81,12 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	baseline_group_name, baseline_result = parse(args.baseline)
+        print(baseline_result)
 
 	results = []
 	for test in args.tests:
 		test_group_name, test_results = parse(test)
+                print(test_results)
 		results.append((test_group_name,test_results))
 
 	generate(baseline_group_name, baseline_result, results, args.out)
