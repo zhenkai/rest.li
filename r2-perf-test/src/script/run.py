@@ -93,6 +93,8 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 			logger.info(test_name)
 			logger.info("client properties: {0}".format(test.client_properties))
 			logger.info("server properties: {0}".format(test.server_properties))
+			logger.info("client branch: {0}".format(test_group.client_branch))
+			logger.info("server branch: {0}".format(test_group.server_branch))
 			logger.info("starting server...")
 
 			if hack_flag:
