@@ -73,7 +73,6 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 		os.makedirs(result_out_dir)
 
 	current_branch = get_current_branch()
-	current_wd = os.getcwd()
 
 	hack_flag = False
 
@@ -96,24 +95,19 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 			logger.info("server properties: {0}".format(test.server_properties))
 			logger.info("starting server...")
 
-			try:
-				if hack_flag:
-					os.chdir(copy_dir)
-					print("running server at dir {0}".format(os.getcwd()))
-
+			if hack_flag:
+				server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, copy_dir)
+			else:
 				server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, cwd)
 
-				i = 0
-				while not poke(8082):
-					i = i + 1
-					assert i < 300, "Server didn't start within 5 minutes."
-					sleep(1)
 
-				logger.info("started server...")
-			finally:
-				if hack_flag:
-					os.chdir(current_wd)
-					print("set wd back to {0}".format(os.getcwd()))
+			i = 0
+			while not poke(8082):
+				i = i + 1
+				assert i < 300, "Server didn't start within 5 minutes."
+				sleep(1)
+
+			logger.info("started server...")
 
 
 			logger.info("starting client and running test...")
@@ -143,7 +137,6 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 			#for gc_file in glob.glob(os.path.join(build_dir, 'r2-perf-test/logs/gc/*.log')):
 				#shutil.copy(gc_file, os.path.join(gc_out_dir, "{0}-{1}".format(test_name, os.path.basename(gc_file))))
 
-	os.chdir(current_wd)
 	check_call(['git', 'checkout', current_branch])
 	logger.info("finished processing of test group: {0}".format(test_group.name))
 
@@ -178,7 +171,6 @@ if __name__ == '__main__':
 	test_groups = read_runbook(args.runbooks)
 	start = time()
 	origin_branch = get_current_branch()
-	origin_wd = os.getcwd()
 	os.setpgrp() # create new process group, become its leader
 	try:
 		for test_group in test_groups:
@@ -191,7 +183,6 @@ if __name__ == '__main__':
 		logger.exception(e)
 		raise e
 	finally:
-		os.chdir(origin_wd)
 		check_call(['git', 'checkout', origin_branch])
 		os.killpg(0, SIGKILL) # kill all processes in this group
 
