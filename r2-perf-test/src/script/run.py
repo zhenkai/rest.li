@@ -22,13 +22,14 @@ stream_handler.setLevel(logging.DEBUG)
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
-error_or_warn = re.compile("WARN|ERROR")
-done = re.compile("DONE")
-empty = re.compile("^\s*$")
-server_started = re.compile("=== Starting Http server ===")
+# hack due to gradle lock issue
+copy_dir = '../../../pegasus_trunk-copy/pegasus/r2-perf-test'
 
 Test = namedtuple("Test", ["name", "client_properties", "server_properties"])
-TestGroup = namedtuple("TestGroup", ["name", "branch", "tests"])
+TestGroup = namedtuple("TestGroup", ["name", "client_branch", "server_branch", "tests"])
+
+def get_current_branch():
+	return Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], stdout=PIPE).communicate()[0].strip()
 
 def poke(port):
 	s = socket.socket()
@@ -46,7 +47,9 @@ def read_runbook(runbooks):
 		 	test_group_name = script['testGroup']
 		 	common_client_properties = script.get('commonClientProperties', '')
 		 	common_server_properties = script.get('commonServerProperties', '')
-		 	test_branch = script.get('branch')
+		 	current_branch = get_current_branch()
+		 	client_branch = script.get('clientBranch', current_branch)
+		 	server_branch = script.get('serverBranch', current_branch)
 		 	tests = script['tests']
 		 	test_list = []
 		 	for test in tests:
@@ -55,7 +58,7 @@ def read_runbook(runbooks):
 		 		server_properties = test.get('serverProperties', '')
 		 		test_instance = Test(name, ' '.join((client_properties, common_client_properties)), ' '.join((server_properties, common_server_properties)))
 		 		test_list.append(test_instance)
-		 	test_group = TestGroup(test_group_name, test_branch, test_list)
+		 	test_group = TestGroup(test_group_name, client_branch, server_branch, test_list)
 		 	test_groups.append(test_group)
 
 	return test_groups
@@ -64,11 +67,25 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 	file_path = os.path.join(directory, test_group.name)
 	gc_out_dir = os.path.join(directory, "{0}-gc".format(test_group.name))
 	result_out_dir = os.path.join(directory, "{0}-result".format(test_group.name))
-	if not os.path.exists(gc_out_dir):
-		os.makedirs(gc_out_dir)
+	#if not os.path.exists(gc_out_dir):
+	#	os.makedirs(gc_out_dir)
 	if not os.path.exists(result_out_dir):
 		os.makedirs(result_out_dir)
 
+	current_branch = get_current_branch()
+	current_wd = os.getcwd()
+
+	hack_flag = False
+
+	if test_group.client_branch == test_group.server_branch and test_group.client_branch == current_branch:
+		pass
+	elif test_group.client_branch == test_group.server_branch:
+		check_call(['git', 'checkout', test_group.client_branch])
+	else:
+		hack_flag = True
+		check_call(['git', 'checkout', test_group.server_branch], cwd=copy_dir)
+		if test_group.client_branch != current_branch:
+			check_call(['git', 'checkout', test_group.client_branch])
 
 	for test in test_group.tests:
 		for stage in ("1", "2"):
@@ -78,15 +95,27 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 			logger.info("client properties: {0}".format(test.client_properties))
 			logger.info("server properties: {0}".format(test.server_properties))
 			logger.info("starting server...")
-			server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, cwd)
 
-			i = 0
-			while not poke(8082):
-				i = i + 1
-				assert i < 300, "Server didn't start within 5 minutes."
-				sleep(1)
+			try:
+				if hack_flag:
+					os.chdir(copy_dir)
+					print("running server at dir {0}".format(os.getcwd()))
 
-			logger.info("started server...")
+				server_process = run_gradle(gradle, 'runHttpServer', test.server_properties, cwd)
+
+				i = 0
+				while not poke(8082):
+					i = i + 1
+					assert i < 300, "Server didn't start within 5 minutes."
+					sleep(1)
+
+				logger.info("started server...")
+			finally:
+				if hack_flag:
+					os.chdir(current_wd)
+					print("set wd back to {0}".format(os.getcwd()))
+
+
 			logger.info("starting client and running test...")
 			client_process = run_gradle(gradle, 'runHttpRestClient', test.client_properties, cwd)
 			if verbose:
@@ -103,18 +132,21 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 			server_process.wait()
 			logger.info("stopped server...")
 
-			call('jps | grep "RunHttpServer\|RunHttpRestClient\|GradleDaemon\|GradleMain" | cut -d " " -f 1 | xargs kill -9', shell=True)
+			call('jps | grep "RunHttpServer\|RunHttpRestClient\|GradleDaemon\|GradleMain\|GradleWorkerMain" | cut -d " " -f 1 | xargs kill -9', shell=True)
 			sleep(10)
 			assert not poke(8082), "what, server still up?"
 
 			logger.info("copying results...")
 			for result_file in glob.glob(os.path.join(build_dir, 'r2-perf-test/*.output')):
 				shutil.move(result_file, os.path.join(result_out_dir, "{0}-{1}".format(test_name, os.path.basename(result_file))))
-			logger.info("copying gc logs...")
-			for gc_file in glob.glob(os.path.join(build_dir, 'r2-perf-test/logs/gc/*.log')):
-				shutil.copy(gc_file, os.path.join(gc_out_dir, "{0}-{1}".format(test_name, os.path.basename(gc_file))))
+			#logger.info("copying gc logs...")
+			#for gc_file in glob.glob(os.path.join(build_dir, 'r2-perf-test/logs/gc/*.log')):
+				#shutil.copy(gc_file, os.path.join(gc_out_dir, "{0}-{1}".format(test_name, os.path.basename(gc_file))))
 
+	os.chdir(current_wd)
+	check_call(['git', 'checkout', current_branch])
 	logger.info("finished processing of test group: {0}".format(test_group.name))
+
 
 
 def run_gradle(gradle, gradle_cmd, properties, cwd):
@@ -145,19 +177,13 @@ if __name__ == '__main__':
 
 	test_groups = read_runbook(args.runbooks)
 	start = time()
+	origin_branch = get_current_branch()
+	origin_wd = os.getcwd()
 	os.setpgrp() # create new process group, become its leader
 	try:
 		for test_group in test_groups:
 			logger.info("processing test group: {0}".format(test_group.name))
-			if test_group.branch:
-				check_call(['git', 'checkout', test_group.branch])
-				logger.info("checked out branch {0}".format(test_group.branch))
-			try:
-				run(directory, test_group, args.gradle, args.cwd, args.verbose, args.build_dir)
-			finally:
-				if test_group.branch:
-					check_call(['git', 'checkout', '@{-1}'])
-					logger.info("resumed git repo to previous branch")
+			run(directory, test_group, args.gradle, args.cwd, args.verbose, args.build_dir)
 		stop = time()
 		print("Took {0} seconds to finish tests".format(stop-start))
 	except:
@@ -165,6 +191,8 @@ if __name__ == '__main__':
 		logger.exception(e)
 		raise e
 	finally:
+		os.chdir(origin_wd)
+		check_call(['git', 'checkout', origin_branch])
 		os.killpg(0, SIGKILL) # kill all processes in this group
 
 
