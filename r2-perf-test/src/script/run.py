@@ -99,8 +99,9 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 
 
 			logger.info("stopped client...")
-			server_process.kill()
-			server_process.wait()
+			# server_process.kill()
+			# server_process.wait()
+			os.killpg(server_process.pid, SIGKILL)
 			logger.info("stopped server...")
 
 			logger.info("copying results...")
@@ -117,7 +118,7 @@ def run_gradle(gradle, gradle_cmd, properties, cwd):
 	raw_cmd = "{0} {1} {2}".format(gradle, gradle_cmd, properties)
 	args = shlex.split(raw_cmd)
 	logger.info(args)
-	return Popen(args, cwd=cwd, stdout=PIPE, stderr=PIPE)
+	return Popen(args, cwd=cwd, stdout=PIPE, stderr=PIPE, preexec_fn=os.setsid)
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser("run tests according to runbook")
