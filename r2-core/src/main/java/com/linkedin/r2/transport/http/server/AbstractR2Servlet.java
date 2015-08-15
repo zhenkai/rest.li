@@ -147,6 +147,8 @@ public abstract class AbstractR2Servlet extends HttpServlet
       resp.setHeader(e.getKey(), e.getValue());
     }
 
+    resp.setHeader("branch", "master");
+
     for (String cookie : restResponse.getCookies())
     {
       resp.addHeader(HttpConstants.RESPONSE_COOKIE_HEADER_NAME, cookie);

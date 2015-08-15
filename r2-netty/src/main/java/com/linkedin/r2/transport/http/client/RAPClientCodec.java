@@ -92,6 +92,7 @@ class RAPClientCodec extends ChannelDuplexHandler
       {
         nettyRequest.headers().set(e.getKey(), e.getValue());
       }
+      nettyRequest.headers().set("branch", "master");
       nettyRequest.headers().set(HttpHeaders.Names.HOST, url.getAuthority());
       nettyRequest.headers().set(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
       nettyRequest.headers().set(HttpHeaders.Names.CONTENT_LENGTH, entity.length());
