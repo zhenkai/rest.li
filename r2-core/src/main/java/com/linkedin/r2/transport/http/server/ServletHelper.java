@@ -202,6 +202,8 @@ import java.util.Map;
       resp.setHeader(e.getKey(), e.getValue());
     }
 
+    resp.setHeader("branch", "stream");
+
     for (String cookie : streamResponse.getCookies())
     {
       resp.addHeader(HttpConstants.RESPONSE_COOKIE_HEADER_NAME, cookie);

@@ -64,6 +64,7 @@ import java.util.Map;
     {
       nettyRequest.headers().set(entry.getKey(), entry.getValue());
     }
+    nettyRequest.headers().set("branch", "stream");
     nettyRequest.headers().set(HttpHeaders.Names.HOST, url.getAuthority());
     nettyRequest.headers().set(HttpConstants.REQUEST_COOKIE_HEADER_NAME, request.getCookies());
 
