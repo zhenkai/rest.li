@@ -7,7 +7,7 @@ import json
 import logging
 import os
 import re
-from subprocess import Popen, PIPE, check_call
+from subprocess import Popen, PIPE, check_call, call
 import shlex
 import shutil
 from signal import SIGKILL
@@ -102,6 +102,10 @@ def run(directory, test_group, gradle, cwd, verbose, build_dir):
 			server_process.kill()
 			server_process.wait()
 			logger.info("stopped server...")
+
+			call('jps | grep "RunHttpServer\|RunHttpRestClient\|GradleDaemon\|GradleMain" | cut -d " " -f 1 | xargs kill -9', shell=True)
+			sleep(10)
+			assert not poke(8082), "what, server still up?"
 
 			logger.info("copying results...")
 			for result_file in glob.glob(os.path.join(build_dir, 'r2-perf-test/*.output')):
