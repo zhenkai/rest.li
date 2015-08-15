@@ -20,9 +20,9 @@
       "serverProperties": "-Dperf.server.msg_size=200000"
     },
     {
-      "name": "200K",
-      "clientProperties": "-Dperf.client.msg_size=200000 -Dperf.client.num_msgs=200000",
-      "serverProperties": "-Dperf.server.msg_size=200000"
+      "name": "2M",
+      "clientProperties": "-Dperf.client.msg_size=2000000 -Dperf.client.num_msgs=200000",
+      "serverProperties": "-Dperf.server.msg_size=2000000"
     }
   ]
 }
