@@ -17,26 +17,26 @@ dependencies {
   task("run${proto}Server", dependsOn: 'testClasses', type: JavaExec) {
     def gclogdir = rootDir.toString() + '/build/r2-perf-test/logs/gc'
     mkdir (gclogdir)
-    jvmArgs '-verbose:gc', '-Xloggc:'+gclogdir+'/gc.log', '-XX:+PrintGCDetails', '-XX:+PrintGCDateStamps'
+    jvmArgs '-verbose:gc', '-Xloggc:'+gclogdir+'/gc.log', '-XX:+PrintGCDetails', '-XX:+PrintGCDateStamps', '-XX:GCLogFileSize=100M', '-XX:+UnlockCommercialFeatures', '-XX:+FlightRecorder', '-XX:+UseCompressedOops', '-XX:MaxGCPauseMillis=51', '-XX:+UseG1GC'
     main = "test.r2.perf.driver.Run${proto}Server"
     description = "Runs the ${proto} server"
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
     systemProperties += props
-    maxHeapSize = "8g"
-    minHeapSize = "8g"
+    maxHeapSize = "4g"
+    minHeapSize = "4g"
   }.doFirst { println "\n=== Starting ${proto} server ===\n" }
 
   // Define client tasks
   ['Rpc', 'Rest'].each { style ->
     task("run${proto}${style}Client", dependsOn: 'testClasses', type: JavaExec) {
       def gclogdir = rootDir.toString() + '/build/r2-perf-test/logs/gc'
-      jvmArgs '-verbose:gc', '-Xloggc:'+gclogdir+'/client-gc.log', '-XX:+PrintGCDetails', '-XX:+PrintGCDateStamps'
+      jvmArgs '-verbose:gc', '-Xloggc:'+gclogdir+'/client-gc.log', '-XX:+PrintGCDetails', '-XX:+PrintGCDateStamps', '-XX:GCLogFileSize=100M', '-XX:+UnlockCommercialFeatures', '-XX:+FlightRecorder', '-XX:+UseCompressedOops', '-XX:MaxGCPauseMillis=51', '-XX:+UseG1GC'
       main = "test.r2.perf.driver.Run${proto}${style}Client"
       description = "Runs ${proto} client for ${style.toUpperCase()}"
       classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
       systemProperties += props
-      maxHeapSize = "8g"
-      minHeapSize = "8g"
+      maxHeapSize = "4g"
+      minHeapSize = "4g"
     }.doFirst { println "\n=== Starting ${proto} ${style.toUpperCase()} client ===\n" }
   }
 }
