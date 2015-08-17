@@ -62,7 +62,8 @@ import java.util.TreeMap;
    */
   public BaseMessageBuilder(MessageHeaders message)
   {
-    setHeaders(message.getHeaders());
+    // message.getHeaders() return already sanitized headers
+    unsafeSetHeaders(message.getHeaders());
     setCookies(message.getCookies());
   }
 
