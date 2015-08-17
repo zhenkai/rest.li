@@ -42,17 +42,7 @@ public abstract class AbstractClientRunnableFactory<T> implements ClientRunnable
     }
     else
     {
-      rateLimiter = new RateLimiter()
-      {
-        @Override
-        public boolean acquirePermit()
-        {
-          return true;
-        }
-
-        @Override
-        public void init() {}
-      };
+      rateLimiter = null;
     }
     return create(_client, stats, warmUpFinished, startLatch, _reqGen, _warmUpReqGen, rateLimiter);
   }

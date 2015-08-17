@@ -44,6 +44,15 @@ import test.r2.perf.Generator;
                                 AtomicBoolean warmUpFinished,
                                 CountDownLatch startLatch,
                                 Generator<REQ> reqGen,
+                                Generator<REQ> warmUpReqGen)
+  {
+    this(stats, warmUpFinished, startLatch, reqGen, warmUpReqGen, null);
+  }
+
+  public AbstractClientRunnable(AtomicReference<Stats> stats,
+                                AtomicBoolean warmUpFinished,
+                                CountDownLatch startLatch,
+                                Generator<REQ> reqGen,
                                 Generator<REQ> warmUpReqGen,
                                 RateLimiter rateLimiter)
   {
@@ -58,10 +67,43 @@ import test.r2.perf.Generator;
   @Override
   public void run()
   {
+    if (_rateLimiter != null)
+    {
+      _rateLimiter.init();
+    }
+
+    warmUp();
+
+    REQ nextMsg;
+
+    while ((nextMsg = _workGen.nextMessage()) != null)
+    {
+      if (_rateLimiter != null)
+      {
+        _rateLimiter.acquirePermit();
+        asyncSendMessageWithStats(nextMsg);
+      }
+      else
+      {
+        sendMessageWithStats(nextMsg);
+      }
+    }
+  }
+
+  private void warmUp()
+  {
     REQ warmUpNextMsg;
     while((warmUpNextMsg = _warmUpReqGen.nextMessage()) != null && !_warmUpFinished.get())
     {
-      sendMessageWithStats(warmUpNextMsg);
+      if (_rateLimiter != null)
+      {
+        _rateLimiter.acquirePermit();
+        asyncSendMessageWithStats(warmUpNextMsg);
+      }
+      else
+      {
+        sendMessageWithStats(warmUpNextMsg);
+      }
     }
 
     try
@@ -73,15 +115,6 @@ import test.r2.perf.Generator;
       e.printStackTrace();
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
-    }
-
-    REQ nextMsg;
-
-    _rateLimiter.init();
-    while ((nextMsg = _workGen.nextMessage()) != null)
-    {
-      _rateLimiter.acquirePermit();
-      sendMessageWithStats(nextMsg);
     }
   }
 
@@ -107,6 +140,32 @@ import test.r2.perf.Generator;
     {
       stats.error(e);
     }
+  }
+
+  private void asyncSendMessageWithStats(REQ msg)
+  {
+    final Stats stats = _stats.get();
+
+    final long start = System.nanoTime();
+
+    final Callback<RES> timingCallback = new Callback<RES>()
+    {
+      @Override
+      public void onError(Throwable e)
+      {
+        stats.error((Exception)e);
+      }
+
+      @Override
+      public void onSuccess(RES result)
+      {
+        long elapsed = System.nanoTime() - start;
+        stats.success(elapsed);
+      }
+    };
+
+    sendMessage(msg, timingCallback);
+    stats.sent();
   }
 
   protected abstract void sendMessage(REQ nextMsg, Callback<RES> callback);
