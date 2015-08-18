@@ -3,6 +3,7 @@ package test.r2.perf.client;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.streaming.DrainReader;
 import com.linkedin.r2.transport.common.Client;
 import test.r2.perf.Generator;
 import test.r2.perf.PerfStreamReader;
@@ -45,7 +46,9 @@ public class StreamClientRunnable extends AbstractClientRunnable<StreamRequest, 
       @Override
       public void onSuccess(StreamResponse result)
       {
-        result.getEntityStream().setReader(new PerfStreamReader<StreamResponse>(timingCallback, result));
+        //result.getEntityStream().setReader(new PerfStreamReader<StreamResponse>(timingCallback, result));
+        timingCallback.onSuccess(result);
+        result.getEntityStream().setReader(new DrainReader());
       }
     };
     _client.streamRequest(nextMsg, callback);
