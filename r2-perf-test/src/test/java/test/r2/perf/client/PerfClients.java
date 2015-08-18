@@ -22,6 +22,7 @@ import com.linkedin.common.callback.Callbacks;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.StreamRequest;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.TransportClientFactory;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
@@ -59,6 +60,17 @@ public class PerfClients
     final Generator<RestRequest> reqGen = new RestRequestGenerator(uri, numMsgs, msgSize);
     final Generator<RestRequest> warmUpReqGen = new RestRequestGenerator(uri, Integer.MAX_VALUE, msgSize);
     final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen, warmUpReqGen, qps);
+
+    return new FactoryClient(crf, numThreads, warmUpMs);
+  }
+
+  public static PerfClient httpStream(URI uri, int numThreads, int numMsgs, int msgSize, int qps, int warmUpMs)
+  {
+    final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
+    final Client client = new TransportClientAdapter(transportClient);
+    final Generator<StreamRequest> reqGen = new StreamRequestGenerator(uri, numMsgs, msgSize);
+    final Generator<StreamRequest> warmUpReqGen = new StreamRequestGenerator(uri, Integer.MAX_VALUE, msgSize);
+    final ClientRunnableFactory crf = new StreamClientRunnableFactory(client, reqGen, warmUpReqGen, qps);
 
     return new FactoryClient(crf, numThreads, warmUpMs);
   }
