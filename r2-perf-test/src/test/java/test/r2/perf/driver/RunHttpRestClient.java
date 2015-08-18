@@ -39,15 +39,7 @@ public class RunHttpRestClient
     final int qps = PerfConfig.getQpsPerThread();
     final int warmUpMs = PerfConfig.getPerfWarmUPMs();
 
-    final PerfClient client;
-    if (pureStreaming)
-    {
-      client = PerfClients.httpStream(uri, numThreads, numMsgs, msgSize, qps, warmUpMs);
-    }
-    else
-    {
-      client = PerfClients.httpRest(uri, numThreads, numMsgs, msgSize, qps, warmUpMs);
-    }
+    final PerfClient client = PerfClients.httpRest(uri, numThreads, numMsgs, msgSize, qps, warmUpMs);
     client.run();
     client.shutdown();
   }
