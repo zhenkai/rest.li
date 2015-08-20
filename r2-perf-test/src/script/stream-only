@@ -1,5 +1,7 @@
 {
   "testGroup": "stream-only",
+  "clientBranch": "r2-streaming-3.0.4-streaming-perf-rebased",
+  "serverBranch": "r2-streaming-3.0.4-streaming-perf-rebased",
   "commonClientProperties": "-Dperf.client.pure_streaming=true",
   "commonServerProperties": "-Dperf.server.pure_streaming=true",
   "tests":
