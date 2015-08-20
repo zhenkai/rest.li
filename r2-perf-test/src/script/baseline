@@ -1,6 +1,7 @@
 {
   "testGroup": "baseline",
-  "branch": "master-r2-test",
+  "clientBranch": "master-r2-test",
+  "serverBranch": "master-r2-test",
   "tests":
   [
     {

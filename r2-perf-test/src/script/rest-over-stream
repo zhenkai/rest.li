@@ -1,5 +1,7 @@
 {
   "testGroup": "rest-over-stream",
+  "clientBranch": "r2-streaming-3.0.4-streaming-perf-rebased",
+  "serverBranch": "r2-streaming-3.0.4-streaming-perf-rebased",
   "tests":
   [
     {
