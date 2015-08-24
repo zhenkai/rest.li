@@ -26,7 +26,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -467,46 +469,38 @@ public final class ByteString
   }
 
   /**
-   * A builder to assemble multiple ByteStrings into one ByteString. To ensure the immutability of the resulting
-   * ByteString, a builder instance cannot be reused.
-   *
-   * The byte array of NoCopyByteArrayOutputStream is used directly to construct ByteString instead of doing a copy.
-   * However, because the outputstream cannot be accessed after build(), the resulting
-   * ByteString is immutable.
+   * A builder to assemble multiple ByteStrings into one ByteString.
    *
    * This class is not thread safe
    */
-  public static class OneTimeBuilder
+  public static class Builder
   {
-    private final NoCopyByteArrayOutputStream _os;
-    private boolean _built;
+    private final List<ByteString> _chunks;
+    private int _bytesNum;
 
-    public OneTimeBuilder()
+    public Builder()
     {
-      _os = new NoCopyByteArrayOutputStream();
-      _built = false;
+      _chunks = new ArrayList<ByteString>();
+      _bytesNum = 0;
     }
 
-    public OneTimeBuilder append(ByteString dataChunk) throws IOException
+    public Builder append(ByteString dataChunk) throws IOException
     {
-      check();
-      dataChunk.write(_os);
+      _chunks.add(dataChunk);
+      _bytesNum += dataChunk.length();
       return this;
     }
 
     public ByteString build()
     {
-      check();
-      _built = true;
-      return new ByteString(_os.getBytes(), 0, _os.getBytesCount());
-    }
-
-    private void check()
-    {
-      if (_built)
+      byte[] bytes = new byte[_bytesNum];
+      int offset = 0;
+      for (ByteString chunk: _chunks)
       {
-        throw new IllegalArgumentException("Builder cannot be used after built");
+        System.arraycopy(chunk._bytes, chunk._offset, bytes, offset, chunk.length());
+        offset += chunk.length();
       }
+      return new ByteString(bytes);
     }
   }
 
