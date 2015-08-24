@@ -15,7 +15,7 @@ import java.io.InputStream;
  */
 public final class FullEntityReader implements Reader
 {
-  private final ByteString.OneTimeBuilder _builder;
+  private final ByteString.Builder _builder;
   private final Callback<ByteString> _callback;
 
   private ReadHandle _rh;
@@ -26,7 +26,7 @@ public final class FullEntityReader implements Reader
   public FullEntityReader(Callback<ByteString> callback)
   {
     _callback = callback;
-    _builder = new ByteString.OneTimeBuilder();
+    _builder = new ByteString.Builder();
   }
 
   public void onInit(ReadHandle rh)
