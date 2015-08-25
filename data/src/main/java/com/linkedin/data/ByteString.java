@@ -350,7 +350,14 @@ public final class ByteString
    */
   public void write(OutputStream out) throws IOException
   {
-    out.write(_bytes, _offset, _length);
+    //out.write(_bytes, _offset, _length);
+    int written = 0;
+    while (written < _length)
+    {
+      int toWrite = Math.min(8192, _length - written);
+      out.write(_bytes, _offset + written, toWrite);
+      written += toWrite;
+    }
   }
 
   /**
