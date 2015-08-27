@@ -484,7 +484,7 @@ public final class ByteString
       _bytesNum = 0;
     }
 
-    public Builder append(ByteString dataChunk) throws IOException
+    public Builder append(ByteString dataChunk)
     {
       _chunks.add(dataChunk);
       _bytesNum += dataChunk.length();
@@ -493,14 +493,26 @@ public final class ByteString
 
     public ByteString build()
     {
-      byte[] bytes = new byte[_bytesNum];
-      int offset = 0;
-      for (ByteString chunk: _chunks)
+      // if & else if is some optimizing to avoid allocating & copying bytes
+      if (_chunks.isEmpty())
       {
-        System.arraycopy(chunk._bytes, chunk._offset, bytes, offset, chunk.length());
-        offset += chunk.length();
+        return empty();
       }
-      return new ByteString(bytes);
+      else if (_chunks.size() == 1)
+      {
+        return _chunks.get(0);
+      }
+      else
+      {
+        byte[] bytes = new byte[_bytesNum];
+        int offset = 0;
+        for (ByteString chunk : _chunks)
+        {
+          System.arraycopy(chunk._bytes, chunk._offset, bytes, offset, chunk.length());
+          offset += chunk.length();
+        }
+        return new ByteString(bytes);
+      }
     }
   }
 

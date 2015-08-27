@@ -4,20 +4,22 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.util.ArgumentUtil;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * A writer that produce content based on the ByteString body
  */
 public class ByteStringWriter implements Writer
 {
-  final ByteString _content;
-  private int _offset;
+  private final ByteString _content;
+  private final AtomicBoolean _done;
   private WriteHandle _wh;
 
   public ByteStringWriter(ByteString content)
   {
     ArgumentUtil.notNull(content, "content");
     _content = content;
-    _offset = 0;
+    _done = new AtomicBoolean(false);
   }
 
   @Override
@@ -31,14 +33,15 @@ public class ByteStringWriter implements Writer
   {
     while(_wh.remaining() > 0)
     {
-      if (_offset == _content.length())
+      if (_done.compareAndSet(false, true))
+      {
+        _wh.write(_content);
+      }
+      else
       {
         _wh.done();
         break;
       }
-      int bytesToWrite = Math.min(R2Constants.DEFAULT_DATA_CHUNK_SIZE, _content.length() - _offset);
-      _wh.write(_content.slice(_offset, bytesToWrite));
-      _offset += bytesToWrite;
     }
   }
 

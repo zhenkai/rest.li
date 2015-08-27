@@ -37,16 +37,8 @@ public final class FullEntityReader implements Reader
 
   public void onDataAvailable(ByteString data)
   {
-    try
-    {
-      _builder.append(data);
-      _rh.request(1);
-    }
-    catch (Exception ex)
-    {
-      _rh.cancel();
-      _callback.onError(ex);
-    }
+    _builder.append(data);
+    _rh.request(1);
   }
 
   public void onDone()

@@ -350,6 +350,38 @@ public class TestByteString
     Assert.assertEquals(substr.copyBytes(), Arrays.copyOfRange(bytes, 2, 3));
   }
 
+  @Test
+  public void testBuilder()
+  {
+    ByteString.Builder builder = new ByteString.Builder();
+
+    Assert.assertEquals(builder.build(), ByteString.empty());
+
+    final byte[] bytes = new byte[1000];
+    for (int i = 0; i < 1000; i++)
+    {
+      bytes[i] = (byte)i;
+    }
+
+    ByteString bs = ByteString.copy(bytes);
+
+    builder.append(bs);
+
+    Assert.assertSame(builder.build(), bs);
+
+    builder.append(bs);
+    builder.append(bs);
+    ByteString newBs = builder.build();
+
+    final byte[] expectedBytes = new byte[3000];
+    System.arraycopy(bytes, 0, expectedBytes, 0, 1000);
+    System.arraycopy(bytes, 0, expectedBytes, 1000, 1000);
+    System.arraycopy(bytes, 0, expectedBytes, 2000, 1000);
+
+    Assert.assertEquals(newBs.copyBytes(), expectedBytes);
+
+  }
+
   @DataProvider
   public Object[][] byteStrings()
   {
