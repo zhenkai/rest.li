@@ -6,7 +6,7 @@ import glob
 import os
 import re
 
-Result = namedtuple('Result', ['group', 'name', 'median', 'qps', 'ninty'])
+Result = namedtuple('Result', ['group', 'name', 'median', 'qps', 'ninty', 'mean', 'nintyfive'])
 
 def parse(test_output_dir):
 	group_name = re.sub('-result', '', os.path.basename(os.path.normpath(test_output_dir)))
@@ -23,16 +23,43 @@ def parse(test_output_dir):
 					ninty = get_float(line)
 				elif line.find('Reqs') > -1:
 					qps = get_float(line)
+				elif line.find('Mean') > -1:
+					mean = get_float(line)
+				elif line.find('95%') > -1:
+					nintyfive = get_float(line)
 
-			result = Result(group_name, test_name, median, qps, ninty)
+			result = Result(group_name, test_name, median, qps, ninty, mean, nintyfive)
 
-			if results.get(result.name):
-				prev_result = results.get(result.name)
-				results[result.name] = Result(group_name, test_name, (median + prev_result.median)/2, (qps + prev_result.qps)/2, (ninty + prev_result.ninty)/2 )
-			else:
-				results[result.name] = result
+			if not results.get(result.name):
+				results[result.name] = []
+			prev = results[result.name]
+			prev.append(result)
+			results[result.name] = prev
 
-	return group_name, results
+	final_results = {}
+
+	for (name, result_list) in results.iteritems():
+		name = name
+		median = 0
+		qps = 0
+		ninty = 0
+		nintyfive = 0
+		mean = 0
+		group_name = ""
+		for result in result_list:
+			median = median + result.median
+			qps = qps + result.qps
+			ninty = ninty + result.ninty
+			mean = mean + result.mean
+			nintyfive = nintyfive + result.nintyfive
+			group_name = result.group
+
+		count = len(result_list)
+
+		final_result = Result(group_name, name, median/count, qps/count, ninty/count, mean/count, nintyfive/count)
+		final_results[name] = final_result
+
+	return group_name, final_results
 
 def get_float(line):
 	str_value = line.split(':')[1]
@@ -41,25 +68,31 @@ def get_float(line):
 def generate(baseline_group_name, baseline, results, out_dir):
 	if not os.path.exists(out_dir):
 		os.makedirs(out_dir)
-	for field in ['median', 'qps', 'ninty']:
-		file_name = os.path.join(out_dir, field)
+
+	for base_name, base_result in baseline.iteritems():
+		file_name = os.path.join(out_dir, base_name)
 		with open(file_name, 'w') as out:
-			headers = []
-			headers.append('Test Name')
-			headers.append(baseline_group_name)
-			for (name, result) in results:
-				headers.append(name)
+			line = []
+			line.append('Metrics')
+			line.append(baseline_group_name)
+			for (group_name, test_result_dict) in results:
+				line.append(group_name)
+			print(','.join(line), file=out)
 
-			print(','.join(headers), file=out)
-
-			for base_name, base_result in baseline.iteritems():
+			for field in ['mean', 'median', 'ninty', 'nintyfive', 'qps']:
 				line = []
-				line.append(base_name)
+				if field == 'ninty':
+					line.append('90% (ms)')
+				elif field == 'nintyfive':
+					line.append('95% (ms)')
+				elif field == 'mean':
+					line.append('Mean (ms)')
+				elif field == 'median':
+					line.append('Median (ms)')
+				elif field == 'qps':
+					line.append('Throughput (QPS)')
 				base_value = getattr(base_result, field)
-				if field == 'qps':
-					line.append(str(int(base_value)))
-				else:
-					line.append('{0:.3f}'.format(base_value))
+				line.append('{0:.3f}'.format(base_value))
 				for (name, test_result_dict) in results:
 					test_result = test_result_dict[base_name]
 					test_value = getattr(test_result, field)
