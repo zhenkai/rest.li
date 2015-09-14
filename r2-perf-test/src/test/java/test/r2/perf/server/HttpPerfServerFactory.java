@@ -17,6 +17,8 @@
 /* $Id$ */
 package test.r2.perf.server;
 
+import com.linkedin.r2.filter.FilterChain;
+import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.transport.common.Server;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
@@ -27,9 +29,21 @@ import com.linkedin.r2.transport.http.server.HttpServerFactory;
  */
 public class HttpPerfServerFactory extends AbstractPerfServerFactory
 {
+  private final FilterChain _filters;
+
+  public HttpPerfServerFactory()
+  {
+    this(FilterChains.empty());
+  }
+
+  public HttpPerfServerFactory(FilterChain filters)
+  {
+    _filters = filters;
+  }
+
   @Override
   protected Server createServer(int port, TransportDispatcher dispatcher)
   {
-    return new HttpServerFactory().createServer(port, dispatcher);
+    return new HttpServerFactory(_filters).createServer(port, dispatcher);
   }
 }

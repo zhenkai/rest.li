@@ -16,9 +16,7 @@
 
 package test.r2.perf;
 
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
-import test.r2.perf.Generator;
+import org.apache.commons.lang.RandomStringUtils;
 
 
 public class StringGenerator implements Generator<String>
@@ -27,9 +25,7 @@ public class StringGenerator implements Generator<String>
 
   public StringGenerator(int msgSize)
   {
-    char[] msg = new char[msgSize];
-    Arrays.fill(msg, 'a');
-    _msg = new String(msg);
+    _msg = RandomStringUtils.randomAscii(msgSize);
   }
 
   @Override

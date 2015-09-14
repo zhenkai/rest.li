@@ -38,15 +38,16 @@ public class RunHttpRestClient
     final boolean pureStreaming = PerfConfig.isClientPureStreaming();
     final int qps = PerfConfig.getQpsPerThread();
     final int warmUpMs = PerfConfig.getPerfWarmUPMs();
+    final String acceptEncoding = PerfConfig.getClientAcceptEncoding();
 
     final PerfClient client;
     if (pureStreaming)
     {
-      client = PerfClients.httpStream(uri, numThreads, numMsgs, msgSize, qps, warmUpMs);
+      client = PerfClients.httpStream(uri, numThreads, numMsgs, msgSize, qps, warmUpMs, acceptEncoding);
     }
     else
     {
-      client = PerfClients.httpRest(uri, numThreads, numMsgs, msgSize, qps, warmUpMs);
+      client = PerfClients.httpRest(uri, numThreads, numMsgs, msgSize, qps, warmUpMs, acceptEncoding);
     }
     client.run();
     client.shutdown();

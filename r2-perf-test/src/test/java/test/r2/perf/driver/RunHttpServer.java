@@ -17,7 +17,11 @@
 /* $Id$ */
 package test.r2.perf.driver;
 
+import com.linkedin.r2.filter.FilterChains;
+import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.transport.common.Server;
+import java.util.concurrent.Executors;
 import test.r2.perf.PerfConfig;
 import test.r2.perf.server.HttpPerfServerFactory;
 
@@ -40,13 +44,22 @@ public class RunHttpServer
     final int msgSize = PerfConfig.getServerMessageSize();
     final boolean pureStreaming = PerfConfig.isServerPureStreaming();
 
+    final HttpPerfServerFactory factory =
+        new HttpPerfServerFactory(FilterChains.create(
+            new ServerCompressionFilter(
+                EncodingType.values(),
+                Executors.newCachedThreadPool(),
+                0
+            )
+        ));
+
     if (pureStreaming)
     {
-      SERVER = new HttpPerfServerFactory().createStreamServer(port, relativeUri, msgSize);
+      SERVER = factory.createStreamServer(port, relativeUri, msgSize);
     }
     else
     {
-      SERVER = new HttpPerfServerFactory().create(port, relativeUri, msgSize);
+      SERVER = factory.create(port, relativeUri, msgSize);
     }
     SERVER.start();
   }

@@ -18,6 +18,8 @@
 package test.r2.perf.client;
 
 import com.linkedin.common.callback.Callback;
+import com.linkedin.r2.filter.R2Constants;
+import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.transport.common.Client;
@@ -51,6 +53,8 @@ import test.r2.perf.Generator;
   @Override
   protected void sendMessage(RestRequest nextMsg, Callback<RestResponse> callback)
   {
-    _client.restRequest(nextMsg, callback);
+    RequestContext context = new RequestContext();
+    context.putLocalAttr(R2Constants.OPERATION, "POST");
+    _client.restRequest(nextMsg, context, callback);
   }
 }

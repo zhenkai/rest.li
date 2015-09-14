@@ -1,0 +1,28 @@
+{
+  "testGroup": "compression-baseline",
+  "clientBranch": "streaming-perf-rebased",
+  "serverBranch": "streaming-perf-rebased",
+  "tests":
+  [
+    {
+      "name": "2K",
+      "clientProperties": "-Dperf.client.msg_size=2000 -Dperf.client.num_msgs=10000000 -Dperf.client.accept.encoding=gzip",
+      "serverProperties": "-Dperf.server.msg_size=2000"
+    },
+    {
+      "name": "20K",
+      "clientProperties": "-Dperf.client.msg_size=20000 -Dperf.client.num_msgs=6000000 -Dperf.client.accept.encoding=gzip",
+      "serverProperties": "-Dperf.server.msg_size=20000"
+    },
+    {
+      "name": "200K",
+      "clientProperties": "-Dperf.client.msg_size=200000 -Dperf.client.num_msgs=1000000 -Dperf.client.accept.encoding=gzip",
+      "serverProperties": "-Dperf.server.msg_size=200000"
+    },
+    {
+      "name": "2M",
+      "clientProperties": "-Dperf.client.msg_size=2000000 -Dperf.client.num_msgs=200000 -Dperf.client.accept.encoding=gzip",
+      "serverProperties": "-Dperf.server.msg_size=2000000"
+    }
+  ]
+}
