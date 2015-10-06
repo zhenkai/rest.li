@@ -28,7 +28,7 @@ import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.compression.EncodingType;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
-import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
+import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;

@@ -1,8 +1,10 @@
-package com.linkedin.r2.filter.message.rest;
+package com.linkedin.r2.filter.message.stream;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.rest.RestResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.Request;

@@ -13,7 +13,7 @@ import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
 import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
 import com.linkedin.r2.filter.compression.streaming.SnappyCompressor;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
-import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestResponse;

@@ -15,7 +15,7 @@
 */
 
 /* $Id$ */
-package com.linkedin.r2.filter.message.rest;
+package com.linkedin.r2.filter.message.stream;
 
 /**
  * A filter that processes {@link com.linkedin.r2.message.rest.RestRequest}s and

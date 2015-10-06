@@ -23,8 +23,8 @@ import com.linkedin.r2.caprep.db.DirectoryDbSink;
 import com.linkedin.r2.caprep.db.DirectoryDbSource;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.StreamFilter;
-import com.linkedin.r2.filter.message.rest.StreamFilterAdapters;
+import com.linkedin.r2.filter.message.stream.StreamFilter;
+import com.linkedin.r2.filter.message.stream.StreamFilterAdapters;
 import com.linkedin.r2.message.RequestContext;
 
 import java.io.IOException;

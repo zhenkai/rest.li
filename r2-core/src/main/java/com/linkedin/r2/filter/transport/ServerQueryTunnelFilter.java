@@ -2,7 +2,7 @@ package com.linkedin.r2.filter.transport;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
+import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.QueryTunnelUtil;

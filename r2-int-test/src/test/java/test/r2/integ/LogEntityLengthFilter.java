@@ -2,8 +2,8 @@ package test.r2.integ;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
-import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
+import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
+import com.linkedin.r2.filter.message.stream.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;

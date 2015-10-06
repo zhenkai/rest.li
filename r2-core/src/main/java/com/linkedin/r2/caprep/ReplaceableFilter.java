@@ -20,9 +20,9 @@ package com.linkedin.r2.caprep;
 
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.message.rest.StreamFilter;
-import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
-import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
+import com.linkedin.r2.filter.message.stream.StreamFilter;
+import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
+import com.linkedin.r2.filter.message.stream.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;

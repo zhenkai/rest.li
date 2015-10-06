@@ -15,7 +15,7 @@
 */
 
 /* $Id$ */
-package com.linkedin.r2.filter.message.rest;
+package com.linkedin.r2.filter.message.stream;
 
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;

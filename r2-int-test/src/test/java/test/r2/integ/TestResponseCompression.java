@@ -28,7 +28,7 @@ import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
 import com.linkedin.r2.filter.compression.streaming.NoopCompressor;
 import com.linkedin.r2.filter.compression.streaming.SnappyCompressor;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
-import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.stream.StreamException;

@@ -21,7 +21,7 @@ import com.linkedin.r2.caprep.ReplayFilter;
 import com.linkedin.r2.caprep.db.TransientDb;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.FilterChain;
-import com.linkedin.r2.filter.message.rest.StreamFilterAdapters;
+import com.linkedin.r2.filter.message.stream.StreamFilterAdapters;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;

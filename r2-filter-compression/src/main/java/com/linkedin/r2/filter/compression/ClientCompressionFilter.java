@@ -25,7 +25,7 @@ import com.linkedin.r2.filter.CompressionOption;
 import com.linkedin.r2.message.entitystream.CompositeWriter;
 import com.linkedin.r2.filter.compression.streaming.PartialReader;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
-import com.linkedin.r2.filter.message.rest.StreamFilter;
+import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamRequest;

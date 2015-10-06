@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * A filter that processes {@link RestResponse}s.
  * This will be ignored if directly added to filter chain. If we intend to use it,
- * adapt it with {@link com.linkedin.r2.filter.message.rest.StreamFilterAdapters#adaptRestFilter(com.linkedin.r2.filter.Filter)}
+ * adapt it with {@link com.linkedin.r2.filter.message.stream.StreamFilterAdapters#adaptRestFilter(com.linkedin.r2.filter.Filter)}
  *
  * @author Chris Pettitt
  * @version $Revision$
