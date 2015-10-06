@@ -26,10 +26,10 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamRequestBuilder;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequestBuilder;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.entitystream.EntityStreams;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;

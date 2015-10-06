@@ -24,8 +24,8 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.r2.message.rest.Messages;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.Messages;
+import com.linkedin.r2.message.stream.StreamResponse;
 
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;

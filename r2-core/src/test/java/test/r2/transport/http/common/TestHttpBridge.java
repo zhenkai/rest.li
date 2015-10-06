@@ -24,11 +24,11 @@ import java.net.URI;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import com.linkedin.r2.message.rest.Messages;
-import com.linkedin.r2.message.rest.StreamException;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.rest.StreamResponseBuilder;
-import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.Messages;
+import com.linkedin.r2.message.stream.StreamException;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.stream.StreamResponseBuilder;
+import com.linkedin.r2.message.entitystream.EntityStreams;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

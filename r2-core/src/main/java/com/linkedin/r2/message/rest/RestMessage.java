@@ -16,6 +16,7 @@
 package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.MessageHeaders;
 
 /**
  * RestMessage is a message with MessageHeaders and a full entity.

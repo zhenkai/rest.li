@@ -16,6 +16,7 @@
 package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.BaseRequest;
 
 import java.net.URI;
 import java.util.List;

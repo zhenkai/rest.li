@@ -1,12 +1,11 @@
 package com.linkedin.r2.transport.http.server;
 
-import com.linkedin.r2.message.streaming.ReadHandle;
+import com.linkedin.r2.message.entitystream.ReadHandle;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This example writer deals with Synchronous IO, which is the case for Servlet API 3.0 & Jetty 8

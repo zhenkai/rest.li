@@ -2,8 +2,7 @@ package test.r2.perf.client;
 
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
-import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.transport.common.Client;
 import test.r2.perf.Generator;
 

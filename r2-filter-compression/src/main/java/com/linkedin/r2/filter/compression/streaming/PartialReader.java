@@ -2,18 +2,18 @@ package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.streaming.EntityStream;
-import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.ReadHandle;
-import com.linkedin.r2.message.streaming.Reader;
-import com.linkedin.r2.message.streaming.WriteHandle;
-import com.linkedin.r2.message.streaming.Writer;
+import com.linkedin.r2.message.entitystream.EntityStream;
+import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.entitystream.ReadHandle;
+import com.linkedin.r2.message.entitystream.Reader;
+import com.linkedin.r2.message.entitystream.WriteHandle;
+import com.linkedin.r2.message.entitystream.Writer;
 import java.util.LinkedList;
 import java.util.Queue;
 
 
 /**
- * Reads at least specified number of bytes from a {@link com.linkedin.r2.message.streaming.EntityStream}.
+ * Reads at least specified number of bytes from a {@link com.linkedin.r2.message.entitystream.EntityStream}.
  *
  * @author Ang Xu
  */

@@ -16,8 +16,7 @@
 
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.r2.message.rest.Request;
-import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.Request;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;

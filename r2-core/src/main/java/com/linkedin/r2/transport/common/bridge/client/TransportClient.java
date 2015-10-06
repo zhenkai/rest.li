@@ -21,8 +21,8 @@ package com.linkedin.r2.transport.common.bridge.client;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 
 import java.util.Map;

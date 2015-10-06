@@ -17,7 +17,7 @@
 /* $Id$ */
 package test.r2.caprep;
 
-import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;

@@ -1,8 +1,8 @@
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

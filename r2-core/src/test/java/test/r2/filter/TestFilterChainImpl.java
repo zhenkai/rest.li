@@ -21,7 +21,7 @@ package test.r2.filter;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.testutils.filter.MessageCountFilter;

@@ -18,6 +18,7 @@
 package com.linkedin.r2.message.rest;
 
 import com.linkedin.data.ByteString;
+import com.linkedin.r2.message.MessageHeadersBuilder;
 
 /**
  * An object that builds new rest messages (request/response).<p/>

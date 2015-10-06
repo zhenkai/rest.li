@@ -17,15 +17,13 @@
 /* $Id$ */
 package test.r2.caprep;
 
-import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.filter.FilterChain;
-import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
-import com.linkedin.r2.message.rest.StreamException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import com.linkedin.r2.testutils.filter.CaptureLastCallFilter;

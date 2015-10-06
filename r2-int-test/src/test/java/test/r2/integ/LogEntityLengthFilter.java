@@ -5,9 +5,9 @@ import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.Observer;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.entitystream.Observer;
 
 import java.util.Map;
 

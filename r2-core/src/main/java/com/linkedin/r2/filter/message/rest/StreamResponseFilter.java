@@ -20,8 +20,8 @@ package com.linkedin.r2.filter.message.rest;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 
 import java.util.Map;
 
@@ -36,7 +36,7 @@ public interface StreamResponseFilter extends Filter
   /**
    * Method to be invoked for each {@link StreamResponse} message.
    *
-   * @param res the {@link com.linkedin.r2.message.rest.StreamResponse} message.
+   * @param res the {@link com.linkedin.r2.message.stream.StreamResponse} message.
    * @param requestContext the {@link RequestContext} of the request.
    * @param wireAttrs the wire attributes of the response.
    * @param nextFilter the next filter in the chain.  Concrete implementations should invoke

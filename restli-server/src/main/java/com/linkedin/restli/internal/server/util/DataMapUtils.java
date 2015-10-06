@@ -88,10 +88,10 @@ public class DataMapUtils
   }
 
   /**
-   * Read {@link DataMap} from a {@link com.linkedin.r2.message.rest.MessageHeaders}, using the message's headers to determine the
+   * Read {@link DataMap} from a {@link com.linkedin.r2.message.MessageHeaders}, using the message's headers to determine the
    * correct encoding type.
    *
-   * @param message {@link com.linkedin.r2.message.rest.MessageHeaders}
+   * @param message {@link com.linkedin.r2.message.MessageHeaders}
    * @return {@link DataMap}
    */
   public static DataMap readMap(final RestMessage message)
@@ -215,7 +215,7 @@ public class DataMapUtils
    * Effectively a combination of {@link #readMap(com.linkedin.r2.message.rest.RestMessage)} and
    * {@link #convert(DataMap, Class)}.
    *
-   * @param message {@link com.linkedin.r2.message.rest.MessageHeaders}
+   * @param message {@link com.linkedin.r2.message.MessageHeaders}
    * @param recordClass class of the requested type
    * @param <T> requested object type
    * @return a new object of the requested type constructed with DataMap read from message entity
@@ -268,7 +268,7 @@ public class DataMapUtils
    * A combination of {@link #readMap(java.io.InputStream)} and
    * {@link #convert(com.linkedin.data.DataMap, Class)} for collection responses.
    *
-   * @param message {@link com.linkedin.r2.message.rest.MessageHeaders}
+   * @param message {@link com.linkedin.r2.message.MessageHeaders}
    * @param recordClass class of the requested type
    * @param <T> requested object type
    * @return a new object of the requested type constructed with DataMap read from message entity

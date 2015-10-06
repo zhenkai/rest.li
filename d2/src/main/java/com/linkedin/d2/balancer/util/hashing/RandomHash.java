@@ -20,7 +20,7 @@
 
 package com.linkedin.d2.balancer.util.hashing;
 
-import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.Request;
 
 import java.util.Random;
 

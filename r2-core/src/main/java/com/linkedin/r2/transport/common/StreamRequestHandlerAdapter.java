@@ -2,12 +2,12 @@ package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 
 /**
  * An adapter for adapting RestRequestHandler to StreamRequestHandler. The adapter would convert StreamRequest to

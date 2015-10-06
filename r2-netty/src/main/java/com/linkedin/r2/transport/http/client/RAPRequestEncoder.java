@@ -2,10 +2,9 @@ package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.streaming.ReadHandle;
-import com.linkedin.r2.message.streaming.Reader;
-import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.entitystream.ReadHandle;
+import com.linkedin.r2.message.entitystream.Reader;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;
@@ -14,15 +13,9 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
-import java.net.URL;
-import java.util.Map;
 
 /**
  * This encoder encodes StreamRequest to Netty's HttpRequest.

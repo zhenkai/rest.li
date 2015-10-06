@@ -22,7 +22,7 @@ import com.linkedin.common.callback.Callbacks;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.TransportClientFactory;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;

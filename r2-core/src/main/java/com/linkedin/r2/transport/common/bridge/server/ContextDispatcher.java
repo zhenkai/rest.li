@@ -19,13 +19,13 @@ package com.linkedin.r2.transport.common.bridge.server;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.DrainReader;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.entitystream.DrainReader;
 import com.linkedin.r2.transport.common.RestRequestHandler;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.StreamRequestHandlerAdapter;

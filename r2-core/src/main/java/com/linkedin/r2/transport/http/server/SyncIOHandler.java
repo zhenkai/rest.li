@@ -1,11 +1,11 @@
 package com.linkedin.r2.transport.http.server;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.streaming.AbortedException;
-import com.linkedin.r2.message.streaming.ReadHandle;
-import com.linkedin.r2.message.streaming.Reader;
-import com.linkedin.r2.message.streaming.WriteHandle;
-import com.linkedin.r2.message.streaming.Writer;
+import com.linkedin.r2.message.entitystream.AbortedException;
+import com.linkedin.r2.message.entitystream.ReadHandle;
+import com.linkedin.r2.message.entitystream.Reader;
+import com.linkedin.r2.message.entitystream.WriteHandle;
+import com.linkedin.r2.message.entitystream.Writer;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;

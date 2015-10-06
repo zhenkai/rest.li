@@ -15,6 +15,8 @@
 */
 package com.linkedin.r2.message.rest;
 
+import com.linkedin.r2.message.Response;
+
 /**
  * An object that contains details of a REST response.
  * RestResponse is a response with full entity.

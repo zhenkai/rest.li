@@ -19,7 +19,7 @@ package com.linkedin.d2.balancer.strategies.random;
 import com.linkedin.d2.balancer.clients.TrackerClient;
 import com.linkedin.d2.balancer.strategies.LoadBalancerStrategy;
 import com.linkedin.d2.balancer.util.hashing.Ring;
-import com.linkedin.r2.message.rest.Request;
+import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 
 import java.net.URI;

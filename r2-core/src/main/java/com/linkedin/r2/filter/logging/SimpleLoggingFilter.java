@@ -22,17 +22,17 @@ import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.message.rest.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Request;
-import com.linkedin.r2.message.rest.Response;
+import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.Response;
 
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.linkedin.r2.message.rest.StreamException;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.Observer;
+import com.linkedin.r2.message.stream.StreamException;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.entitystream.Observer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

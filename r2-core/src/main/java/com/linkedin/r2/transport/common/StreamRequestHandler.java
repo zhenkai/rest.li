@@ -2,11 +2,11 @@ package com.linkedin.r2.transport.common;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 
 /**
- * A request handler for {@link com.linkedin.r2.message.rest.StreamRequest}s.
+ * A request handler for {@link com.linkedin.r2.message.stream.StreamRequest}s.
  *
  * @author Zhenkai Zhu
  */

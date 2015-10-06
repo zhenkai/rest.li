@@ -26,10 +26,10 @@ import com.linkedin.r2.filter.message.rest.StreamFilterAdapters;
 import com.linkedin.r2.filter.message.rest.StreamRequestFilter;
 import com.linkedin.r2.filter.message.rest.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Request;
-import com.linkedin.r2.message.rest.Response;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -3,8 +3,8 @@ package com.linkedin.r2.testutils.filter;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.message.rest.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 
 import java.util.Map;
 

@@ -2,9 +2,9 @@ package com.linkedin.r2.streaming.sample;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamRequestBuilder;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequestBuilder;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.Client;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 

@@ -21,10 +21,10 @@ import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.CompressionOption;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamRequestBuilder;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequestBuilder;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.entitystream.EntityStreams;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 
 import java.net.URI;

@@ -1,8 +1,8 @@
 package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.streaming.WriteHandle;
-import com.linkedin.r2.message.streaming.Writer;
+import com.linkedin.r2.message.entitystream.WriteHandle;
+import com.linkedin.r2.message.entitystream.Writer;
 import java.util.Queue;
 
 

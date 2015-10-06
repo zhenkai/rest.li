@@ -18,11 +18,11 @@ package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
-import com.linkedin.r2.message.streaming.EntityStream;
-import com.linkedin.r2.message.streaming.ReadHandle;
-import com.linkedin.r2.message.streaming.Reader;
-import com.linkedin.r2.message.streaming.WriteHandle;
-import com.linkedin.r2.message.streaming.Writer;
+import com.linkedin.r2.message.entitystream.EntityStream;
+import com.linkedin.r2.message.entitystream.ReadHandle;
+import com.linkedin.r2.message.entitystream.Reader;
+import com.linkedin.r2.message.entitystream.WriteHandle;
+import com.linkedin.r2.message.entitystream.Writer;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Queue;
@@ -30,8 +30,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 /**
- * This class pipes a {@link com.linkedin.r2.message.streaming.EntityStream} to
- * a different {@link com.linkedin.r2.message.streaming.EntityStream} in which
+ * This class pipes a {@link com.linkedin.r2.message.entitystream.EntityStream} to
+ * a different {@link com.linkedin.r2.message.entitystream.EntityStream} in which
  * the data is compressed.
  *
  * @author Ang Xu

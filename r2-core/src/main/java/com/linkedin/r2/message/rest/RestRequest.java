@@ -15,6 +15,8 @@
 */
 package com.linkedin.r2.message.rest;
 
+import com.linkedin.r2.message.Request;
+
 /**
  * An object that contains details of a REST request.
  * RestRequest is a request with full entity.

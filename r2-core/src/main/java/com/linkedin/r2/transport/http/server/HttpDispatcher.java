@@ -20,11 +20,11 @@ package com.linkedin.r2.transport.http.server;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.streaming.BaseConnector;
-import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.Observer;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.entitystream.BaseConnector;
+import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.entitystream.Observer;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -56,7 +56,7 @@ public class HttpDispatcher
   }
 
   /**
-   * handle a {@link com.linkedin.r2.message.rest.StreamRequest}.
+   * handle a {@link com.linkedin.r2.message.stream.StreamRequest}.
    * @see com.linkedin.r2.transport.common.bridge.server.TransportDispatcher#handleStreamRequest
    *
    * @param req the request to be handled.
@@ -69,7 +69,7 @@ public class HttpDispatcher
   }
 
   /**
-   * handle a {@link com.linkedin.r2.message.rest.StreamRequest} using the given request context.
+   * handle a {@link com.linkedin.r2.message.stream.StreamRequest} using the given request context.
    * @see com.linkedin.r2.transport.common.bridge.server.TransportDispatcher#handleStreamRequest
    *
    * @param req the request to be handled.

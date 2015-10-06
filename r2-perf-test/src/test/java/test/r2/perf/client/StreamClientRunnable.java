@@ -1,8 +1,8 @@
 package test.r2.perf.client;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.Client;
 import test.r2.perf.Generator;
 import test.r2.perf.PerfStreamReader;

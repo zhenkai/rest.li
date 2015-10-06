@@ -20,8 +20,8 @@
 
 package com.linkedin.r2.transport.http.client;
 
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.rest.StreamResponseBuilder;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.stream.StreamResponseBuilder;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;

@@ -23,8 +23,8 @@ import com.linkedin.d2.balancer.LoadBalancerClient;
 import com.linkedin.d2.balancer.util.LoadBalancerUtil;
 import com.linkedin.jersey.api.uri.UriBuilder;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 

@@ -1,15 +1,10 @@
 package test.r2.perf.client;
 
-import com.linkedin.data.ByteString;
-import com.linkedin.r2.filter.R2Constants;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamRequestBuilder;
-import com.linkedin.r2.message.streaming.EntityStreams;
-import com.linkedin.r2.message.streaming.WriteHandle;
-import com.linkedin.r2.message.streaming.Writer;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequestBuilder;
+import com.linkedin.r2.message.entitystream.EntityStreams;
 import test.r2.perf.Generator;
 import test.r2.perf.PerfStreamWriter;
-import test.r2.perf.StringGenerator;
 
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;

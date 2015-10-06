@@ -20,18 +20,18 @@ package test.r2.message;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.rest.Messages;
+import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestMethod;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamRequestBuilder;
-import com.linkedin.r2.message.rest.StreamResponse;
-import com.linkedin.r2.message.rest.StreamResponseBuilder;
-import com.linkedin.r2.message.streaming.ByteStringWriter;
-import com.linkedin.r2.message.streaming.EntityStreams;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamRequestBuilder;
+import com.linkedin.r2.message.stream.StreamResponse;
+import com.linkedin.r2.message.stream.StreamResponseBuilder;
+import com.linkedin.r2.message.entitystream.ByteStringWriter;
+import com.linkedin.r2.message.entitystream.EntityStreams;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

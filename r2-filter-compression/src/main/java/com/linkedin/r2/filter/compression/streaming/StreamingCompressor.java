@@ -16,7 +16,7 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-import com.linkedin.r2.message.streaming.EntityStream;
+import com.linkedin.r2.message.entitystream.EntityStream;
 
 
 /**

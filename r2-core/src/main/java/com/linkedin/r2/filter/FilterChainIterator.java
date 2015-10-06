@@ -19,8 +19,8 @@ package com.linkedin.r2.filter;
 
 import com.linkedin.r2.filter.message.MessageFilter;
 import com.linkedin.r2.message.RequestContext;
-import com.linkedin.r2.message.rest.Request;
-import com.linkedin.r2.message.rest.Response;
+import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.Response;
 
 import java.util.List;
 import java.util.Map;

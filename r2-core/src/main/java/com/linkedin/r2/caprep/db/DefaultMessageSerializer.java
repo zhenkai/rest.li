@@ -18,10 +18,10 @@
 package com.linkedin.r2.caprep.db;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.rest.MessageHeaders;
-import com.linkedin.r2.message.rest.Request;
-import com.linkedin.r2.message.rest.Response;
-import com.linkedin.r2.message.rest.MessageHeadersBuilder;
+import com.linkedin.r2.message.MessageHeaders;
+import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.MessageHeadersBuilder;
 import com.linkedin.r2.message.rest.RestMessage;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;

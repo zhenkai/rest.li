@@ -18,7 +18,7 @@
 package test.r2.message;
 
 
-import com.linkedin.r2.message.rest.MessageHeaders;
+import com.linkedin.r2.message.MessageHeaders;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestResponseBuilder;
 

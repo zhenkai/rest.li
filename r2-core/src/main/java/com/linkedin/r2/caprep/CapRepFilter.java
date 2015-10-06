@@ -30,8 +30,8 @@ import com.linkedin.r2.message.RequestContext;
 import java.io.IOException;
 import java.util.Map;
 
-import com.linkedin.r2.message.rest.StreamRequest;
-import com.linkedin.r2.message.rest.StreamResponse;
+import com.linkedin.r2.message.stream.StreamRequest;
+import com.linkedin.r2.message.stream.StreamResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
