@@ -43,7 +43,7 @@ public interface StreamRequestFilter extends Filter
    *                   {@link NextFilter#onRequest} to continue the filter chain.
    */
 
-  void onRequest(StreamRequest req,
+  void onStreamRequest(StreamRequest req,
                      RequestContext requestContext,
                      Map<String, String> wireAttrs,
                      NextFilter<StreamRequest, StreamResponse> nextFilter);

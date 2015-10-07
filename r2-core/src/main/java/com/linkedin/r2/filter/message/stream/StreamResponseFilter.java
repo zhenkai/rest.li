@@ -42,7 +42,7 @@ public interface StreamResponseFilter extends Filter
    * @param nextFilter the next filter in the chain.  Concrete implementations should invoke
    *                   {@link NextFilter#onResponse} to continue the filter chain.
    */
-  void onResponse(StreamResponse res,
+  void onStreamResponse(StreamResponse res,
                       RequestContext requestContext,
                       Map<String, String> wireAttrs,
                       NextFilter<StreamRequest, StreamResponse> nextFilter);
@@ -56,7 +56,7 @@ public interface StreamResponseFilter extends Filter
    * @param nextFilter the next filter in the chain.  Concrete implementations should invoke
    *                   {@link NextFilter#onError} to continue the filter chain.
    */
-  void onError(Throwable ex,
+  void onStreamError(Throwable ex,
                    RequestContext requestContext,
                    Map<String, String> wireAttrs,
                    NextFilter<StreamRequest, StreamResponse> nextFilter);
