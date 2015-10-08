@@ -21,6 +21,8 @@ package com.linkedin.r2.transport.common.bridge.client;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.AbstractClient;
@@ -35,6 +37,7 @@ import java.util.Map;
 public class TransportClientAdapter extends AbstractClient
 {
   private final TransportClient _client;
+  private final boolean _restOverStream;
 
   /**
    * Construct a new instance which delegates to the specified {@link TransportClient}.
@@ -43,7 +46,19 @@ public class TransportClientAdapter extends AbstractClient
    */
   public TransportClientAdapter(TransportClient client)
   {
+    this(client, false);
+  }
+
+  /**
+   * Construct a new instance which delegates to the specified {@link TransportClient}.
+   *
+   * @param client {@link TransportClient} to delegate calls.
+   * @param restOverStream whether to run in rest-over-stream model
+   */
+  public TransportClientAdapter(TransportClient client, boolean restOverStream)
+  {
     _client = client;
+    _restOverStream = restOverStream;
   }
 
   @Override
@@ -54,6 +69,21 @@ public class TransportClientAdapter extends AbstractClient
     final Map<String, String> wireAttrs = new HashMap<String, String>();
     //make a copy of the caller's RequestContext to ensure that we have a unique instance per-request
     _client.streamRequest(request, new RequestContext(requestContext), wireAttrs, new TransportCallbackAdapter<StreamResponse>(callback));
+  }
+
+  @Override
+  public void restRequest(RestRequest request, RequestContext requestContext, Callback<RestResponse> callback)
+  {
+    if (!_restOverStream)
+    {
+      final Map<String, String> wireAttrs = new HashMap<String, String>();
+      //make a copy of the caller's RequestContext to ensure that we have a unique instance per-request
+      _client.restRequest(request, new RequestContext(requestContext), wireAttrs, new TransportCallbackAdapter<RestResponse>(callback));
+    }
+    else
+    {
+      super.restRequest(request, requestContext, callback);
+    }
   }
 
   @Override
