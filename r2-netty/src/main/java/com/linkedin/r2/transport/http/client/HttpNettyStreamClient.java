@@ -23,9 +23,11 @@ package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.Messages;
+import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.rest.RestRequest;
-import com.linkedin.r2.message.rest.RestRequestBuilder;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
@@ -36,6 +38,7 @@ import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.http.common.HttpBridge;
 import com.linkedin.r2.util.Cancellable;
+import com.linkedin.r2.util.Timeout;
 import com.linkedin.r2.util.TimeoutRunnable;
 
 import io.netty.bootstrap.Bootstrap;
@@ -48,7 +51,6 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.net.InetAddress;
@@ -75,12 +77,13 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Steven Ihde
  * @author Ang Xu
+ * @author Zhenkai Zhu
  * @version $Revision: $
  */
 
-/* package private */ class HttpNettyClient implements TransportClient
+/* package private */ class HttpNettyStreamClient implements TransportClient
 {
-  static final Logger LOG = LoggerFactory.getLogger(HttpNettyClient.class);
+  static final Logger LOG = LoggerFactory.getLogger(HttpNettyStreamClient.class);
   private static final int HTTP_DEFAULT_PORT = 80;
   private static final int HTTPS_DEFAULT_PORT = 443;
 
@@ -98,10 +101,11 @@ import org.slf4j.LoggerFactory;
 
   private final long _requestTimeout;
   private final long _shutdownTimeout;
-  private final int _maxResponseSize;
+  private final long _maxResponseSize;
   private final int _maxHeaderSize;
   private final int _maxChunkSize;
   private final int _maxConcurrentConnections;
+
 
   private final String _requestTimeoutMessage;
   private final AbstractJmxManager _jmxManager;
@@ -122,7 +126,7 @@ import org.slf4j.LoggerFactory;
    * @param sslParameters             {@link SSLParameters}with overloaded construct
    * @param callbackExecutors         An optional EventExecutorGroup to invoke user callback
    * @param poolWaiterSize            Maximum waiters waiting on the HTTP connection pool
-   * @param name                      Name of the {@link HttpNettyClient}
+   * @param name                      Name of the {@link HttpNettyStreamClient}
    * @param jmxManager                A management class that is aware of the creation/shutdown event
    *                                  of the underlying {@link ChannelPoolManager}
    * @param strategy                  The strategy used to return pool objects.
@@ -132,28 +136,29 @@ import org.slf4j.LoggerFactory;
    * @param maxConcurrentConnections  Maximum number of concurrent connection attempts the HTTP
    *                                  connection pool can make.
    */
-  public HttpNettyClient(NioEventLoopGroup eventLoopGroup,
-                         ScheduledExecutorService executor,
-                         int poolSize,
-                         long requestTimeout,
-                         long idleTimeout,
-                         long shutdownTimeout,
-                         int maxResponseSize,
-                         SSLContext sslContext,
-                         SSLParameters sslParameters,
-                         ExecutorService callbackExecutors,
-                         int poolWaiterSize,
-                         String name,
-                         AbstractJmxManager jmxManager,
-                         AsyncPoolImpl.Strategy strategy,
-                         int minPoolSize,
-                         int maxHeaderSize,
-                         int maxChunkSize,
-                         int maxConcurrentConnections)
+  public HttpNettyStreamClient(NioEventLoopGroup eventLoopGroup,
+                               ScheduledExecutorService executor,
+                               int poolSize,
+                               long requestTimeout,
+                               long idleTimeout,
+                               long shutdownTimeout,
+                               long maxResponseSize,
+                               SSLContext sslContext,
+                               SSLParameters sslParameters,
+                               ExecutorService callbackExecutors,
+                               int poolWaiterSize,
+                               String name,
+                               AbstractJmxManager jmxManager,
+                               AsyncPoolImpl.Strategy strategy,
+                               int minPoolSize,
+                               int maxHeaderSize,
+                               int maxChunkSize,
+                               int maxConcurrentConnections,
+                               boolean tcpNoDelay)
   {
     Bootstrap bootstrap = new Bootstrap().group(eventLoopGroup)
-        .channel(NioSocketChannel.class)
-        .handler(new HttpClientPipelineInitializer(sslContext, sslParameters));
+                                .channel(NioSocketChannel.class)
+                                .handler(new HttpClientPipelineInitializer(sslContext, sslParameters));
 
     _channelPoolManager = new ChannelPoolManager(
         new ChannelPoolFactoryImpl(bootstrap,
@@ -161,7 +166,7 @@ import org.slf4j.LoggerFactory;
             idleTimeout,
             poolWaiterSize,
             strategy,
-            minPoolSize),
+            minPoolSize, tcpNoDelay),
         name + ChannelPoolManager.BASE_NAME);
 
     _maxResponseSize = maxResponseSize;
@@ -179,11 +184,11 @@ import org.slf4j.LoggerFactory;
   }
 
   /* Constructor for test purpose ONLY. */
-  HttpNettyClient(ChannelPoolFactory factory,
-                  ScheduledExecutorService executor,
-                  int requestTimeout,
-                  int shutdownTimeout,
-                  int maxResponseSize)
+  HttpNettyStreamClient(ChannelPoolFactory factory,
+                        ScheduledExecutorService executor,
+                        int requestTimeout,
+                        int shutdownTimeout,
+                        long maxResponseSize)
   {
     _maxResponseSize = maxResponseSize;
     _channelPoolManager = new ChannelPoolManager(factory);
@@ -202,21 +207,21 @@ import org.slf4j.LoggerFactory;
 
   @Override
   public void restRequest(RestRequest request,
-                          RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          TransportCallback<RestResponse> callback)
+                                 RequestContext requestContext,
+                                 Map<String, String> wireAttrs,
+                                 final TransportCallback<RestResponse> callback)
   {
-    MessageType.setMessageType(MessageType.Type.REST, wireAttrs);
-    writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.restToHttpCallback(callback, request));
+    throw new UnsupportedOperationException(HttpNettyStreamClient.class.getName() + " does not support restRequest");
   }
 
   @Override
   public void streamRequest(StreamRequest request,
-                            RequestContext requestContext,
-                            Map<String, String> wireAttrs,
-                            TransportCallback<StreamResponse> callback)
+                          RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          TransportCallback<StreamResponse> callback)
   {
-    throw new UnsupportedOperationException(HttpNettyClient.class.getName() + " does not support streamRequest");
+    MessageType.setMessageType(MessageType.Type.REST, wireAttrs);
+    writeRequestWithTimeout(request, requestContext, wireAttrs, HttpBridge.streamToHttpCallback(callback, request));
   }
 
   @Override
@@ -229,32 +234,32 @@ import org.slf4j.LoggerFactory;
       final long deadline = System.currentTimeMillis() + _shutdownTimeout;
       TimeoutCallback<None> closeChannels =
           new TimeoutCallback<None>(_scheduler,
-              _shutdownTimeout,
-              TimeUnit.MILLISECONDS,
-              new Callback<None>()
-              {
-                private void finishShutdown()
-                {
-                  _state.set(State.REQUESTS_STOPPING);
-                  // Timeout any waiters which haven't received a Channel yet
-                  for (Callback<Channel> callback : _channelPoolManager.cancelWaiters())
-                  {
-                    callback.onError(new TimeoutException("Operation did not complete before shutdown"));
-                  }
+                                    _shutdownTimeout,
+                                    TimeUnit.MILLISECONDS,
+                                    new Callback<None>()
+                                    {
+        private void finishShutdown()
+        {
+          _state.set(State.REQUESTS_STOPPING);
+          // Timeout any waiters which haven't received a Channel yet
+          for (Callback<Channel> callback : _channelPoolManager.cancelWaiters())
+          {
+            callback.onError(new TimeoutException("Operation did not complete before shutdown"));
+          }
 
-                  // Timeout any requests still pending response
-                  for (Channel c : _allChannels)
-                  {
-                    TransportCallback<RestResponse> callback = c.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).getAndRemove();
-                    if (callback != null)
-                    {
-                      errorResponse(callback, new TimeoutException("Operation did not complete before shutdown"));
-                    }
-                  }
+          // Timeout any requests still pending response
+          for (Channel c : _allChannels)
+          {
+            TransportCallback<StreamResponse> callback = c.attr(RAPStreamResponseHandler.CALLBACK_ATTR_KEY).getAndRemove();
+            if (callback != null)
+            {
+              errorResponse(callback, new TimeoutException("Operation did not complete before shutdown"));
+            }
+          }
 
-                  // Close all active and idle Channels
-                  final TimeoutRunnable afterClose = new TimeoutRunnable(
-                      _scheduler, deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS, new Runnable()
+          // Close all active and idle Channels
+          final TimeoutRunnable afterClose = new TimeoutRunnable(
+                  _scheduler, deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS, new Runnable()
                   {
                     @Override
                     public void run()
@@ -264,34 +269,34 @@ import org.slf4j.LoggerFactory;
                       callback.onSuccess(None.none());
                     }
                   }, "Timed out waiting for channels to close, continuing shutdown");
-                  _allChannels.close().addListener(new ChannelGroupFutureListener()
-                  {
-                    @Override
-                    public void operationComplete(ChannelGroupFuture channelGroupFuture) throws Exception
-                    {
-                      if (!channelGroupFuture.isSuccess())
-                      {
-                        LOG.warn("Failed to close some connections, ignoring");
-                      }
-                      afterClose.run();
-                    }
-                  });
-                }
+          _allChannels.close().addListener(new ChannelGroupFutureListener()
+          {
+            @Override
+            public void operationComplete(ChannelGroupFuture channelGroupFuture) throws Exception
+            {
+              if (!channelGroupFuture.isSuccess())
+              {
+                LOG.warn("Failed to close some connections, ignoring");
+              }
+              afterClose.run();
+            }
+          });
+        }
 
-                @Override
-                public void onSuccess(None none)
-                {
-                  LOG.info("All connection pools shut down, closing all channels");
-                  finishShutdown();
-                }
+        @Override
+        public void onSuccess(None none)
+        {
+          LOG.info("All connection pools shut down, closing all channels");
+          finishShutdown();
+        }
 
-                @Override
-                public void onError(Throwable e)
-                {
-                  LOG.warn("Error shutting down HTTP connection pools, ignoring and continuing shutdown", e);
-                  finishShutdown();
-                }
-              }, "Connection pool shutdown timeout exceeded (" + _shutdownTimeout + "ms)");
+        @Override
+        public void onError(Throwable e)
+        {
+          LOG.warn("Error shutting down HTTP connection pools, ignoring and continuing shutdown", e);
+          finishShutdown();
+        }
+      }, "Connection pool shutdown timeout exceeded (" + _shutdownTimeout + "ms)");
       _channelPoolManager.shutdown(closeChannels);
       _jmxManager.onProviderShutdown(_channelPoolManager);
     }
@@ -301,25 +306,54 @@ import org.slf4j.LoggerFactory;
     }
   }
 
-  private void writeRequestWithTimeout(RestRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
-                                       TransportCallback<RestResponse> callback)
+  private void writeRequestWithTimeout(final StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
+                                       TransportCallback<StreamResponse> callback)
   {
-    ExecutionCallback<RestResponse> executionCallback = new ExecutionCallback<RestResponse>(_callbackExecutors, callback);
+    StreamExecutionCallback executionCallback = new StreamExecutionCallback(_callbackExecutors, callback);
     // By wrapping the callback in a Timeout callback before passing it along, we deny the rest
     // of the code access to the unwrapped callback.  This ensures two things:
     // 1. The user callback will always be invoked, since the Timeout will eventually expire
     // 2. The user callback is never invoked more than once
-    TimeoutTransportCallback<RestResponse> timeoutCallback =
-        new TimeoutTransportCallback<RestResponse>(_scheduler,
-            _requestTimeout,
-            TimeUnit.MILLISECONDS,
-            executionCallback,
-            _requestTimeoutMessage);
-    writeRequest(request, requestContext, wireAttrs, timeoutCallback);
+    final TimeoutTransportCallback<StreamResponse> timeoutCallback =
+        new TimeoutTransportCallback<StreamResponse>(_scheduler,
+                                                   _requestTimeout,
+                                                   TimeUnit.MILLISECONDS,
+                                                   executionCallback,
+                                                   _requestTimeoutMessage);
+
+    final StreamRequest requestWithWireAttrHeaders = request.builder()
+        .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
+        .build(request.getEntityStream());
+
+    // We treat full request (already fully in memory) and real stream request (not fully buffered in memory)
+    // differently. For the latter we have to use chunked transfer encoding. For the former we can avoid
+    // using chunked encoding which has two benefits: 1) slightly save cost of transmitting over the wire; 2) more
+    // importantly legacy R2 servers cannot work with chunked transfer encoding, so this allow the new client
+    // talk to legacy R2 servers without problem if they're just using restRequest (full request).
+    if(!isFullRequest(requestContext))
+    {
+      writeRequest(requestWithWireAttrHeaders, timeoutCallback);
+    }
+    else
+    {
+      Messages.toRestRequest(requestWithWireAttrHeaders, new Callback<RestRequest>()
+      {
+        @Override
+        public void onError(Throwable e)
+        {
+          errorResponse(timeoutCallback, e);
+        }
+
+        @Override
+        public void onSuccess(RestRequest restRequest)
+        {
+          writeRequest(restRequest, timeoutCallback);
+        }
+      });
+    }
   }
 
-  private void writeRequest(RestRequest request, RequestContext requestContext, Map<String, String> wireAttrs,
-                            final TimeoutTransportCallback<RestResponse> callback)
+  private void writeRequest(final Request request, final TimeoutTransportCallback<StreamResponse> callback)
   {
     State state = _state.get();
     if (state != State.RUNNING)
@@ -340,11 +374,7 @@ import org.slf4j.LoggerFactory;
     if (port == -1) {
       port = "http".equalsIgnoreCase(scheme) ? HTTP_DEFAULT_PORT : HTTPS_DEFAULT_PORT;
     }
-
-    final RestRequest newRequest = new RestRequestBuilder(request)
-        .overwriteHeaders(WireAttributeHelper.toWireAttributes(wireAttrs))
-        .build();
-
+    
     final SocketAddress address;
     try
     {
@@ -390,8 +420,25 @@ import org.slf4j.LoggerFactory;
           }
         });
 
+        final Timeout<None> streamingTimeout =
+            new Timeout<None>(_scheduler, _requestTimeout, TimeUnit.MILLISECONDS, None.none());
+        callback.addTimeoutTask(new Runnable()
+        {
+          @Override
+          public void run()
+          {
+            Timeout<None> timeout = channel.attr(RAPResponseDecoder.TIMEOUT_ATTR_KEY).getAndRemove();
+            if (timeout != null)
+            {
+              // stop the timeout for streaming since streaming of response would not happen
+              timeout.getItem();
+            }
+          }
+        });
         // This handler invokes the callback with the response once it arrives.
-        channel.attr(RAPResponseHandler.CALLBACK_ATTR_KEY).set(callback);
+        channel.attr(RAPStreamResponseHandler.CALLBACK_ATTR_KEY).set(callback);
+        channel.attr(RAPResponseDecoder.TIMEOUT_ATTR_KEY)
+            .set(streamingTimeout);
 
         final State state = _state.get();
         if (state == State.REQUESTS_STOPPING || state == State.SHUTDOWN)
@@ -402,11 +449,11 @@ import org.slf4j.LoggerFactory;
           // attachment.  The TimeoutTransportCallback ensures the user callback in never
           // invoked more than once, so it is safe to invoke it unconditionally.
           errorResponse(callback,
-              new TimeoutException("Operation did not complete before shutdown"));
+                        new TimeoutException("Operation did not complete before shutdown"));
           return;
         }
 
-        channel.writeAndFlush(newRequest);
+        channel.writeAndFlush(request);
       }
 
       @Override
@@ -431,6 +478,12 @@ import org.slf4j.LoggerFactory;
   static <T> void errorResponse(TransportCallback<T> callback, Throwable e)
   {
     callback.onResponse(TransportResponseImpl.<T>error(e));
+  }
+
+  static boolean isFullRequest(RequestContext requestContext)
+  {
+    Object isFull = requestContext.getLocalAttr(R2Constants.IS_FULL_REQUEST);
+    return isFull != null && (Boolean)isFull;
   }
 
   static Exception toException(Throwable t)
@@ -474,15 +527,15 @@ import org.slf4j.LoggerFactory;
         if (sslParameters.getCipherSuites() != null)
         {
           checkContained(supportedSSLParameters.getCipherSuites(),
-              sslParameters.getCipherSuites(),
-              "cipher suite");
+                         sslParameters.getCipherSuites(),
+                         "cipher suite");
         }
 
         if (sslParameters.getProtocols() != null)
         {
           checkContained(supportedSSLParameters.getProtocols(),
-              sslParameters.getProtocols(),
-              "protocol");
+                         sslParameters.getProtocols(),
+                         "protocol");
         }
       }
       _sslContext = sslContext;
@@ -510,7 +563,7 @@ import org.slf4j.LoggerFactory;
       if (!changed)
       {
         throw new IllegalArgumentException("None of the requested " + valueName
-            + "s: " + containedSet + " are found in SSLContext");
+                                           + "s: " + containedSet + " are found in SSLContext");
       }
 
       if (!containedSet.isEmpty())
@@ -526,8 +579,9 @@ import org.slf4j.LoggerFactory;
     protected void initChannel(NioSocketChannel ch) throws Exception
     {
       ch.pipeline().addLast("codec", new HttpClientCodec(4096, _maxHeaderSize, _maxChunkSize));
-      ch.pipeline().addLast("dechunker", new HttpObjectAggregator(_maxResponseSize));
-      ch.pipeline().addLast("rapiCodec", new RAPClientCodec());
+      ch.pipeline().addLast("rapFullRequestEncoder", new RAPFullRequestEncoder());
+      ch.pipeline().addLast("rapEncoder", new RAPRequestEncoder());
+      ch.pipeline().addLast("rapDecoder", new RAPResponseDecoder(_maxResponseSize));
       ch.pipeline().addLast("responseHandler", _responseHandler);
       if (_sslContext != null)
       {
@@ -545,13 +599,15 @@ import org.slf4j.LoggerFactory;
     private final int _maxPoolWaiterSize;
     private final AsyncPoolImpl.Strategy _strategy;
     private final int _minPoolSize;
+    private final boolean _tcpNoDelay;
 
     private ChannelPoolFactoryImpl(Bootstrap bootstrap,
                                    int maxPoolSize,
                                    long idleTimeout,
                                    int maxPoolWaiterSize,
                                    AsyncPoolImpl.Strategy strategy,
-                                   int minPoolSize)
+                                   int minPoolSize,
+                                   boolean tcpNoDelay)
     {
       _bootstrap = bootstrap;
       _maxPoolSize = maxPoolSize;
@@ -559,28 +615,29 @@ import org.slf4j.LoggerFactory;
       _maxPoolWaiterSize = maxPoolWaiterSize;
       _strategy = strategy;
       _minPoolSize = minPoolSize;
+      _tcpNoDelay = tcpNoDelay;
     }
 
     @Override
     public AsyncPool<Channel> getPool(SocketAddress address)
     {
       return new AsyncPoolImpl<Channel>(address.toString() + " HTTP connection pool",
-          new ChannelPoolLifecycle(address,
-              _bootstrap,
-              _allChannels,
-              false),
-          _maxPoolSize,
-          _idleTimeout,
-          _scheduler,
-          _maxPoolWaiterSize,
-          _strategy,
-          _minPoolSize,
-          new ExponentialBackOffRateLimiter(0,
-              _requestTimeout / 2,
-              Math.max(10, _requestTimeout / 32),
-              _scheduler,
-              _maxConcurrentConnections)
-      );
+                                        new ChannelPoolLifecycle(address,
+                                                                 _bootstrap,
+                                                                 _allChannels,
+                                                                 _tcpNoDelay),
+                                        _maxPoolSize,
+                                        _idleTimeout,
+                                        _scheduler,
+                                        _maxPoolWaiterSize,
+                                        _strategy,
+                                        _minPoolSize,
+                                        new ExponentialBackOffRateLimiter(0,
+                                                            _requestTimeout / 2,
+                                                            Math.max(10, _requestTimeout / 32),
+                                                            _scheduler,
+                                                            _maxConcurrentConnections)
+                                        );
     }
   }
 

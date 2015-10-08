@@ -81,7 +81,11 @@ public class TestHttpsEcho extends AbstractEchoServiceTest
     properties.put(HttpClientFactory.HTTP_SSL_CONTEXT, context);
     properties.put(HttpClientFactory.HTTP_SSL_PARAMS, context.getDefaultSSLParameters());
 
-    final TransportClient client = new HttpClientFactory(filters).getClient(properties);
+    final TransportClient client = new HttpClientFactory.Builder()
+        .setFilterChain(filters)
+        .setCreateLegacyClient(false)
+        .build()
+        .getClient(properties);
     return new TransportClientAdapter(client);
   }
 

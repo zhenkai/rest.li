@@ -54,7 +54,7 @@ public class TestMixUseOfStreamAndNonStream
   @BeforeSuite
   public void setup() throws IOException
   {
-    _clientFactory = new HttpClientFactory();
+    _clientFactory = HttpClientFactory.getSimpleClientFactory();
     final Map<String, String> clientProperties = new HashMap<String, String>();
     _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
 

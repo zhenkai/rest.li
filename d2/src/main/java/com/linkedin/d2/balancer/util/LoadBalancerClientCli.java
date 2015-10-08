@@ -723,7 +723,7 @@ public class LoadBalancerClientCli
     Map<String, TransportClientFactory> clientFactories =
         new HashMap<String, TransportClientFactory>();
 
-    clientFactories.put("http", new HttpClientFactory());
+    clientFactories.put("http", HttpClientFactory.getSimpleClientFactory());
 
     // create the state
     SimpleLoadBalancerState state =
@@ -762,7 +762,7 @@ public class LoadBalancerClientCli
     }
 
     Map<String, TransportClientFactory> clientFactories = new HashMap<String, TransportClientFactory>();
-    clientFactories.put("http", new HttpClientFactory());
+    clientFactories.put("http", HttpClientFactory.getSimpleClientFactory());
 
     Map<String, LoadBalancerStrategyFactory<? extends LoadBalancerStrategy>> loadBalancerStrategyFactories =
     new HashMap<String, LoadBalancerStrategyFactory<? extends LoadBalancerStrategy>>();

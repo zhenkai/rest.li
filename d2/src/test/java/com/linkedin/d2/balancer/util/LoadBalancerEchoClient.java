@@ -215,7 +215,7 @@ public class LoadBalancerEchoClient
     Map<String, TransportClientFactory> clientFactories =
         new HashMap<String, TransportClientFactory>();
 
-    clientFactories.put("http", new HttpClientFactory());
+    clientFactories.put("http", HttpClientFactory.getSimpleClientFactory());
 
     // create the state
     SimpleLoadBalancerState state =

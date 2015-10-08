@@ -95,7 +95,7 @@ public class TestHttpNettyClient
   public void testNoChannelTimeout()
       throws InterruptedException
   {
-    HttpNettyClient client = new HttpNettyClient(new NoCreations(_scheduler), _scheduler, 500, 500, 1024 * 1024 * 2);
+    HttpNettyStreamClient client = new HttpNettyStreamClient(new NoCreations(_scheduler), _scheduler, 500, 500, 1024 * 1024 * 2);
 
     RestRequest r = new RestRequestBuilder(URI.create("http://localhost/")).build();
 
@@ -130,7 +130,7 @@ public class TestHttpNettyClient
   {
     TestServer testServer = new TestServer();
 
-    HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(500).setIdleTimeout(10000)
+    HttpNettyStreamClient client = new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(500).setIdleTimeout(10000)
         .setShutdownTimeout(500).build();
 
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
@@ -162,7 +162,7 @@ public class TestHttpNettyClient
   @Test
   public void testBadAddress() throws InterruptedException, IOException, TimeoutException
   {
-    HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler)
+    HttpNettyStreamClient client = new HttpClientBuilder(_eventLoop, _scheduler)
                                   .setRequestTimeout(30000)
                                   .setIdleTimeout(10000)
                                   .setShutdownTimeout(500)
@@ -202,7 +202,7 @@ public class TestHttpNettyClient
   {
     TestServer testServer = new TestServer();
 
-    HttpNettyClient client =
+    HttpNettyStreamClient client =
         new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(50000).setIdleTimeout(10000)
             .setShutdownTimeout(500).setMaxResponseSize(TEST_MAX_RESPONSE_SIZE).build();
 
@@ -281,7 +281,7 @@ public class TestHttpNettyClient
   {
     TestServer testServer = new TestServer();
 
-    HttpNettyClient client =
+    HttpNettyStreamClient client =
         new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(5000000).setIdleTimeout(10000)
             .setShutdownTimeout(500).setMaxHeaderSize(TEST_MAX_HEADER_SIZE).build();
 
@@ -313,7 +313,7 @@ public class TestHttpNettyClient
   public void testBadHeader() throws InterruptedException, IOException
   {
     TestServer testServer = new TestServer();
-    HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler)
+    HttpNettyStreamClient client = new HttpClientBuilder(_eventLoop, _scheduler)
                                   .setRequestTimeout(10000)
                                   .setIdleTimeout(10000)
                                   .setShutdownTimeout(500).build();
@@ -342,7 +342,7 @@ public class TestHttpNettyClient
   @Test
   public void testShutdown() throws ExecutionException, TimeoutException, InterruptedException
   {
-    HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler)
+    HttpNettyStreamClient client = new HttpClientBuilder(_eventLoop, _scheduler)
                                   .setRequestTimeout(500)
                                   .setIdleTimeout(10000)
                                   .setShutdownTimeout(500)
@@ -372,7 +372,7 @@ public class TestHttpNettyClient
 
   {
     // Test that shutdown works when the outstanding request is stuck in the pool waiting for a channel
-    HttpNettyClient client = new HttpNettyClient(new NoCreations(_scheduler), _scheduler, 60000, 1, 1024 * 1024 * 2);
+    HttpNettyStreamClient client = new HttpNettyStreamClient(new NoCreations(_scheduler), _scheduler, 60000, 1, 1024 * 1024 * 2);
 
     RestRequest r = new RestRequestBuilder(URI.create("http://some.host/")).build();
     FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
@@ -418,7 +418,7 @@ public class TestHttpNettyClient
   {
     TestServer testServer = new TestServer();
 
-    HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(requestTimeout)
+    HttpNettyStreamClient client = new HttpClientBuilder(_eventLoop, _scheduler).setRequestTimeout(requestTimeout)
         .setShutdownTimeout(shutdownTimeout).build();
 
     RestRequest r = new RestRequestBuilder(testServer.getNoResponseURI()).build();
@@ -595,7 +595,7 @@ public class TestHttpNettyClient
       }
     };
 
-    HttpNettyClient client =
+    HttpNettyStreamClient client =
         new HttpClientBuilder(_eventLoop, _scheduler)
             .setJmxManager(manager)
             .build();
@@ -629,7 +629,7 @@ public class TestHttpNettyClient
     SSLContext context = SSLContext.getDefault();
     SSLParameters sslParameters = context.getDefaultSSLParameters();
 
-    HttpNettyClient client = new HttpClientBuilder(_eventLoop, _scheduler)
+    HttpNettyStreamClient client = new HttpClientBuilder(_eventLoop, _scheduler)
           .setSSLContext(context)
           .setSSLParameters(sslParameters)
           .build();

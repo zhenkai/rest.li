@@ -63,7 +63,7 @@ public class TestChannelPoolBehavior
   public void setup() throws IOException
   {
     _scheduler = Executors.newSingleThreadScheduledExecutor();
-    _clientFactory = new HttpClientFactory();
+    _clientFactory = HttpClientFactory.getSimpleClientFactory();
     _client1 = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
     _client2 = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
     _server = new HttpServerFactory().createServer(PORT, getTransportDispatcher());

@@ -39,6 +39,9 @@ import com.linkedin.r2.util.ConfigValueExtractor;
 import com.linkedin.r2.util.NamedThreadFactory;
 
 import io.netty.channel.nio.NioEventLoopGroup;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import javax.net.ssl.SSLContext;
@@ -138,6 +141,7 @@ public class HttpClientFactory implements TransportClientFactory
   private final Map<String, CompressionConfig> _requestCompressionConfigs;
   // flag to enable/disable Nagle's algorithm
   private final boolean                    _tcpNoDelay;
+  private final boolean                    _createLegacyClient;
 
   // All fields below protected by _mutex
   private final Object                     _mutex               = new Object();
@@ -277,7 +281,7 @@ public class HttpClientFactory implements TransportClientFactory
                            boolean tcpNoDelay)
   {
     this(filters, eventLoopGroup, shutdownFactory, executor, shutdownExecutor, callbackExecutorGroup, shutdownCallbackExecutor,
-        jmxManager, tcpNoDelay, Integer.MAX_VALUE, Collections.<String, CompressionConfig>emptyMap(), null);
+        jmxManager, tcpNoDelay, Integer.MAX_VALUE, Collections.<String, CompressionConfig>emptyMap(), null, true);
   }
 
   public HttpClientFactory(FilterChain filters,
@@ -291,7 +295,8 @@ public class HttpClientFactory implements TransportClientFactory
                            boolean tcpNoDelay,
                            int requestCompressionThresholdDefault,
                            Map<String, CompressionConfig> requestCompressionConfigs,
-                           Executor compressionExecutor)
+                           Executor compressionExecutor,
+                           boolean createLegacyClient)
   {
     _filters = filters;
     _eventLoopGroup = eventLoopGroup;
@@ -314,6 +319,12 @@ public class HttpClientFactory implements TransportClientFactory
     _tcpNoDelay = tcpNoDelay;
     _compressionExecutor = compressionExecutor;
     _useClientCompression = _compressionExecutor != null;
+    _createLegacyClient = createLegacyClient;
+  }
+
+  public static HttpClientFactory getSimpleClientFactory()
+  {
+    return new Builder().setCreateLegacyClient(false).build();
   }
 
   public static class Builder
@@ -331,6 +342,7 @@ public class HttpClientFactory implements TransportClientFactory
     private int                        _requestCompressionThresholdDefault = Integer.MAX_VALUE;
     private Map<String, CompressionConfig> _requestCompressionConfigs = Collections.<String, CompressionConfig>emptyMap();
     private boolean                    _tcpNoDelay = true;
+    private boolean                    _createLegacyClient = true;
 
     public Builder setNioEventLoopGroup(NioEventLoopGroup nioEventLoopGroup)
     {
@@ -404,6 +416,12 @@ public class HttpClientFactory implements TransportClientFactory
       return this;
     }
 
+    public Builder setCreateLegacyClient(boolean createLegacyClient)
+    {
+      _createLegacyClient = createLegacyClient;
+      return this;
+    }
+
     public HttpClientFactory build()
     {
       NioEventLoopGroup eventLoopGroup = _eventLoopGroup != null ? _eventLoopGroup
@@ -413,7 +431,7 @@ public class HttpClientFactory implements TransportClientFactory
 
       return new HttpClientFactory(_filters, eventLoopGroup, _shutdownFactory, scheduledExecutorService,
           _shutdownExecutor, _callbackExecutorGroup, _shutdownCallbackExecutor, _jmxManager,
-          _tcpNoDelay, _requestCompressionThresholdDefault, _requestCompressionConfigs, _compressionExecutor);
+          _tcpNoDelay, _requestCompressionThresholdDefault, _requestCompressionConfigs, _compressionExecutor, _createLegacyClient);
     }
 
   }
@@ -432,7 +450,7 @@ public class HttpClientFactory implements TransportClientFactory
     return getClient(properties, sslContext, sslParameters);
   }
 
-  HttpNettyClient getRawClient(Map<String, String> properties)
+  TransportClient getRawClient(Map<String, String> properties)
   {
     return getRawClient(properties, null, null);
   }
@@ -645,7 +663,7 @@ public class HttpClientFactory implements TransportClientFactory
   /**
    * Testing aid.
    */
-  HttpNettyClient getRawClient(Map<String, ? extends Object> properties,
+  TransportClient getRawClient(Map<String, ? extends Object> properties,
                                SSLContext sslContext,
                                SSLParameters sslParameters)
   {
@@ -667,25 +685,50 @@ public class HttpClientFactory implements TransportClientFactory
     Integer maxChunkSize = chooseNewOverDefault(getIntValue(properties, HTTP_MAX_CHUNK_SIZE), DEFAULT_MAX_CHUNK_SIZE);
     Integer maxConcurrentConnections = chooseNewOverDefault(getIntValue(properties, HTTP_MAX_CONCURRENT_CONNECTIONS), Integer.MAX_VALUE);
 
-    return new HttpNettyClient(_eventLoopGroup,
-                               _executor,
-                               poolSize,
-                               requestTimeout,
-                               idleTimeout,
-                               shutdownTimeout,
-                               maxResponseSize,
-                               sslContext,
-                               sslParameters,
-                               _callbackExecutorGroup,
-                               poolWaiterSize,
-                               clientName,
-                               _jmxManager,
-                               strategy,
-                               poolMinSize,
-                               maxHeaderSize,
-                               maxChunkSize,
-                               maxConcurrentConnections,
-                               _tcpNoDelay);
+    if (_createLegacyClient)
+    {
+      return new HttpNettyClient(
+          _eventLoopGroup,
+          _executor,
+          poolSize,
+          requestTimeout,
+          idleTimeout,
+          shutdownTimeout,
+          (int)maxResponseSize,
+          sslContext,
+          sslParameters,
+          _callbackExecutorGroup,
+          poolWaiterSize,
+          clientName,
+          _jmxManager,
+          strategy,
+          poolMinSize,
+          maxHeaderSize,
+          maxChunkSize,
+          maxConcurrentConnections);
+    }
+    else
+    {
+      return new HttpNettyStreamClient(_eventLoopGroup,
+          _executor,
+          poolSize,
+          requestTimeout,
+          idleTimeout,
+          shutdownTimeout,
+          maxResponseSize,
+          sslContext,
+          sslParameters,
+          _callbackExecutorGroup,
+          poolWaiterSize,
+          clientName,
+          _jmxManager,
+          strategy,
+          poolMinSize,
+          maxHeaderSize,
+          maxChunkSize,
+          maxConcurrentConnections,
+          _tcpNoDelay);
+    }
   }
 
   /**

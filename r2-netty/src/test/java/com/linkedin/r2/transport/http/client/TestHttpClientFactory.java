@@ -82,7 +82,7 @@ public class TestHttpClientFactory
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    HttpClientFactory factory = new HttpClientFactory(FilterChains.empty(), eventLoop, true, scheduler, true);
+    HttpClientFactory factory = getHttpClientFactory(eventLoop, true, scheduler, true);
 
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
@@ -116,7 +116,7 @@ public class TestHttpClientFactory
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    HttpClientFactory factory = new HttpClientFactory(FilterChains.empty(), eventLoop, true, scheduler, true);
+    HttpClientFactory factory = getHttpClientFactory(eventLoop, true, scheduler, true);
 
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
@@ -151,7 +151,13 @@ public class TestHttpClientFactory
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    HttpClientFactory factory = new HttpClientFactory(FilterChains.empty(), eventLoop, true, scheduler, true);
+    HttpClientFactory factory = new HttpClientFactory.Builder()
+        .setNioEventLoopGroup(eventLoop)
+        .setShutDownFactory(true)
+        .setScheduleExecutorService(scheduler)
+        .setShutdownScheduledExecutorService(true)
+        .setCreateLegacyClient(false)
+        .build();
 
     Map<String, String> properties = new HashMap<String, String>();
 
@@ -160,10 +166,10 @@ public class TestHttpClientFactory
     String maxResponse = "3000";
     String idleTimeout = "8000";
     String shutdownTimeout = "14000";
-    HttpNettyClient client;
+    HttpNettyStreamClient client;
 
     //test creation using default values
-    client = factory.getRawClient(properties);
+    client = (HttpNettyStreamClient) factory.getRawClient(properties);
     Assert.assertEquals(client.getMaxResponseSize(), HttpClientFactory.DEFAULT_MAX_RESPONSE_SIZE);
     Assert.assertEquals(client.getRequestTimeout(), HttpClientFactory.DEFAULT_REQUEST_TIMEOUT);
     Assert.assertEquals(client.getShutdownTimeout(), HttpClientFactory.DEFAULT_SHUTDOWN_TIMEOUT);
@@ -174,7 +180,7 @@ public class TestHttpClientFactory
     properties.put(HttpClientFactory.HTTP_IDLE_TIMEOUT, idleTimeout);
     properties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, maxResponse);
     properties.put(HttpClientFactory.HTTP_SHUTDOWN_TIMEOUT, shutdownTimeout);
-    client = factory.getRawClient(properties);
+    client = (HttpNettyStreamClient)factory.getRawClient(properties);
     Assert.assertEquals(client.getMaxResponseSize(), Integer.parseInt(maxResponse));
     Assert.assertEquals(client.getRequestTimeout(), Integer.parseInt(requestTimeout));
     Assert.assertEquals(client.getShutdownTimeout(), Integer.parseInt(shutdownTimeout));
@@ -183,7 +189,7 @@ public class TestHttpClientFactory
   @Test
   public void testNewSSLProperties() throws Exception
   {
-    HttpClientFactory factory = new HttpClientFactory();
+    HttpClientFactory factory = HttpClientFactory.getSimpleClientFactory();
     Map<String,Object> params = new HashMap<String, Object>();
     SSLParameters sslParameters = new SSLParameters();
     sslParameters.setProtocols(new String[]{ "Unsupported" });
@@ -205,7 +211,7 @@ public class TestHttpClientFactory
   @Test
   public void testSSLParams() throws Exception
   {
-    HttpClientFactory factory = new HttpClientFactory();
+    HttpClientFactory factory = HttpClientFactory.getSimpleClientFactory();
     Map<String,Object> params = new HashMap<String, Object>();
     SSLParameters sslParameters = new SSLParameters();
     sslParameters.setProtocols(new String[]{ "Unsupported" });
@@ -230,7 +236,7 @@ public class TestHttpClientFactory
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    HttpClientFactory factory = new HttpClientFactory(FilterChains.empty(), eventLoop, true, scheduler, true);
+    HttpClientFactory factory = getHttpClientFactory(eventLoop, true, scheduler, true);
 
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
@@ -258,7 +264,7 @@ public class TestHttpClientFactory
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    HttpClientFactory factory = new HttpClientFactory(FilterChains.empty(), eventLoop, true, scheduler, true);
+    HttpClientFactory factory = getHttpClientFactory(eventLoop, true, scheduler, true);
 
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
@@ -294,7 +300,7 @@ public class TestHttpClientFactory
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    HttpClientFactory factory = new HttpClientFactory(FilterChains.empty(), eventLoop, true, scheduler, true);
+    HttpClientFactory factory = getHttpClientFactory(eventLoop, true, scheduler, true);
 
     Client client = new TransportClientAdapter(factory.getClient(
             Collections.<String, Object>emptyMap()));
@@ -334,7 +340,7 @@ public class TestHttpClientFactory
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    HttpClientFactory factory = new HttpClientFactory(FilterChains.empty(), eventLoop, false, scheduler, false);
+    HttpClientFactory factory = getHttpClientFactory(eventLoop, false, scheduler, false);
 
     FutureCallback<None> callback = new FutureCallback<None>();
     factory.shutdown(callback, 60, TimeUnit.MINUTES);
@@ -348,19 +354,19 @@ public class TestHttpClientFactory
   @Test
   public void testRequestTimeoutConfig()
   {
-    HttpClientFactory factory = new HttpClientFactory();
+    HttpClientFactory factory = new HttpClientFactory.Builder().setCreateLegacyClient(false).build();
 
     try
     {
       Map<String,String> config = new HashMap<String, String>();
 
       config.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "999");
-      HttpNettyClient client = factory.getRawClient(config);
+      HttpNettyStreamClient client = (HttpNettyStreamClient)factory.getRawClient(config);
       Assert.assertEquals(client.getRequestTimeout(), 999);
 
 
       config.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "888");
-      client = factory.getRawClient(config);
+      client = (HttpNettyStreamClient)factory.getRawClient(config);
       Assert.assertEquals(client.getRequestTimeout(), 888);
 
     }
@@ -375,7 +381,7 @@ public class TestHttpClientFactory
   public void testClientShutdownBeingCalledMultipleTimes()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    HttpClientFactory factory = new HttpClientFactory();
+    HttpClientFactory factory = HttpClientFactory.getSimpleClientFactory();
     TransportClient client = factory.getClient(Collections.<String, Object>emptyMap());
     // first shutdown call
     FutureCallback<None> clientShutdown = new FutureCallback<None>();
@@ -426,5 +432,19 @@ public class TestHttpClientFactory
         .setRequestCompressionConfigs(requestCompressionConfigs)
         .build();
     Assert.assertEquals(factory.getCompressionConfig(serviceName, EncodingType.SNAPPY_FRAMED.getHttpName()), expectedConfig);
+  }
+
+  private static HttpClientFactory getHttpClientFactory(NioEventLoopGroup eventLoopGroup,
+                                                        boolean shutdownFactory,
+                                                        ScheduledExecutorService scheduler,
+                                                        boolean shutdownScheduler)
+  {
+    return new HttpClientFactory.Builder()
+        .setNioEventLoopGroup(eventLoopGroup)
+        .setShutDownFactory(shutdownFactory)
+        .setScheduleExecutorService(scheduler)
+        .setShutdownScheduledExecutorService(shutdownScheduler)
+        .setCreateLegacyClient(false)
+        .build();
   }
 }

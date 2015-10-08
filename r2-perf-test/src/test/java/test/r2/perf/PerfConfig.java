@@ -36,6 +36,7 @@ public class PerfConfig
   private static final String PERF_SERVER_MSG_SIZE = "perf.server.msg_size";
   private static final String PERF_CLIENT_PURE_STREAMING = "perf.client.pure_streaming";
   private static final String PERF_SERVER_PURE_STREAMING = "perf.server.pure_streaming";
+  private static final String PERF_CLIENT_LEGACY_CODE_PATH = "perf.client.legacy.code.path";
 
   // Default property values
   private static final String DEFAULT_HOST = "localhost";
@@ -97,6 +98,11 @@ public class PerfConfig
   public static boolean isServerPureStreaming()
   {
     return getBoolean(PERF_SERVER_PURE_STREAMING);
+  }
+
+  public static boolean clientLegacyCodePath()
+  {
+    return getBoolean(PERF_CLIENT_LEGACY_CODE_PATH);
   }
 
   private static URI getUri(String propName)

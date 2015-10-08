@@ -48,7 +48,7 @@ public class TestJetty404
   @BeforeClass
   public void setup() throws IOException
   {
-    _clientFactory = new HttpClientFactory();
+    _clientFactory = HttpClientFactory.getSimpleClientFactory();
     _client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, String>emptyMap()));
     _server = new HttpServerFactory().createServer(PORT, "/correct-path", 50, new TransportDispatcher()
     {

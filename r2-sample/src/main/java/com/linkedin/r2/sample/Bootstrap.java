@@ -73,8 +73,11 @@ public class Bootstrap
 
   public static Client createHttpClient(FilterChain filters)
   {
-    final TransportClient client = new HttpClientFactory(filters)
-            .getClient(Collections.<String, String>emptyMap());
+    final TransportClient client = new HttpClientFactory.Builder()
+        .setFilterChain(filters)
+        .setCreateLegacyClient(false)
+        .build()
+        .getClient(Collections.<String, String>emptyMap());
     return new TransportClientAdapter(client);
   }
 

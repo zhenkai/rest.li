@@ -144,7 +144,10 @@ public class TestCompressionEcho
                                         Arrays.asList(new String[]{"*"}),
                                         _executor);
 
-        TransportClientFactory factory = new HttpClientFactory(FilterChains.create(clientCompressionFilter));
+        TransportClientFactory factory = new HttpClientFactory.Builder()
+            .setFilterChain(FilterChains.create(clientCompressionFilter))
+            .setCreateLegacyClient(false)
+            .build();
         Client client = new TransportClientAdapter(factory.getClient(getClientProperties()));
         args[cur][0] = client;
         args[cur][1] = LARGE_BYTES_NUM;
@@ -165,7 +168,10 @@ public class TestCompressionEcho
                 Arrays.asList(new String[]{"*"}),
                 _executor);
 
-        TransportClientFactory factory = new HttpClientFactory(FilterChains.create(clientCompressionFilter));
+        TransportClientFactory factory = new HttpClientFactory.Builder()
+            .setFilterChain(FilterChains.create(clientCompressionFilter))
+            .setCreateLegacyClient(false)
+            .build();
         Client client = new TransportClientAdapter(factory.getClient(getClientProperties()));
         args[cur][0] = client;
         args[cur][1] = SMALL_BYTES_NUM;

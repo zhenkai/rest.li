@@ -79,7 +79,7 @@ class ChannelPoolLifecycle implements AsyncPool.Lifecycle<Channel>
         }
         else
         {
-          channelCallback.onError(HttpNettyClient.toException(channelFuture.cause()));
+          channelCallback.onError(HttpNettyStreamClient.toException(channelFuture.cause()));
         }
       }
     });
@@ -113,7 +113,7 @@ class ChannelPoolLifecycle implements AsyncPool.Lifecycle<Channel>
           }
           else
           {
-            channelCallback.onError(HttpNettyClient.toException(channelFuture.cause()));
+            channelCallback.onError(HttpNettyStreamClient.toException(channelFuture.cause()));
           }
         }
       });

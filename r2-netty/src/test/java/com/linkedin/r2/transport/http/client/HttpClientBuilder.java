@@ -25,7 +25,7 @@ import javax.net.ssl.SSLParameters;
 
 
 /**
- * Convenient class for building {@link HttpNettyClient} with reasonable default configs.
+ * Convenient class for building {@link HttpNettyStreamClient} with reasonable default configs.
  *
  * @author Ang Xu
  * @version $Revision: $
@@ -160,9 +160,9 @@ class HttpClientBuilder
     return this;
   }
 
-  public HttpNettyClient build()
+  public HttpNettyStreamClient build()
   {
-    return new HttpNettyClient(_eventLoopGroup,
+    return new HttpNettyStreamClient(_eventLoopGroup,
                                _scheduler,
                                _maxPoolSize,
                                _requestTimeout,
