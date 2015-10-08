@@ -28,6 +28,8 @@ import com.linkedin.r2.filter.compression.EncodingType;
 import com.linkedin.r2.filter.transport.ClientQueryTunnelFilter;
 import com.linkedin.r2.filter.transport.FilterChainClient;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.TransportClientFactory;
@@ -841,6 +843,15 @@ public class HttpClientFactory implements TransportClientFactory
     private FactoryClient(TransportClient client)
     {
       _client = client;
+    }
+
+    @Override
+    public   void restRequest(RestRequest request,
+                              RequestContext requestContext,
+                              Map<String, String> wireAttrs,
+                              TransportCallback<RestResponse> callback)
+    {
+      _client.restRequest(request, requestContext, wireAttrs, callback);
     }
 
     @Override

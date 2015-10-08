@@ -26,6 +26,8 @@ import com.linkedin.d2.balancer.util.LoadBalancerUtil;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.entitystream.EntityStream;
@@ -71,32 +73,32 @@ public class TrackerClient implements LoadBalancerClient
   public TrackerClient(URI uri, Map<Integer, PartitionData> partitionDataMap, TransportClient wrappedClient)
   {
     this(uri, partitionDataMap, wrappedClient, SystemClock.instance(), null,
-         DegraderLoadBalancerStrategyConfig.DEFAULT_UPDATE_INTERVAL_MS);
+        DegraderLoadBalancerStrategyConfig.DEFAULT_UPDATE_INTERVAL_MS);
   }
 
   public TrackerClient(URI uri, Map<Integer, PartitionData> partitionDataMap, TransportClient wrappedClient,
                        Clock clock, Config config)
-    {
-      this(uri, partitionDataMap, wrappedClient, clock, config,
-           DegraderLoadBalancerStrategyConfig.DEFAULT_UPDATE_INTERVAL_MS);
-    }
+  {
+    this(uri, partitionDataMap, wrappedClient, clock, config,
+        DegraderLoadBalancerStrategyConfig.DEFAULT_UPDATE_INTERVAL_MS);
+  }
 
   public TrackerClient(URI uri, Map<Integer, PartitionData> partitionDataMap, TransportClient wrappedClient,
                        Clock clock, Config config, long interval)
+  {
+    _uri = uri;
+    _wrappedClient = wrappedClient;
+    _callTracker = new CallTrackerImpl(interval, clock);
+
+    if (config == null)
     {
-      _uri = uri;
-      _wrappedClient = wrappedClient;
-      _callTracker = new CallTrackerImpl(interval, clock);
+      config = new Config();
+    }
 
-      if (config == null)
-      {
-        config = new Config();
-      }
-
-      config.setCallTracker(_callTracker);
-      config.setClock(clock);
-      // The overrideDropRate will be globally determined by the DegraderLoadBalancerStrategy.
-      config.setOverrideDropRate(0.0);
+    config.setCallTracker(_callTracker);
+    config.setClock(clock);
+    // The overrideDropRate will be globally determined by the DegraderLoadBalancerStrategy.
+    config.setOverrideDropRate(0.0);
 
       /* TrackerClient contains state for each partition, but they actually share the same DegraderImpl
        *
@@ -122,28 +124,37 @@ public class TrackerClient implements LoadBalancerClient
        * Deadlocks will be gone since there will be only one DegraderImpl.
        * However, now it becomes harder to have different configurations for different partitions.
        */
-      int mapSize = partitionDataMap.size();
-      Map<Integer, PartitionState>partitionStates = new HashMap<Integer, PartitionState>(mapSize * 2);
-      config.setName("TrackerClient Degrader: " + uri);
-      DegraderImpl degrader = new DegraderImpl(config);
-      DegraderControl degraderControl = new DegraderControl(degrader);
-      for (Map.Entry<Integer, PartitionData> entry : partitionDataMap.entrySet())
-      {
-        int partitionId = entry.getKey();
-        PartitionState partitionState = new PartitionState(entry.getValue(), degrader, degraderControl);
-        partitionStates.put(partitionId, partitionState);
-      }
-      _partitionStates = Collections.unmodifiableMap(partitionStates);
-      debug(_log, "created tracker client: ", this);
+    int mapSize = partitionDataMap.size();
+    Map<Integer, PartitionState>partitionStates = new HashMap<Integer, PartitionState>(mapSize * 2);
+    config.setName("TrackerClient Degrader: " + uri);
+    DegraderImpl degrader = new DegraderImpl(config);
+    DegraderControl degraderControl = new DegraderControl(degrader);
+    for (Map.Entry<Integer, PartitionData> entry : partitionDataMap.entrySet())
+    {
+      int partitionId = entry.getKey();
+      PartitionState partitionState = new PartitionState(entry.getValue(), degrader, degraderControl);
+      partitionStates.put(partitionId, partitionState);
     }
+    _partitionStates = Collections.unmodifiableMap(partitionStates);
+    debug(_log, "created tracker client: ", this);
+  }
+
+  @Override
+  public void restRequest(RestRequest request,
+                          RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          TransportCallback<RestResponse> callback)
+  {
+    _wrappedClient.restRequest(request, requestContext, wireAttrs, new TrackerClientRestCallback(callback, _callTracker.startCall()));
+  }
 
   @Override
   public void streamRequest(StreamRequest request,
-                          RequestContext requestContext,
-                          Map<String, String> wireAttrs,
-                          TransportCallback<StreamResponse> callback)
+                            RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            TransportCallback<StreamResponse> callback)
   {
-    _wrappedClient.streamRequest(request, requestContext, wireAttrs, new TrackerClientCallback(callback, _callTracker.startCall()));
+    _wrappedClient.streamRequest(request, requestContext, wireAttrs, new TrackerClientStreamCallback(callback, _callTracker.startCall()));
   }
 
   @Override
@@ -214,12 +225,60 @@ public class TrackerClient implements LoadBalancerClient
         + ", _uri=" + _uri + ", _partitionStates=" + _partitionStates + ", _wrappedClient=" + _wrappedClient + "]";
   }
 
-  private static class TrackerClientCallback implements TransportCallback<StreamResponse>
+  private static class TrackerClientRestCallback implements TransportCallback<RestResponse>
+  {
+    private TransportCallback<RestResponse> _wrappedCallback;
+    private CallCompletion       _callCompletion;
+
+    public TrackerClientRestCallback(TransportCallback<RestResponse> wrappedCallback,
+                                 CallCompletion callCompletion)
+    {
+      _wrappedCallback = wrappedCallback;
+      _callCompletion = callCompletion;
+    }
+
+    @Override
+    public void onResponse(TransportResponse<RestResponse> response)
+    {
+      if (response.hasError())
+      {
+        Throwable throwable = response.getError();
+        if (throwable instanceof RemoteInvocationException)
+        {
+          Throwable originalThrowable = LoadBalancerUtil.findOriginalThrowable(throwable);
+          if (originalThrowable instanceof ConnectException)
+          {
+            _callCompletion.endCallWithError(ErrorType.CONNECT_EXCEPTION);
+          }
+          else if (originalThrowable instanceof ClosedChannelException)
+          {
+            _callCompletion.endCallWithError(ErrorType.CLOSED_CHANNEL_EXCEPTION);
+          }
+          else
+          {
+            _callCompletion.endCallWithError(ErrorType.REMOTE_INVOCATION_EXCEPTION);
+          }
+        }
+        else
+        {
+          _callCompletion.endCallWithError();
+        }
+      }
+      else
+      {
+        _callCompletion.endCall();
+      }
+
+      _wrappedCallback.onResponse(response);
+    }
+  }
+
+  private static class TrackerClientStreamCallback implements TransportCallback<StreamResponse>
   {
     private TransportCallback<StreamResponse> _wrappedCallback;
     private CallCompletion       _callCompletion;
 
-    public TrackerClientCallback(TransportCallback<StreamResponse> wrappedCallback,
+    public TrackerClientStreamCallback(TransportCallback<StreamResponse> wrappedCallback,
                                  CallCompletion callCompletion)
     {
       _wrappedCallback = wrappedCallback;

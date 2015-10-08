@@ -23,6 +23,8 @@ import com.linkedin.d2.balancer.LoadBalancerClient;
 import com.linkedin.d2.balancer.util.LoadBalancerUtil;
 import com.linkedin.jersey.api.uri.UriBuilder;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
@@ -54,6 +56,15 @@ public class RewriteClient implements LoadBalancerClient
   }
 
   @Override
+  public void restRequest(RestRequest request,
+                   RequestContext requestContext,
+                   Map<String, String> wireAttrs,
+                   TransportCallback<RestResponse> callback)
+  {
+    _wrappedClient.restRequest(rewriteRequest(request), requestContext, wireAttrs, callback);
+  }
+
+  @Override
   public void streamRequest(StreamRequest request,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
@@ -76,6 +87,11 @@ public class RewriteClient implements LoadBalancerClient
   private StreamRequest rewriteRequest(StreamRequest req)
   {
     return req.builder().setURI(rewriteUri(req.getURI())).build(req.getEntityStream());
+  }
+
+  private RestRequest rewriteRequest(RestRequest req)
+  {
+    return req.builder().setURI(rewriteUri(req.getURI())).build();
   }
 
   private URI rewriteUri(URI uri)

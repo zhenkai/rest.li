@@ -62,6 +62,8 @@ import com.linkedin.d2.discovery.stores.file.FileStore;
 import com.linkedin.d2.discovery.stores.mock.MockStore;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.TransportClientFactory;
@@ -996,6 +998,14 @@ public class SimpleLoadBalancerTest
                               RequestContext requestContext,
                               Map<String, String> wireAttrs,
                               TransportCallback<StreamResponse> callback)
+      {
+      }
+
+      @Override
+      public void restRequest(RestRequest request,
+                       RequestContext requestContext,
+                       Map<String, String> wireAttrs,
+                       TransportCallback<RestResponse> callback)
       {
       }
 

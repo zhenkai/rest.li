@@ -23,6 +23,8 @@ import com.linkedin.d2.balancer.properties.PartitionData;
 import com.linkedin.d2.balancer.util.partitions.DefaultPartitionAccessor;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
 import com.linkedin.r2.message.stream.StreamResponse;
@@ -92,6 +94,14 @@ public class TrackerClientTest
     public TestClient(boolean emptyResponse)
     {
       _emptyResponse = emptyResponse;
+    }
+
+    @Override
+    public void restRequest(RestRequest request,
+                     RequestContext requestContext,
+                     Map<String, String> wireAttrs,
+                     TransportCallback<RestResponse> callback)
+    {
     }
 
     @Override

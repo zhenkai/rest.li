@@ -20,6 +20,8 @@ package com.linkedin.d2.balancer.clients;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.TransportClientFactory;
@@ -56,7 +58,13 @@ public class LazyClientTest
     client.streamRequest(null, new RequestContext(), null, null);
 
     assertEquals(factory.getClientCount, 1);
-    assertEquals(factory.restRequestCount, 2);
+    assertEquals(factory.requestCount, 2);
+    assertEquals(factory.shutdownCount, 0);
+
+    client.restRequest(null, new RequestContext(), null, null);
+
+    assertEquals(factory.getClientCount, 1);
+    assertEquals(factory.requestCount, 3);
     assertEquals(factory.shutdownCount, 0);
 
     client.shutdown(null);
@@ -67,7 +75,7 @@ public class LazyClientTest
   public static class LazyClientTestFactory implements TransportClientFactory
   {
     public int                 getClientCount   = 0;
-    public int                 restRequestCount = 0;
+    public int                 requestCount = 0;
     public int                 shutdownCount    = 0;
     public Map<String, ? extends Object> properties;
 
@@ -86,7 +94,16 @@ public class LazyClientTest
                                 Map<String, String> wireAttrs,
                                 TransportCallback<StreamResponse> callback)
         {
-          ++restRequestCount;
+          ++requestCount;
+        }
+
+        @Override
+        public void restRequest(RestRequest request,
+                                  RequestContext requestContext,
+                                  Map<String, String> wireAttrs,
+                                  TransportCallback<RestResponse> callback)
+        {
+          ++requestCount;
         }
 
         @Override
