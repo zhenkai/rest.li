@@ -83,7 +83,7 @@ public class TestHttpsEcho extends AbstractEchoServiceTest
 
     final TransportClient client = new HttpClientFactory.Builder()
         .setFilterChain(filters)
-        .setCreateLegacyClient(false)
+        .setRestOverStream(true)
         .build()
         .getClient(properties);
     return new TransportClientAdapter(client);

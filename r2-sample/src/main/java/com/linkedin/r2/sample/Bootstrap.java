@@ -75,7 +75,7 @@ public class Bootstrap
   {
     final TransportClient client = new HttpClientFactory.Builder()
         .setFilterChain(filters)
-        .setCreateLegacyClient(false)
+        .setRestOverStream(true)
         .build()
         .getClient(Collections.<String, String>emptyMap());
     return new TransportClientAdapter(client);

@@ -40,8 +40,6 @@ import com.linkedin.r2.util.NamedThreadFactory;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import javax.net.ssl.SSLContext;
@@ -56,6 +54,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -141,7 +141,7 @@ public class HttpClientFactory implements TransportClientFactory
   private final Map<String, CompressionConfig> _requestCompressionConfigs;
   // flag to enable/disable Nagle's algorithm
   private final boolean                    _tcpNoDelay;
-  private final boolean                    _createLegacyClient;
+  private final boolean                    _restOverStream;
 
   // All fields below protected by _mutex
   private final Object                     _mutex               = new Object();
@@ -296,7 +296,7 @@ public class HttpClientFactory implements TransportClientFactory
                            int requestCompressionThresholdDefault,
                            Map<String, CompressionConfig> requestCompressionConfigs,
                            Executor compressionExecutor,
-                           boolean createLegacyClient)
+                           boolean restOverStream)
   {
     _filters = filters;
     _eventLoopGroup = eventLoopGroup;
@@ -319,12 +319,12 @@ public class HttpClientFactory implements TransportClientFactory
     _tcpNoDelay = tcpNoDelay;
     _compressionExecutor = compressionExecutor;
     _useClientCompression = _compressionExecutor != null;
-    _createLegacyClient = createLegacyClient;
+    _restOverStream = restOverStream;
   }
 
   public static HttpClientFactory getSimpleClientFactory()
   {
-    return new Builder().setCreateLegacyClient(false).build();
+    return new Builder().setRestOverStream(true).build();
   }
 
   public static class Builder
@@ -342,7 +342,7 @@ public class HttpClientFactory implements TransportClientFactory
     private int                        _requestCompressionThresholdDefault = Integer.MAX_VALUE;
     private Map<String, CompressionConfig> _requestCompressionConfigs = Collections.<String, CompressionConfig>emptyMap();
     private boolean                    _tcpNoDelay = true;
-    private boolean                    _createLegacyClient = true;
+    private boolean                    _restOverStream = false;
 
     public Builder setNioEventLoopGroup(NioEventLoopGroup nioEventLoopGroup)
     {
@@ -416,9 +416,9 @@ public class HttpClientFactory implements TransportClientFactory
       return this;
     }
 
-    public Builder setCreateLegacyClient(boolean createLegacyClient)
+    public Builder setRestOverStream(boolean restOverStream)
     {
-      _createLegacyClient = createLegacyClient;
+      _restOverStream = restOverStream;
       return this;
     }
 
@@ -431,7 +431,7 @@ public class HttpClientFactory implements TransportClientFactory
 
       return new HttpClientFactory(_filters, eventLoopGroup, _shutdownFactory, scheduledExecutorService,
           _shutdownExecutor, _callbackExecutorGroup, _shutdownCallbackExecutor, _jmxManager,
-          _tcpNoDelay, _requestCompressionThresholdDefault, _requestCompressionConfigs, _compressionExecutor, _createLegacyClient);
+          _tcpNoDelay, _requestCompressionThresholdDefault, _requestCompressionConfigs, _compressionExecutor, _restOverStream);
     }
 
   }
@@ -685,10 +685,33 @@ public class HttpClientFactory implements TransportClientFactory
     Integer maxChunkSize = chooseNewOverDefault(getIntValue(properties, HTTP_MAX_CHUNK_SIZE), DEFAULT_MAX_CHUNK_SIZE);
     Integer maxConcurrentConnections = chooseNewOverDefault(getIntValue(properties, HTTP_MAX_CONCURRENT_CONNECTIONS), Integer.MAX_VALUE);
 
-    if (_createLegacyClient)
+    TransportClient streamClient = new HttpNettyStreamClient(_eventLoopGroup,
+      _executor,
+      poolSize,
+      requestTimeout,
+      idleTimeout,
+      shutdownTimeout,
+      maxResponseSize,
+      sslContext,
+      sslParameters,
+      _callbackExecutorGroup,
+      poolWaiterSize,
+      clientName,
+      _jmxManager,
+      strategy,
+      poolMinSize,
+      maxHeaderSize,
+      maxChunkSize,
+      maxConcurrentConnections,
+      _tcpNoDelay);
+
+    if (_restOverStream)
     {
-      return new HttpNettyClient(
-          _eventLoopGroup,
+      return streamClient;
+    }
+    else
+    {
+      TransportClient legacyClient = new HttpNettyClient(_eventLoopGroup,
           _executor,
           poolSize,
           requestTimeout,
@@ -706,28 +729,8 @@ public class HttpClientFactory implements TransportClientFactory
           maxHeaderSize,
           maxChunkSize,
           maxConcurrentConnections);
-    }
-    else
-    {
-      return new HttpNettyStreamClient(_eventLoopGroup,
-          _executor,
-          poolSize,
-          requestTimeout,
-          idleTimeout,
-          shutdownTimeout,
-          maxResponseSize,
-          sslContext,
-          sslParameters,
-          _callbackExecutorGroup,
-          poolWaiterSize,
-          clientName,
-          _jmxManager,
-          strategy,
-          poolMinSize,
-          maxHeaderSize,
-          maxChunkSize,
-          maxConcurrentConnections,
-          _tcpNoDelay);
+
+      return new SwitchableClient(legacyClient, streamClient);
     }
   }
 
@@ -943,6 +946,101 @@ public class HttpClientFactory implements TransportClientFactory
       {
         callback.onError(new IllegalStateException("shutdown has already been requested."));
       }
+    }
+  }
+
+  private static class SwitchableClient implements TransportClient
+  {
+    private final TransportClient _legacyClient;
+    private final TransportClient _streamClient;
+
+    SwitchableClient(TransportClient legacyClient, TransportClient streamClient)
+    {
+      _legacyClient = legacyClient;
+      _streamClient = streamClient;
+    }
+
+    @Override
+    public void restRequest(RestRequest request,
+                            RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            TransportCallback<RestResponse> callback)
+    {
+      _legacyClient.restRequest(request, requestContext, wireAttrs, callback);
+    }
+
+    @Override
+    public void streamRequest(StreamRequest request,
+                       RequestContext requestContext,
+                       Map<String, String> wireAttrs,
+                       TransportCallback<StreamResponse> callback)
+    {
+      _streamClient.streamRequest(request, requestContext, wireAttrs, callback);
+    }
+
+    @Override
+    public void shutdown(final Callback<None> callback)
+    {
+      Callback<None> twiceCallback = new Callback<None>()
+      {
+        boolean _invoked = false;
+        Throwable _error = null;
+
+        @Override
+        public void onError(Throwable e)
+        {
+          boolean invokeOriginalCallback = false;
+          synchronized (this)
+          {
+            if (_invoked)
+            {
+              invokeOriginalCallback = true;
+            }
+            else
+            {
+              _invoked = true;
+              _error = e;
+            }
+          }
+
+          if (invokeOriginalCallback)
+          {
+            callback.onError(e);
+          }
+        }
+
+        @Override
+        public void onSuccess(None result)
+        {
+          boolean invokeOriginalCallback = false;
+          synchronized (this)
+          {
+            if (_invoked)
+            {
+              invokeOriginalCallback = true;
+            }
+            else
+            {
+              _invoked = true;
+            }
+          }
+
+          if (invokeOriginalCallback)
+          {
+            if (_error != null)
+            {
+              callback.onError(_error);
+            }
+            else
+            {
+              callback.onSuccess(result);
+            }
+          }
+        }
+      };
+
+      _legacyClient.shutdown(twiceCallback);
+      _streamClient.shutdown(twiceCallback);
     }
   }
 }

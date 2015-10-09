@@ -23,18 +23,22 @@ package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
+import com.linkedin.data.message.Message;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.Request;
+import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.MessageType;
 import com.linkedin.r2.transport.common.WireAttributeHelper;
 import com.linkedin.r2.transport.common.bridge.client.TransportClient;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
+import com.linkedin.r2.transport.common.bridge.common.TransportResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 import com.linkedin.r2.transport.http.common.HttpBridge;
 import com.linkedin.r2.util.Cancellable;
@@ -211,7 +215,62 @@ import org.slf4j.LoggerFactory;
                                  Map<String, String> wireAttrs,
                                  final TransportCallback<RestResponse> callback)
   {
-    throw new UnsupportedOperationException(HttpNettyStreamClient.class.getName() + " does not support restRequest");
+    // would never happen if people are using Client interface to send request
+    // if this is called, mostly it's some test code using TransportClient interface to send request directly
+
+    MessageType.setMessageType(MessageType.Type.REST, wireAttrs);
+    StreamRequest adaptedRequest = Messages.toStreamRequest(request);
+    TransportCallback<StreamResponse> adaptedCallback = new TransportCallback<StreamResponse>()
+    {
+      @Override
+      public void onResponse(TransportResponse<StreamResponse> response)
+      {
+        if (response.hasError())
+        {
+          Throwable error = response.getError();
+          if (error instanceof StreamException)
+          {
+            Messages.toRestException((StreamException) error, new Callback<RestException>()
+            {
+              @Override
+              public void onError(Throwable e)
+              {
+                callback.onResponse(TransportResponseImpl.<RestResponse>error(e));
+              }
+
+              @Override
+              public void onSuccess(RestException result)
+              {
+                callback.onResponse(TransportResponseImpl.<RestResponse>error(result));
+              }
+            });
+          }
+          else
+          {
+            callback.onResponse(TransportResponseImpl.<RestResponse>error(error));
+          }
+        }
+        else
+        {
+          Messages.toRestResponse(response.getResponse(), new Callback<RestResponse>()
+          {
+            @Override
+            public void onError(Throwable e)
+            {
+              callback.onResponse(TransportResponseImpl.<RestResponse>error(e));
+            }
+
+            @Override
+            public void onSuccess(RestResponse result)
+            {
+              callback.onResponse(TransportResponseImpl.<RestResponse>success(result));
+            }
+          });
+        }
+      }
+    };
+
+    writeRequestWithTimeout(adaptedRequest, requestContext, wireAttrs, HttpBridge.streamToHttpCallback(adaptedCallback, adaptedRequest));
   }
 
   @Override

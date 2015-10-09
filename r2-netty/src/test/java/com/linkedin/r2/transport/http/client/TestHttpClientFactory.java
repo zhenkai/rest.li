@@ -44,7 +44,6 @@ import org.testng.annotations.Test;
 import com.linkedin.common.callback.Callbacks;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
-import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.compression.EncodingType;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -156,7 +155,7 @@ public class TestHttpClientFactory
         .setShutDownFactory(true)
         .setScheduleExecutorService(scheduler)
         .setShutdownScheduledExecutorService(true)
-        .setCreateLegacyClient(false)
+        .setRestOverStream(true)
         .build();
 
     Map<String, String> properties = new HashMap<String, String>();
@@ -354,7 +353,7 @@ public class TestHttpClientFactory
   @Test
   public void testRequestTimeoutConfig()
   {
-    HttpClientFactory factory = new HttpClientFactory.Builder().setCreateLegacyClient(false).build();
+    HttpClientFactory factory = new HttpClientFactory.Builder().setRestOverStream(true).build();
 
     try
     {
@@ -444,7 +443,7 @@ public class TestHttpClientFactory
         .setShutDownFactory(shutdownFactory)
         .setScheduleExecutorService(scheduler)
         .setShutdownScheduledExecutorService(shutdownScheduler)
-        .setCreateLegacyClient(false)
+        .setRestOverStream(true)
         .build();
   }
 }
