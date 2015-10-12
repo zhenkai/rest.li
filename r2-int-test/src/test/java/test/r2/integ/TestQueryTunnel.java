@@ -63,15 +63,23 @@ public class TestQueryTunnel
 
     _client = new TransportClientAdapter(transportClient);
 
-    final StreamRequestHandler handler = new StreamRequestHandlerAdapter(new CheckQueryTunnelHandler());
+    final RestRequestHandler restHandler = new CheckQueryTunnelHandler();
+    final StreamRequestHandler streamHandler = new StreamRequestHandlerAdapter(restHandler);
 
     TransportDispatcher dispatcher = new TransportDispatcher()
     {
       @Override
+      public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs, RequestContext requestContext,
+                                    TransportCallback<RestResponse> callback)
+      {
+        restHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<RestResponse>(callback));
+      }
+
+      @Override
       public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs,
                              RequestContext requestContext, TransportCallback<StreamResponse> callback)
       {
-        handler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
+        streamHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
       }
     };
     _server = getServerFactory().createServer(PORT, dispatcher);

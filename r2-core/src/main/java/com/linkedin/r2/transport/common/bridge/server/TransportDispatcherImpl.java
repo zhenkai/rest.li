@@ -18,16 +18,20 @@ package com.linkedin.r2.transport.common.bridge.server;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestException;
+import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.entitystream.DrainReader;
+import com.linkedin.r2.transport.common.RestRequestHandler;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.common.TransportResponseImpl;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -36,10 +40,34 @@ import java.util.Map;
 /* package private */ final class TransportDispatcherImpl implements TransportDispatcher
 {
   private final Map<URI, StreamRequestHandler> _streamHandlers;
+  private final Map<URI, RestRequestHandler> _restHandlers;
 
-  /* package private */ TransportDispatcherImpl(Map<URI, StreamRequestHandler> streamHandlers)
+  /* package private */ TransportDispatcherImpl(Map<URI, RestRequestHandler> restHandlers, Map<URI, StreamRequestHandler> streamHandlers)
   {
-    _streamHandlers = streamHandlers;
+    _streamHandlers = streamHandlers == null ? Collections.<URI, StreamRequestHandler>emptyMap() : new HashMap<URI, StreamRequestHandler>(streamHandlers);
+    _restHandlers = restHandlers == null ? Collections.<URI, RestRequestHandler>emptyMap() : new HashMap<URI, RestRequestHandler>(restHandlers);
+  }
+
+  @Override
+  public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
+                                  RequestContext requestContext, TransportCallback<RestResponse> callback)
+  {
+    final URI address = req.getURI();
+    RestRequestHandler handler = _restHandlers.get(address);
+    if (handler == null)
+    {
+      callback.onResponse(TransportResponseImpl.success(RestStatus.responseForStatus(RestStatus.NOT_FOUND, "No resource for URI:" + address)));
+      return;
+    }
+
+    try
+    {
+      handler.handleRequest(req, requestContext, new TransportCallbackAdapter<RestResponse>(callback));
+    }
+    catch (Exception e)
+    {
+      callback.onResponse(TransportResponseImpl.<RestResponse>error(RestException.forError(RestStatus.INTERNAL_SERVER_ERROR, e)));
+    }
   }
 
   @Override

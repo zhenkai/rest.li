@@ -4,6 +4,9 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamRequest;
@@ -52,6 +55,13 @@ public class TestJetty404
     _client = new TransportClientAdapter(_clientFactory.getClient(Collections.<String, String>emptyMap()));
     _server = new HttpServerFactory().createServer(PORT, "/correct-path", 50, new TransportDispatcher()
     {
+      @Override
+      public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
+                                           RequestContext requestContext, TransportCallback<RestResponse> callback)
+      {
+        callback.onResponse(TransportResponseImpl.success(new RestResponseBuilder().build()));
+      }
+
       @Override
       public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<StreamResponse> callback)
       {

@@ -86,6 +86,13 @@ public class TestServerTimeoutAsyncEvent
     TransportDispatcher transportDispatcher = new TransportDispatcher()
     {
       @Override
+      public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
+                                    RequestContext requestContext, TransportCallback<RestResponse> callback)
+      {
+        throw new UnsupportedOperationException("This dispatcher only supports stream");
+      }
+
+      @Override
       public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs, RequestContext requestContext, TransportCallback<StreamResponse> callback)
       {
         StreamRequestHandler handler = handlers.get(req.getURI());
@@ -333,7 +340,7 @@ public class TestServerTimeoutAsyncEvent
   private class BuggyFilter implements StreamRequestFilter
   {
     @Override
-    public void onRequest(StreamRequest req,
+    public void onStreamRequest(StreamRequest req,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
                           NextFilter<StreamRequest, StreamResponse> nextFilter)

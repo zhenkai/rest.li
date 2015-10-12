@@ -19,6 +19,8 @@ package com.linkedin.restli.server;
 
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestException;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
@@ -39,11 +41,27 @@ import java.util.Map;
  */
 public class DelegatingTransportDispatcher implements TransportDispatcher
 {
-  private final StreamRequestHandler _handler;
+  private final StreamRequestHandler _streamHandler;
+  private final RestRequestHandler _restHandler;
 
   public DelegatingTransportDispatcher(final RestRequestHandler handler)
   {
-    _handler = new StreamRequestHandlerAdapter(handler);
+    _streamHandler = new StreamRequestHandlerAdapter(handler);
+    _restHandler = handler;
+  }
+
+  @Override
+  public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
+                                  RequestContext requestContext, TransportCallback<RestResponse> callback)
+  {
+    try
+    {
+      _restHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<RestResponse>(callback));
+    }
+    catch (Exception e)
+    {
+      callback.onResponse(TransportResponseImpl.<RestResponse>error(RestException.forError(RestStatus.INTERNAL_SERVER_ERROR, e)));
+    }
   }
 
   @Override
@@ -54,7 +72,7 @@ public class DelegatingTransportDispatcher implements TransportDispatcher
   {
     try
     {
-      _handler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
+      _streamHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
     }
     catch (Exception e)
     {

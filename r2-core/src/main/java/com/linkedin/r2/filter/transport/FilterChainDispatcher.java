@@ -20,6 +20,8 @@ package com.linkedin.r2.filter.transport;
 
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
@@ -55,11 +57,19 @@ public class FilterChainDispatcher implements TransportDispatcher
   }
 
   @Override
+  public void handleRestRequest(RestRequest req, Map<String, String> wireAttrs,
+                                       RequestContext requestContext, TransportCallback<RestResponse> callback)
+  {
+    ResponseFilter.registerCallback(callback, requestContext);
+    _filters.onRestRequest(req, requestContext, wireAttrs);
+  }
+
+  @Override
   public void handleStreamRequest(StreamRequest req, Map<String, String> wireAttrs,
                                 RequestContext requestContext,
                                 TransportCallback<StreamResponse> callback)
   {
     ResponseFilter.registerCallback(callback, requestContext);
-    _filters.onRequest(req, requestContext, wireAttrs);
+    _filters.onStreamRequest(req, requestContext, wireAttrs);
   }
 }

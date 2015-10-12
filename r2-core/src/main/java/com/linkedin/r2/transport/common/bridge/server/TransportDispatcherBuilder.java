@@ -31,26 +31,33 @@ import java.util.Map;
 public class TransportDispatcherBuilder
 {
   private final Map<URI, StreamRequestHandler> _streamHandlers;
+  private final Map<URI, RestRequestHandler> _restHandlers;
 
   public TransportDispatcherBuilder()
   {
-    this(new HashMap<URI, StreamRequestHandler>());
+    this(new HashMap<URI, RestRequestHandler>(), new HashMap<URI, StreamRequestHandler>());
   }
 
-  public TransportDispatcherBuilder(Map<URI, StreamRequestHandler> handlers)
+  public TransportDispatcherBuilder(Map<URI, RestRequestHandler> restHandlers, Map<URI, StreamRequestHandler> streamHandlers)
   {
-    _streamHandlers = new HashMap<URI, StreamRequestHandler>(handlers);
+    _restHandlers = new HashMap<URI, RestRequestHandler>(restHandlers);
+    _streamHandlers = new HashMap<URI, StreamRequestHandler>(streamHandlers);
+  }
+
+  public TransportDispatcherBuilder addRestHandler(URI uri, RestRequestHandler handler)
+  {
+    _restHandlers.put(uri, handler);
+    return this;
+  }
+
+  public RestRequestHandler removeRestHandler(URI uri)
+  {
+    return _restHandlers.remove(uri);
   }
 
   public TransportDispatcherBuilder addStreamHandler(URI uri, StreamRequestHandler handler)
   {
     _streamHandlers.put(uri, handler);
-    return this;
-  }
-
-  public TransportDispatcherBuilder addRestHandler(URI uri, RestRequestHandler handler)
-  {
-    _streamHandlers.put(uri, new StreamRequestHandlerAdapter(handler));
     return this;
   }
 
@@ -62,13 +69,14 @@ public class TransportDispatcherBuilder
 
   public TransportDispatcherBuilder reset()
   {
+    _restHandlers.clear();
     _streamHandlers.clear();
     return this;
   }
 
   public TransportDispatcher build()
   {
-    return new TransportDispatcherImpl(new HashMap<URI, StreamRequestHandler>(_streamHandlers));
+    return new TransportDispatcherImpl(_restHandlers, _streamHandlers);
   }
 
 }
