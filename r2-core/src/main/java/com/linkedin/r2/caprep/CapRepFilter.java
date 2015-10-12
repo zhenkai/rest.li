@@ -23,6 +23,9 @@ import com.linkedin.r2.caprep.db.DirectoryDbSink;
 import com.linkedin.r2.caprep.db.DirectoryDbSource;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.message.rest.RestFilter;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.rest.RestResponseFilter;
 import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.filter.message.stream.StreamFilterAdapters;
 import com.linkedin.r2.message.RequestContext;
@@ -30,6 +33,8 @@ import com.linkedin.r2.message.RequestContext;
 import java.io.IOException;
 import java.util.Map;
 
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import org.slf4j.Logger;
@@ -43,13 +48,24 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class CapRepFilter implements StreamFilter, CapRepAdmin
+public class CapRepFilter implements StreamFilter, RestFilter, CapRepAdmin
 {
   private static final Logger _log = LoggerFactory.getLogger(CapRepFilter.class);
 
   private static final Filter PASS_THROUGH_FILTER = new PassThroughFilter();
 
   private final ReplaceableFilter _filter = new ReplaceableFilter(PASS_THROUGH_FILTER);
+  private final boolean _restOverStream;
+
+  CapRepFilter()
+  {
+    this(false);
+  }
+
+  CapRepFilter(boolean restOverStream)
+  {
+    _restOverStream = restOverStream;
+  }
 
   @Override
   public void capture(String directory) throws IOException
@@ -58,8 +74,17 @@ public class CapRepFilter implements StreamFilter, CapRepAdmin
     _filter.setFilter(PASS_THROUGH_FILTER);
     try
     {
-      _filter.setFilter(StreamFilterAdapters.adaptRestFilter(new CaptureFilter(new DirectoryDbSink(directory,
-                                                              new DefaultMessageSerializer()))));
+      final RestFilter captureFilter = new CaptureFilter(new DirectoryDbSink(directory,
+          new DefaultMessageSerializer()));
+
+      if (_restOverStream)
+      {
+        _filter.setFilter(StreamFilterAdapters.adaptRestFilter(captureFilter));
+      }
+      else
+      {
+        _filter.setFilter(captureFilter);
+      }
     }
     catch (IOException e)
     {
@@ -80,8 +105,16 @@ public class CapRepFilter implements StreamFilter, CapRepAdmin
     _filter.setFilter(PASS_THROUGH_FILTER);
     try
     {
-      _filter.setFilter(StreamFilterAdapters.adaptRestFilter(new ReplayFilter(new DirectoryDbSource(directory,
-                                                               new DefaultMessageSerializer()))));
+      final RestRequestFilter replayFilter = new ReplayFilter(new DirectoryDbSource(directory,
+          new DefaultMessageSerializer()));
+      if (_restOverStream)
+      {
+        _filter.setFilter(StreamFilterAdapters.adaptRestFilter(replayFilter));
+      }
+      else
+      {
+        _filter.setFilter(replayFilter);
+      }
     }
     catch (IOException e)
     {
@@ -103,32 +136,59 @@ public class CapRepFilter implements StreamFilter, CapRepAdmin
   }
 
   @Override
+  public void onRestRequest(RestRequest req,
+                            RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            NextFilter<RestRequest, RestResponse> nextFilter)
+  {
+    _filter.onRestRequest(req, requestContext, wireAttrs, nextFilter);
+  }
+
+  @Override
+  public void onRestResponse(RestResponse res,
+                             RequestContext requestContext,
+                             Map<String, String> wireAttrs,
+                             NextFilter<RestRequest, RestResponse> nextFilter)
+  {
+    _filter.onRestResponse(res, requestContext, wireAttrs, nextFilter);
+  }
+
+  @Override
+  public void onRestError(Throwable ex,
+                          RequestContext requestContext,
+                          Map<String, String> wireAttrs,
+                          NextFilter<RestRequest, RestResponse> nextFilter)
+  {
+    _filter.onRestError(ex, requestContext, wireAttrs, nextFilter);
+  }
+
+  @Override
   public String getMode()
   {
     return _filter.getFilter().getClass().getSimpleName();
   }
 
   @Override
-  public void onRequest(StreamRequest req, RequestContext requestContext,
+  public void onStreamRequest(StreamRequest req, RequestContext requestContext,
                             Map<String, String> wireAttrs,
                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    _filter.onRequest(req, requestContext, wireAttrs, nextFilter);
+    _filter.onStreamRequest(req, requestContext, wireAttrs, nextFilter);
   }
 
   @Override
-  public void onResponse(StreamResponse res, RequestContext requestContext,
+  public void onStreamResponse(StreamResponse res, RequestContext requestContext,
                              Map<String, String> wireAttrs,
                              NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    _filter.onResponse(res, requestContext, wireAttrs, nextFilter);
+    _filter.onStreamResponse(res, requestContext, wireAttrs, nextFilter);
   }
 
   @Override
-  public void onError(Throwable ex, RequestContext requestContext,
+  public void onStreamError(Throwable ex, RequestContext requestContext,
                           Map<String, String> wireAttrs,
                           NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
-    _filter.onError(ex, requestContext, wireAttrs, nextFilter);
+    _filter.onStreamError(ex, requestContext, wireAttrs, nextFilter);
   }
 }

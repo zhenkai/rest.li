@@ -68,11 +68,11 @@ public class StreamFilterAdapters
     return new StreamFilter()
     {
       @Override
-      public void onRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
+      public void onStreamRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
       {
         if (requestFilter != null)
         {
-          requestFilter.onRequest(req, requestContext, wireAttrs, nextFilter);
+          requestFilter.onStreamRequest(req, requestContext, wireAttrs, nextFilter);
         }
         else
         {
@@ -81,11 +81,11 @@ public class StreamFilterAdapters
       }
 
       @Override
-      public void onResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
+      public void onStreamResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
       {
         if (responseFilter != null)
         {
-          responseFilter.onResponse(res, requestContext, wireAttrs, nextFilter);
+          responseFilter.onStreamResponse(res, requestContext, wireAttrs, nextFilter);
         }
         else
         {
@@ -94,11 +94,11 @@ public class StreamFilterAdapters
       }
 
       @Override
-      public void onError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
+      public void onStreamError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
       {
         if (responseFilter != null)
         {
-          responseFilter.onError(ex, requestContext, wireAttrs, nextFilter);
+          responseFilter.onStreamError(ex, requestContext, wireAttrs, nextFilter);
         }
         else
         {
@@ -118,7 +118,7 @@ public class StreamFilterAdapters
     }
 
     @Override
-    public   void onRequest(StreamRequest req,
+    public   void onStreamRequest(StreamRequest req,
                             final RequestContext requestContext,
                             final Map<String, String> wireAttrs,
                             final NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -151,7 +151,7 @@ public class StreamFilterAdapters
     }
 
     @Override
-    public void onResponse(StreamResponse res,
+    public void onStreamResponse(StreamResponse res,
                     final RequestContext requestContext,
                     final Map<String, String> wireAttrs,
                     final NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -174,7 +174,7 @@ public class StreamFilterAdapters
     }
 
     @Override
-    public void onError(Throwable ex,
+    public void onStreamError(Throwable ex,
                  final RequestContext requestContext,
                  final Map<String, String> wireAttrs,
                  final NextFilter<StreamRequest, StreamResponse> nextFilter)

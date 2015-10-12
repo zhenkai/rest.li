@@ -20,6 +20,7 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.R2Constants;
+import com.linkedin.r2.filter.message.rest.RestFilter;
 import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Request;
@@ -29,6 +30,8 @@ import java.net.URI;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
@@ -45,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * @author Chris Pettitt
  * @author Joe Betz
  */
-public class SimpleLoggingFilter implements StreamFilter
+public class SimpleLoggingFilter implements StreamFilter, RestFilter
 {
   // _log is not static because we need to be able to set it during test.
   private final Logger _log;
@@ -66,8 +69,8 @@ public class SimpleLoggingFilter implements StreamFilter
   }
 
   @Override
-  public void onRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
-                            NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestRequest(RestRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
+                              NextFilter<RestRequest, RestResponse> nextFilter)
   {
     trace("onRestRequest", req, wireAttrs, requestContext);
     requestContext.putLocalAttr(REQUEST_URI, req.getURI());
@@ -76,19 +79,59 @@ public class SimpleLoggingFilter implements StreamFilter
   }
 
   @Override
-  public void onResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs,
-                             NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestResponse(RestResponse res, RequestContext requestContext, Map<String, String> wireAttrs,
+                               NextFilter<RestRequest, RestResponse> nextFilter)
   {
     trace("onRestResponse", res, wireAttrs, requestContext);
     nextFilter.onResponse(res, requestContext, wireAttrs);
   }
 
   @Override
-  public void onError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
-                          NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
+                            NextFilter<RestRequest, RestResponse> nextFilter)
   {
     warn("onRestError", ex, wireAttrs, requestContext);
     nextFilter.onError(ex, requestContext, wireAttrs);
+  }
+
+  @Override
+  public void onStreamRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
+                            NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    trace("onStreamRequest", req, wireAttrs, requestContext);
+    requestContext.putLocalAttr(REQUEST_URI, req.getURI());
+    requestContext.putLocalAttr(REQUEST_METHOD, req.getMethod());
+    nextFilter.onRequest(req, requestContext, wireAttrs);
+  }
+
+  @Override
+  public void onStreamResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs,
+                             NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    trace("onStreamResponse", res, wireAttrs, requestContext);
+    nextFilter.onResponse(res, requestContext, wireAttrs);
+  }
+
+  @Override
+  public void onStreamError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
+                          NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    warn("onStreamError", ex, wireAttrs, requestContext);
+    nextFilter.onError(ex, requestContext, wireAttrs);
+  }
+
+  private void trace(final String method, final RestRequest request,
+                     final Map<String, String> wireAttrs, final RequestContext requestContext)
+  {
+    _log.debug(buildLogMessage(method, "request", formatRequest(request, request.getEntity().length()), wireAttrs, requestContext));
+  }
+
+  private void trace(final String method, final RestResponse response, final Map<String, String> wireAttrs,
+                     final RequestContext requestContext)
+  {
+    final URI requestUri = (URI)requestContext.getLocalAttr(REQUEST_URI);
+    final String requestMethod = (String)requestContext.getLocalAttr(REQUEST_METHOD);
+    _log.debug(buildLogMessage(method, "response", formatResponse(response, response.getEntity().length(), requestUri, requestMethod), wireAttrs, requestContext));
   }
 
   private void trace(final String method, final StreamRequest request,

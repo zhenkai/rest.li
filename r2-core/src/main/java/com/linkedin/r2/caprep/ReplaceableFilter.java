@@ -20,10 +20,15 @@ package com.linkedin.r2.caprep;
 
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.message.rest.RestFilter;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
+import com.linkedin.r2.filter.message.rest.RestResponseFilter;
 import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
 import com.linkedin.r2.filter.message.stream.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.util.ArgumentUtil;
@@ -37,7 +42,7 @@ import java.util.Map;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class ReplaceableFilter implements StreamFilter
+public class ReplaceableFilter implements StreamFilter, RestFilter
 {
   private volatile Filter _filter;
 
@@ -73,14 +78,14 @@ public class ReplaceableFilter implements StreamFilter
   }
 
   @Override
-  public void onRequest(StreamRequest req,
-                            RequestContext requestContext,
-                            Map<String, String> wireAttrs,
-                            NextFilter<StreamRequest, StreamResponse> nextFilter)
+  public void onRestRequest(RestRequest req,
+                              RequestContext requestContext,
+                              Map<String, String> wireAttrs,
+                              NextFilter<RestRequest, RestResponse> nextFilter)
   {
-    if (_filter instanceof StreamRequestFilter)
+    if (_filter instanceof RestRequestFilter)
     {
-      ((StreamRequestFilter) _filter).onRequest(req, requestContext, wireAttrs, nextFilter);
+      ((RestRequestFilter) _filter).onRestRequest(req, requestContext, wireAttrs, nextFilter);
     }
     else
     {
@@ -89,14 +94,62 @@ public class ReplaceableFilter implements StreamFilter
   }
 
   @Override
-  public void onResponse(StreamResponse res,
+  public void onRestResponse(RestResponse res,
+                      RequestContext requestContext,
+                      Map<String, String> wireAttrs,
+                      NextFilter<RestRequest, RestResponse> nextFilter)
+  {
+    if (_filter instanceof RestResponseFilter)
+    {
+      ((RestResponseFilter) _filter).onRestResponse(res, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onResponse(res, requestContext, wireAttrs);
+    }
+  }
+
+  @Override
+  public void onRestError(Throwable ex,
+                   RequestContext requestContext,
+                   Map<String, String> wireAttrs,
+                   NextFilter<RestRequest, RestResponse> nextFilter)
+  {
+    if (_filter instanceof RestResponseFilter)
+    {
+      ((RestResponseFilter) _filter).onRestError(ex, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onError(ex, requestContext, wireAttrs);
+    }
+  }
+
+  @Override
+  public void onStreamRequest(StreamRequest req,
+                            RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            NextFilter<StreamRequest, StreamResponse> nextFilter)
+  {
+    if (_filter instanceof StreamRequestFilter)
+    {
+      ((StreamRequestFilter) _filter).onStreamRequest(req, requestContext, wireAttrs, nextFilter);
+    }
+    else
+    {
+      nextFilter.onRequest(req, requestContext, wireAttrs);
+    }
+  }
+
+  @Override
+  public void onStreamResponse(StreamResponse res,
                              RequestContext requestContext,
                              Map<String, String> wireAttrs,
                              NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     if (_filter instanceof StreamResponseFilter)
     {
-      ((StreamResponseFilter) _filter).onResponse(res, requestContext, wireAttrs, nextFilter);
+      ((StreamResponseFilter) _filter).onStreamResponse(res, requestContext, wireAttrs, nextFilter);
     }
     else
     {
@@ -106,14 +159,14 @@ public class ReplaceableFilter implements StreamFilter
   }
 
   @Override
-  public void onError(Throwable ex,
+  public void onStreamError(Throwable ex,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
                           NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     if (_filter instanceof StreamResponseFilter)
     {
-      ((StreamResponseFilter) _filter).onError(ex, requestContext, wireAttrs, nextFilter);
+      ((StreamResponseFilter) _filter).onStreamError(ex, requestContext, wireAttrs, nextFilter);
     }
     else
     {
