@@ -95,6 +95,52 @@ public class QueryTunnelUtil
   }
 
   /**
+   * @param request   a RestRequest object to be encoded as a tunneled POST
+   * @param threshold the size of the query params above which the request will be encoded
+   *
+   * @return an encoded RestRequest
+   */
+  public static RestRequest encode(final RestRequest request, int threshold)
+      throws URISyntaxException, MessagingException, IOException
+  {
+    return encode(request, new RequestContext(), threshold);
+  }
+
+  /**
+   * @param request   a RestRequest object to be encoded as a tunneled POST
+   * @param requestContext a RequestContext object associated with the request
+   * @param threshold the size of the query params above which the request will be encoded
+   *
+   * @return an encoded RestRequest
+   */
+  public static RestRequest encode(final RestRequest request, RequestContext requestContext, int threshold)
+      throws URISyntaxException, MessagingException, IOException
+  {
+    URI uri = request.getURI();
+
+    // Check to see if we should tunnel this request by testing the length of the query
+    // if the query is NULL, we won't bother to encode.
+    // 0 length is a special case that could occur with a url like http://www.foo.com?
+    // which we don't want to encode, because we'll lose the "?" in the process
+    // Otherwise only encode queries whose length is greater than or equal to the
+    // threshold value.
+
+    String query = uri.getRawQuery();
+
+    boolean forceQueryTunnel = requestContext.getLocalAttr(R2Constants.FORCE_QUERY_TUNNEL) != null
+        && (Boolean) requestContext.getLocalAttr(R2Constants.FORCE_QUERY_TUNNEL);
+
+    if (query == null
+        || query.length() == 0
+        || (query.length() < threshold && !forceQueryTunnel))
+    {
+      return request;
+    }
+
+    return encode(request);
+  }
+
+  /**
    * @param request   a StreamRequest object to be encoded as a tunneled POST
    * @param threshold the size of the query params above which the request will be encoded
    * @param callback the callback to be executed with the encoded request
@@ -208,8 +254,44 @@ public class QueryTunnelUtil
    * creates a new request that represents the intended original request
    *
    * @param request the request to be decoded
-   * @param callback the callback to be executed with the decoded request
+   *
+   * @return a decoded RestRequest
    */
+  public static RestRequest decode(final RestRequest request)
+      throws MessagingException, IOException, URISyntaxException
+  {
+    return decode(request, new RequestContext());
+  }
+
+  /**
+   * Takes a Request object that has been encoded for tunnelling as a POST with an X-HTTP-Override-Method header and
+   * creates a new request that represents the intended original request
+   *
+   * @param request the request to be decoded
+   * @param requestContext a RequestContext object associated with the request
+   *
+   * @return a decoded RestRequest
+   */
+  public static RestRequest decode(final RestRequest request, RequestContext requestContext)
+      throws MessagingException, IOException, URISyntaxException
+  {
+    if (request.getHeader(HEADER_METHOD_OVERRIDE) == null)
+    {
+      // Not a tunnelled request, just pass thru
+      return request;
+    }
+
+    return doDecode(request, requestContext);
+  }
+
+
+    /**
+     * Takes a Request object that has been encoded for tunnelling as a POST with an X-HTTP-Override-Method header and
+     * creates a new request that represents the intended original request
+     *
+     * @param request the request to be decoded
+     * @param callback the callback to be executed with the decoded request
+     */
   public static void decode(final StreamRequest request, Callback<StreamRequest> callback)
   {
     decode(request, new RequestContext(), callback);
@@ -248,7 +330,7 @@ public class QueryTunnelUtil
           RestRequest decodedRequest;
           try
           {
-            decodedRequest = decode(result, requestContext);
+            decodedRequest = doDecode(result, requestContext);
           }
           catch (Exception ex)
           {
@@ -261,7 +343,7 @@ public class QueryTunnelUtil
     }
   }
 
-  private static RestRequest decode(final RestRequest request, RequestContext requestContext)
+  private static RestRequest doDecode(final RestRequest request, RequestContext requestContext)
       throws MessagingException, IOException, URISyntaxException
   {
 
