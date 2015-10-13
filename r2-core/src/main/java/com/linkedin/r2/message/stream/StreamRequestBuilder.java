@@ -2,7 +2,7 @@ package com.linkedin.r2.message.stream;
 
 import com.linkedin.r2.message.BaseRequestBuilder;
 import com.linkedin.r2.message.Request;
-import com.linkedin.r2.message.entitystream.EntityStream;
+import com.linkedin.r2.message.stream.entitystream.EntityStream;
 
 import java.net.URI;
 

@@ -1,4 +1,4 @@
-package com.linkedin.r2.message.entitystream;
+package com.linkedin.r2.message.stream.entitystream;
 
 /**
  * @author Zhenkai Zhu

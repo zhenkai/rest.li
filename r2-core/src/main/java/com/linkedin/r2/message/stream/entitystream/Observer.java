@@ -1,9 +1,9 @@
-package com.linkedin.r2.message.entitystream;
+package com.linkedin.r2.message.stream.entitystream;
 
 import com.linkedin.data.ByteString;
 
 /**
- * Observer passively observes the data flow of an EntityStream {@link com.linkedin.r2.message.entitystream.EntityStream}
+ * Observer passively observes the data flow of an EntityStream {@link com.linkedin.r2.message.stream.entitystream.EntityStream}
  * i.e. observer cannot drive the flow of data in the EntityStream
  *
  * @author Zhenkai Zhu

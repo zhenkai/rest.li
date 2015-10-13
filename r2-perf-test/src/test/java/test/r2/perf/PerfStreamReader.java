@@ -2,8 +2,8 @@ package test.r2.perf;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.entitystream.ReadHandle;
-import com.linkedin.r2.message.entitystream.Reader;
+import com.linkedin.r2.message.stream.entitystream.ReadHandle;
+import com.linkedin.r2.message.stream.entitystream.Reader;
 
 /**
  * @auther Zhenkai Zhu

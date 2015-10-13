@@ -35,7 +35,7 @@ import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
-import com.linkedin.r2.message.entitystream.Observer;
+import com.linkedin.r2.message.stream.entitystream.Observer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

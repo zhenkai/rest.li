@@ -1,7 +1,7 @@
-package com.linkedin.r2.message.entitystream;
+package com.linkedin.r2.message.stream.entitystream;
 
 /**
- * This is the handle to read data from an EntityStream {@link com.linkedin.r2.message.entitystream.EntityStream}
+ * This is the handle to read data from an EntityStream {@link com.linkedin.r2.message.stream.entitystream.EntityStream}
  *
  * @author Zhenkai Zhu
  */

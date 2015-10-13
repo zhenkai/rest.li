@@ -1,6 +1,6 @@
 package com.linkedin.r2.transport.http.server;
 
-import com.linkedin.r2.message.entitystream.ReadHandle;
+import com.linkedin.r2.message.stream.entitystream.ReadHandle;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;

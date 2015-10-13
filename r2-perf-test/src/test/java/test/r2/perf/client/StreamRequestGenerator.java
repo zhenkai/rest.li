@@ -2,7 +2,7 @@ package test.r2.perf.client;
 
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
-import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import test.r2.perf.Generator;
 import test.r2.perf.PerfStreamWriter;
 

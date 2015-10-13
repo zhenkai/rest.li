@@ -1,13 +1,13 @@
 package test.r2.message.streaming;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.entitystream.EntityStream;
-import com.linkedin.r2.message.entitystream.EntityStreams;
-import com.linkedin.r2.message.entitystream.Observer;
-import com.linkedin.r2.message.entitystream.ReadHandle;
-import com.linkedin.r2.message.entitystream.Reader;
-import com.linkedin.r2.message.entitystream.WriteHandle;
-import com.linkedin.r2.message.entitystream.Writer;
+import com.linkedin.r2.message.stream.entitystream.EntityStream;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.Observer;
+import com.linkedin.r2.message.stream.entitystream.ReadHandle;
+import com.linkedin.r2.message.stream.entitystream.Reader;
+import com.linkedin.r2.message.stream.entitystream.WriteHandle;
+import com.linkedin.r2.message.stream.entitystream.Writer;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

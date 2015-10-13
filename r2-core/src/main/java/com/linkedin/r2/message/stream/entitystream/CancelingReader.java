@@ -1,11 +1,11 @@
-package com.linkedin.r2.message.entitystream;
+package com.linkedin.r2.message.stream.entitystream;
 
 import com.linkedin.data.ByteString;
 
 
 /**
- * A reader to cancel an unstarted {@link com.linkedin.r2.message.entitystream.EntityStream} and
- * abort its underlying {@link com.linkedin.r2.message.entitystream.Writer}.
+ * A reader to cancel an unstarted {@link com.linkedin.r2.message.stream.entitystream.EntityStream} and
+ * abort its underlying {@link com.linkedin.r2.message.stream.entitystream.Writer}.
  *
  * @author Ang Xu
  */

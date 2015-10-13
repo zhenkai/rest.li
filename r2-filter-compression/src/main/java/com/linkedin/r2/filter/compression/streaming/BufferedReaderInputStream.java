@@ -17,8 +17,8 @@
 package com.linkedin.r2.filter.compression.streaming;
 
 import com.linkedin.data.ByteString;
-import com.linkedin.r2.message.entitystream.ReadHandle;
-import com.linkedin.r2.message.entitystream.Reader;
+import com.linkedin.r2.message.stream.entitystream.ReadHandle;
+import com.linkedin.r2.message.stream.entitystream.Reader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -26,7 +26,7 @@ import java.util.concurrent.BlockingQueue;
 
 
 /**
- * An {@link InputStream} backed by an {@link com.linkedin.r2.message.entitystream.EntityStream}.
+ * An {@link InputStream} backed by an {@link com.linkedin.r2.message.stream.entitystream.EntityStream}.
  * Note: access to {@link InputStream} APIs are not thread-safe!
  *
  * @author Ang Xu

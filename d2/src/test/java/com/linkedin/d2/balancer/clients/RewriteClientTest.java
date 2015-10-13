@@ -29,7 +29,7 @@ import java.util.Map;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
 import com.linkedin.r2.message.stream.StreamResponse;
-import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;

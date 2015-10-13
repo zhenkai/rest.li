@@ -23,7 +23,7 @@ import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.stream.StreamResponseBuilder;
-import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import com.linkedin.r2.sample.echo.EchoService;
 import com.linkedin.r2.sample.echo.rest.RestEchoServer;
 import com.linkedin.r2.transport.common.Server;

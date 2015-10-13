@@ -1,7 +1,7 @@
 package com.linkedin.r2.message.stream;
 
 import com.linkedin.r2.message.MessageHeadersBuilder;
-import com.linkedin.r2.message.entitystream.EntityStream;
+import com.linkedin.r2.message.stream.entitystream.EntityStream;
 
 /**
  * @author Zhenkai Zhu

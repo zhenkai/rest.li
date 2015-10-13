@@ -12,12 +12,12 @@ import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
 import com.linkedin.r2.message.stream.StreamResponse;
-import com.linkedin.r2.message.entitystream.EntityStream;
-import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.EntityStream;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 
-import com.linkedin.r2.message.entitystream.ReadHandle;
-import com.linkedin.r2.message.entitystream.Reader;
-import com.linkedin.r2.message.entitystream.WriteHandle;
+import com.linkedin.r2.message.stream.entitystream.ReadHandle;
+import com.linkedin.r2.message.stream.entitystream.Reader;
+import com.linkedin.r2.message.stream.entitystream.WriteHandle;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;

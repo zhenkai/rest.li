@@ -2,7 +2,7 @@ package test.r2.integ;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
-import com.linkedin.r2.message.entitystream.ReadHandle;
+import com.linkedin.r2.message.stream.entitystream.ReadHandle;
 
 /**
  * @author Zhenkai Zhu

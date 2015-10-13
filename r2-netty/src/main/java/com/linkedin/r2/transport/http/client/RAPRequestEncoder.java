@@ -3,8 +3,8 @@ package com.linkedin.r2.transport.http.client;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.stream.StreamRequest;
-import com.linkedin.r2.message.entitystream.ReadHandle;
-import com.linkedin.r2.message.entitystream.Reader;
+import com.linkedin.r2.message.stream.entitystream.ReadHandle;
+import com.linkedin.r2.message.stream.entitystream.Reader;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;

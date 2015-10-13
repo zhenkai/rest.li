@@ -7,7 +7,7 @@ import com.linkedin.r2.filter.message.stream.StreamResponseFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
-import com.linkedin.r2.message.entitystream.Observer;
+import com.linkedin.r2.message.stream.entitystream.Observer;
 
 import java.util.Map;
 

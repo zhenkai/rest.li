@@ -1,10 +1,10 @@
-package com.linkedin.r2.message.entitystream;
+package com.linkedin.r2.message.stream.entitystream;
 
 /**
  * An object that represents the stream of request/response entity.
  *
- * Each entityStream can have one Writer, multiple Observers {@link com.linkedin.r2.message.entitystream.Observer} and
- * exactly one Reader {@link com.linkedin.r2.message.entitystream.Reader}. The data flow of a stream is reader
+ * Each entityStream can have one Writer, multiple Observers {@link com.linkedin.r2.message.stream.entitystream.Observer} and
+ * exactly one Reader {@link com.linkedin.r2.message.stream.entitystream.Reader}. The data flow of a stream is reader
  * driven: that is, if reader doesn't read, there is no data flow.
  */
 public interface EntityStream

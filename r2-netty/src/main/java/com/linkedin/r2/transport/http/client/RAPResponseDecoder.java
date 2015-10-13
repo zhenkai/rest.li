@@ -6,10 +6,10 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.RemoteInvocationException;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.stream.StreamResponseBuilder;
-import com.linkedin.r2.message.entitystream.EntityStream;
-import com.linkedin.r2.message.entitystream.EntityStreams;
-import com.linkedin.r2.message.entitystream.WriteHandle;
-import com.linkedin.r2.message.entitystream.Writer;
+import com.linkedin.r2.message.stream.entitystream.EntityStream;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.WriteHandle;
+import com.linkedin.r2.message.stream.entitystream.Writer;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 import com.linkedin.r2.util.Timeout;
 

@@ -1,4 +1,4 @@
-package com.linkedin.r2.message.entitystream;
+package com.linkedin.r2.message.stream.entitystream;
 
 import com.linkedin.data.ByteString;
 import org.slf4j.Logger;
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 ;
 
 /**
- * A class consists exclusively of static methods to deal with EntityStream {@link com.linkedin.r2.message.entitystream.EntityStream}
+ * A class consists exclusively of static methods to deal with EntityStream {@link com.linkedin.r2.message.stream.entitystream.EntityStream}
  *
  * @author Zhenkai Zhu
  */

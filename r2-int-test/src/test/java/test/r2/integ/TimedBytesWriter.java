@@ -1,6 +1,6 @@
 package test.r2.integ;
 
-import com.linkedin.r2.message.entitystream.WriteHandle;
+import com.linkedin.r2.message.stream.entitystream.WriteHandle;
 
 /**
  * @author Zhenkai Zhu

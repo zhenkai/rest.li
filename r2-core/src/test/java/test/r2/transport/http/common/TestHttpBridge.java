@@ -28,7 +28,7 @@ import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.stream.StreamResponseBuilder;
-import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

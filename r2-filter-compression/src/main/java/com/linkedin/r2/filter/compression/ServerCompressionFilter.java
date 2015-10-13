@@ -17,7 +17,7 @@
 package com.linkedin.r2.filter.compression;
 
 import com.linkedin.common.callback.Callback;
-import com.linkedin.r2.message.entitystream.CompositeWriter;
+import com.linkedin.r2.message.stream.entitystream.CompositeWriter;
 import com.linkedin.r2.filter.compression.streaming.PartialReader;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
 import com.linkedin.r2.filter.message.stream.StreamFilter;
@@ -25,8 +25,8 @@ import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.stream.StreamResponseBuilder;
-import com.linkedin.r2.message.entitystream.EntityStream;
-import com.linkedin.r2.message.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.EntityStream;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;

@@ -1,7 +1,7 @@
-package com.linkedin.r2.message.entitystream;
+package com.linkedin.r2.message.stream.entitystream;
 
 /**
- * Writer is the producer of data for an EntityStream {@link com.linkedin.r2.message.entitystream.EntityStream}
+ * Writer is the producer of data for an EntityStream {@link com.linkedin.r2.message.stream.entitystream.EntityStream}
  *
  * @author Zhenkai Zhu
  */

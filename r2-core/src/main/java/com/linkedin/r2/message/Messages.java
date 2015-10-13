@@ -12,9 +12,9 @@ import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.stream.StreamResponseBuilder;
-import com.linkedin.r2.message.entitystream.ByteStringWriter;
-import com.linkedin.r2.message.entitystream.EntityStreams;
-import com.linkedin.r2.message.entitystream.FullEntityReader;
+import com.linkedin.r2.message.stream.entitystream.ByteStringWriter;
+import com.linkedin.r2.message.stream.entitystream.EntityStreams;
+import com.linkedin.r2.message.stream.entitystream.FullEntityReader;
 import com.linkedin.r2.transport.http.common.HttpConstants;
 
 

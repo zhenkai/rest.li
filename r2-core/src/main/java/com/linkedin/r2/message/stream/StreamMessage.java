@@ -1,7 +1,7 @@
 package com.linkedin.r2.message.stream;
 
 import com.linkedin.r2.message.MessageHeaders;
-import com.linkedin.r2.message.entitystream.EntityStream;
+import com.linkedin.r2.message.stream.entitystream.EntityStream;
 
 /**
  * StreamMessage is a message with MessageHeaders and an EntityStream as its entity.
