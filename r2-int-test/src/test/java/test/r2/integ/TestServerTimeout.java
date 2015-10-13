@@ -107,7 +107,7 @@ public class TestServerTimeout
     };
 
     FilterChain filterChain = FilterChains.create(new BuggyFilter());
-    _server = new HttpServerFactory(filterChain).createRAPServer(PORT, transportDispatcher, SERVER_IOHANDLER_TIMEOUT);
+    _server = new HttpServerFactory(filterChain).createRAPServer(PORT, transportDispatcher, SERVER_IOHANDLER_TIMEOUT, true);
     _server.start();
   }
 

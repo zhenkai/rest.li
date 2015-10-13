@@ -80,7 +80,7 @@ public class TestHttpServer
             .addRestHandler(URI.create("/foobar"), new FoobarHandler(_scheduler))
             .build();
 
-    _server = getServerFactory().createServer(PORT, dispatcher);
+    _server = getServerFactory().createServer(PORT, dispatcher, true);
     _server.start();
   }
 

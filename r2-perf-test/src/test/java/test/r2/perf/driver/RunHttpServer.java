@@ -42,7 +42,7 @@ public class RunHttpServer
 
     if (pureStreaming)
     {
-      SERVER = new HttpPerfServerFactory().createStreamServer(port, relativeUri, msgSize);
+      SERVER = new HttpPerfServerFactory().createPureStreamServer(port, relativeUri, msgSize);
     }
     else
     {

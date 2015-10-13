@@ -46,17 +46,18 @@ public class HttpJettyServer implements HttpServer
 
   public enum ServletType {RAP, ASYNC_EVENT}
 
-  public HttpJettyServer(int port, HttpDispatcher dispatcher)
+  public HttpJettyServer(int port, HttpDispatcher dispatcher, boolean restOverStream)
   {
-    this(port, new RAPStreamServlet(dispatcher));
+    this(port, createServlet(dispatcher, ServletType.RAP, 0, restOverStream));
   }
 
   public HttpJettyServer(int port,
                          String contextPath,
                          int threadPoolSize,
-                         HttpDispatcher dispatcher)
+                         HttpDispatcher dispatcher,
+                         boolean restOverStream)
   {
-    this(port, contextPath, threadPoolSize, dispatcher, ServletType.RAP, 0);
+    this(port, contextPath, threadPoolSize, dispatcher, ServletType.RAP, 0, restOverStream);
   }
 
   public HttpJettyServer(int port,
@@ -64,9 +65,10 @@ public class HttpJettyServer implements HttpServer
                          int threadPoolSize,
                          HttpDispatcher dispatcher,
                          ServletType type,
-                         int asyncTimeout)
+                         int asyncTimeout,
+                         boolean restOverStream)
   {
-    this(port, contextPath, threadPoolSize, createServlet(dispatcher, type, asyncTimeout));
+    this(port, contextPath, threadPoolSize, createServlet(dispatcher, type, asyncTimeout, restOverStream));
   }
 
   public HttpJettyServer(int port, HttpServlet servlet)
@@ -135,16 +137,16 @@ public class HttpJettyServer implements HttpServer
     return new Connector[] { connector };
   }
 
-  private static HttpServlet createServlet(HttpDispatcher dispatcher, ServletType type, int timeout)
+  private static HttpServlet createServlet(HttpDispatcher dispatcher, ServletType type, int timeout, boolean restOverStream)
   {
     HttpServlet httpServlet;
     switch (type)
     {
       case ASYNC_EVENT:
-        httpServlet = new AsyncR2StreamServlet(dispatcher, timeout);
+        httpServlet = restOverStream ? new AsyncR2StreamServlet(dispatcher, timeout) : new AsyncR2Servlet(dispatcher, timeout);
         break;
       default:
-        httpServlet = new RAPStreamServlet(dispatcher);
+        httpServlet = restOverStream ? new RAPStreamServlet(dispatcher) : new RAPServlet(dispatcher);
     }
 
     return httpServlet;

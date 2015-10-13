@@ -68,7 +68,7 @@ public class TestJetty404
         req.getEntityStream().setReader(new DrainReader());
         callback.onResponse(TransportResponseImpl.success(new StreamResponseBuilder().build(EntityStreams.emptyStream())));
       }
-    });
+    }, true);
     _server.start();
   }
 

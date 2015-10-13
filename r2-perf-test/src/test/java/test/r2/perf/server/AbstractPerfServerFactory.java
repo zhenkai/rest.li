@@ -33,6 +33,7 @@ import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder
 
 import java.net.URI;
 import test.r2.perf.Generator;
+import test.r2.perf.PerfConfig;
 import test.r2.perf.PerfStreamReader;
 import test.r2.perf.PerfStreamWriter;
 import test.r2.perf.StringGenerator;
@@ -51,10 +52,10 @@ public abstract class AbstractPerfServerFactory
           .addRestHandler(echoUri, new RestEchoServer(new PerfServiceImpl(msg_size)))
           .build();
 
-    return createServer(port, dispatcher);
+    return createServer(port, dispatcher, PerfConfig.serverRestOverStream());
   }
 
-  public Server createStreamServer(int port, URI echoUri, final int msg_size)
+  public Server createPureStreamServer(int port, URI echoUri, final int msg_size)
   {
     StreamRequestHandler handler = new StreamRequestHandler()
     {
@@ -81,10 +82,10 @@ public abstract class AbstractPerfServerFactory
         .addStreamHandler(echoUri, handler)
         .build();
 
-    return createServer(port, dispatcher);
+    return createServer(port, dispatcher, true);
   }
 
-  protected abstract Server createServer(int port, TransportDispatcher dispatcher);
+  protected abstract Server createServer(int port, TransportDispatcher dispatcher, boolean restOverStream);
 
   public class PerfServiceImpl implements EchoService
   {

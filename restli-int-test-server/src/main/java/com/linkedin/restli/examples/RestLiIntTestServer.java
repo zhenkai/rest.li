@@ -146,6 +146,7 @@ public class RestLiIntTestServer
         HttpServerFactory.DEFAULT_THREAD_POOL_SIZE,
         dispatcher,
         useAsyncServletApi ? HttpJettyServer.ServletType.ASYNC_EVENT : HttpJettyServer.ServletType.RAP,
-        asyncTimeOut);
+        asyncTimeOut,
+        true);
   }
 }

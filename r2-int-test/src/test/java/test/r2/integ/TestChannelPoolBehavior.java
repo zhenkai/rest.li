@@ -66,7 +66,7 @@ public class TestChannelPoolBehavior
     _clientFactory = HttpClientFactory.getSimpleClientFactory();
     _client1 = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
     _client2 = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
-    _server = new HttpServerFactory().createServer(PORT, getTransportDispatcher());
+    _server = new HttpServerFactory().createServer(PORT, getTransportDispatcher(), true);
     _server.start();
   }
 

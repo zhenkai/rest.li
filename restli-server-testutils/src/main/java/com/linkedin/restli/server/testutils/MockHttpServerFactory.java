@@ -190,7 +190,8 @@ public class MockHttpServerFactory
                                                                dispatcher,
                                                                enableAsync ? HttpJettyServer.ServletType.ASYNC_EVENT
                                                                    : HttpJettyServer.ServletType.RAP,
-                                                               enableAsync ? ASYNC_TIMEOUT : -1);
+                                                               enableAsync ? ASYNC_TIMEOUT : -1,
+                                                               true);
     return new HttpServer()
     {
       @Override

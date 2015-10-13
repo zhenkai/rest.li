@@ -81,7 +81,7 @@ public class TestRequestCompression
   @BeforeClass
   public void setup() throws IOException
   {
-    _server = new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_EVENT).createServer(PORT, getTransportDispatcher());
+    _server = new HttpServerFactory(HttpJettyServer.ServletType.ASYNC_EVENT).createServer(PORT, getTransportDispatcher(), true);
     _server.start();
   }
 

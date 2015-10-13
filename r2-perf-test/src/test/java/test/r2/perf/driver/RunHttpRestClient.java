@@ -40,7 +40,7 @@ public class RunHttpRestClient
     final PerfClient client;
     if (pureStreaming)
     {
-      client = PerfClients.httpStream(uri, numThreads, numMsgs, msgSize);
+      client = PerfClients.httpPureStream(uri, numThreads, numMsgs, msgSize);
     }
     else
     {

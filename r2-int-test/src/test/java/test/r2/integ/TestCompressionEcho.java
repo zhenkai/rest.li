@@ -71,7 +71,7 @@ public class TestCompressionEcho
   @BeforeClass
   public void setup() throws IOException
   {
-    _server = getServerFactory().createServer(PORT, getTransportDispatcher());
+    _server = getServerFactory().createServer(PORT, getTransportDispatcher(), true);
     _server.start();
   }
 

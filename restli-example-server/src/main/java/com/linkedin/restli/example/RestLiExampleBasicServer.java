@@ -81,7 +81,7 @@ public class RestLiExampleBasicServer
     final ResourceFactory factory = new InjectMockResourceFactory(beanProvider);
 
     final TransportDispatcher dispatcher = new DelegatingTransportDispatcher(new RestLiServer(config, factory));
-    return new HttpServerFactory(FilterChains.empty()).createServer(SERVER_PORT, dispatcher);
+    return new HttpServerFactory(FilterChains.empty()).createServer(SERVER_PORT, dispatcher, true);
   }
 
   public static void startServer(HttpServer server) throws IOException

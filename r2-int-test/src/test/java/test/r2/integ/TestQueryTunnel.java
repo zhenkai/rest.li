@@ -82,7 +82,7 @@ public class TestQueryTunnel
         streamHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
       }
     };
-    _server = getServerFactory().createServer(PORT, dispatcher);
+    _server = getServerFactory().createServer(PORT, dispatcher, true);
     _server.start();
   }
 

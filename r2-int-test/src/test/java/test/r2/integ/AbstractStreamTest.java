@@ -41,7 +41,7 @@ public abstract class AbstractStreamTest
     _scheduler = Executors.newSingleThreadScheduledExecutor();
     _clientFactory = getClientFactory();
     _client = new TransportClientAdapter(_clientFactory.getClient(getClientProperties()));
-    _server = getServerFactory().createServer(PORT, getTransportDispatcher());
+    _server = getServerFactory().createServer(PORT, getTransportDispatcher(), true);
     _server.start();
   }
 

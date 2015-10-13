@@ -56,7 +56,7 @@ public class Bootstrap
   public static Server createHttpServer(int port, FilterChain filters)
   {
     return new HttpServerFactory(filters)
-            .createServer(port, createDispatcher());
+            .createServer(port, createDispatcher(), true);
   }
 
   public static Server createHttpsServer(String keyStore, String keyStorePassword, FilterChain filters)
@@ -68,7 +68,7 @@ public class Bootstrap
   {
     return new HttpServerFactory(filters)
         .createHttpsServer(HTTP_PORT, sslPort, keyStore, keyStorePassword, createDispatcher(),
-            HttpServerFactory.DEFAULT_SERVLET_TYPE);
+            HttpServerFactory.DEFAULT_SERVLET_TYPE, true);
   }
 
   public static Client createHttpClient(FilterChain filters)

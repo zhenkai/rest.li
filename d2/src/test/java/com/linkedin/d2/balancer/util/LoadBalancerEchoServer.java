@@ -377,7 +377,7 @@ public class LoadBalancerEchoServer
 
   private Server getHttpServer(TransportDispatcher dispatcher)
   {
-    return new HttpServerFactory().createServer(_port, dispatcher);
+    return new HttpServerFactory().createServer(_port, dispatcher, true);
   }
 
 

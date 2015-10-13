@@ -108,7 +108,7 @@ public class TestServerTimeoutAsyncEvent
       }
     };
     FilterChain filterChain = FilterChains.create(new BuggyFilter());
-    _server = new HttpServerFactory(filterChain, HttpJettyServer.ServletType.ASYNC_EVENT).createServer(PORT, transportDispatcher, ASYNC_EVENT_TIMEOUT);
+    _server = new HttpServerFactory(filterChain, HttpJettyServer.ServletType.ASYNC_EVENT).createServer(PORT, transportDispatcher, ASYNC_EVENT_TIMEOUT, true);
     _server.start();
     _asyncExecutor = Executors.newSingleThreadExecutor();
   }

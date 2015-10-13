@@ -59,20 +59,20 @@ public class HttpServerFactory
     _servletType = servletType;
   }
 
-  public HttpServer createServer(int port, TransportDispatcher transportDispatcher)
+  public HttpServer createServer(int port, TransportDispatcher transportDispatcher, boolean restOverStream)
   {
     return createServer(port,
         DEFAULT_CONTEXT_PATH,
         DEFAULT_THREAD_POOL_SIZE,
-        transportDispatcher);
+        transportDispatcher, restOverStream);
   }
 
   public HttpServer createServer(int port,
                                  String contextPath,
                                  int threadPoolSize,
-                                 TransportDispatcher transportDispatcher)
+                                 TransportDispatcher transportDispatcher, boolean restOverStream)
   {
-    return createServer(port, contextPath, threadPoolSize, transportDispatcher, _servletType, DEFAULT_ASYNC_TIMEOUT);
+    return createServer(port, contextPath, threadPoolSize, transportDispatcher, _servletType, DEFAULT_ASYNC_TIMEOUT, restOverStream);
   }
 
   public HttpServer createServer(int port,
@@ -80,7 +80,8 @@ public class HttpServerFactory
                                  int threadPoolSize,
                                  TransportDispatcher transportDispatcher,
                                  HttpJettyServer.ServletType servletType,
-                                 int asyncTimeOut)
+                                 int asyncTimeOut,
+                                 boolean restOverStream)
   {
     final TransportDispatcher filterDispatcher =
         new FilterChainDispatcher(transportDispatcher,  _filters);
@@ -90,7 +91,8 @@ public class HttpServerFactory
                                threadPoolSize,
                                dispatcher,
                                servletType,
-                               asyncTimeOut);
+                               asyncTimeOut,
+                               restOverStream);
   }
 
   public HttpServer createHttpsServer(int port,
@@ -98,10 +100,11 @@ public class HttpServerFactory
       String keyStore,
       String keyStorePassword,
       TransportDispatcher transportDispatcher,
-      HttpJettyServer.ServletType servletType)
+      HttpJettyServer.ServletType servletType,
+      boolean restOverStream)
   {
     return createHttpsServer(port, sslPort, keyStore, keyStorePassword, DEFAULT_CONTEXT_PATH, DEFAULT_THREAD_POOL_SIZE,
-        transportDispatcher, servletType, DEFAULT_ASYNC_TIMEOUT);
+        transportDispatcher, servletType, DEFAULT_ASYNC_TIMEOUT, restOverStream);
   }
 
   public HttpServer createHttpsServer(int port,
@@ -112,7 +115,8 @@ public class HttpServerFactory
                                       int threadPoolSize,
                                       TransportDispatcher transportDispatcher,
                                       HttpJettyServer.ServletType servletType,
-                                      int asyncTimeOut)
+                                      int asyncTimeOut,
+                                      boolean restOverStream)
   {
     final TransportDispatcher filterDispatcher =
       new FilterChainDispatcher(transportDispatcher, _filters);
@@ -125,19 +129,20 @@ public class HttpServerFactory
                                 threadPoolSize,
                                 dispatcher,
                                 servletType,
-                                asyncTimeOut);
+                                asyncTimeOut,
+                                restOverStream);
   }
 
-  public HttpServer createServer(int port, TransportDispatcher transportDispatcher, int timeout)
+  public HttpServer createServer(int port, TransportDispatcher transportDispatcher, int timeout, boolean restOverStream)
   {
-    return createServer(port, DEFAULT_CONTEXT_PATH, DEFAULT_THREAD_POOL_SIZE, transportDispatcher, _servletType, timeout);
+    return createServer(port, DEFAULT_CONTEXT_PATH, DEFAULT_THREAD_POOL_SIZE, transportDispatcher, _servletType, timeout, restOverStream);
   }
 
-  public HttpServer createRAPServer(int port, TransportDispatcher transportDispatcher, int timeout)
+  public HttpServer createRAPServer(int port, TransportDispatcher transportDispatcher, int timeout, boolean restOverStream)
   {
     final TransportDispatcher filterDispatcher =
         new FilterChainDispatcher(transportDispatcher,  _filters);
-    HttpServlet httpServlet = new RAPStreamServlet(filterDispatcher, timeout);
+    HttpServlet httpServlet = restOverStream ? new RAPStreamServlet(filterDispatcher, timeout) : new RAPServlet(filterDispatcher);
     return new HttpJettyServer(port, httpServlet);
   }
 }

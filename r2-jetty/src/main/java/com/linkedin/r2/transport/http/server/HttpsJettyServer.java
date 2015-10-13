@@ -44,9 +44,10 @@ public class HttpsJettyServer extends HttpJettyServer
                           int threadPoolSize,
                           HttpDispatcher dispatcher,
                           HttpJettyServer.ServletType servletType,
-                          int asyncTimeOut)
+                          int asyncTimeOut,
+                          boolean restOverStream)
   {
-    super(port, contextPath, threadPoolSize, dispatcher, servletType, asyncTimeOut);
+    super(port, contextPath, threadPoolSize, dispatcher, servletType, asyncTimeOut, restOverStream);
     _sslPort = sslPort;
     _keyStore = keyStore;
     _keyStorePassword = keyStorePassword;

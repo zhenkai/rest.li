@@ -52,7 +52,7 @@ public class PerfClients
       .setShutdownScheduledExecutorService(true)
       .setCallbackExecutor(Executors.newFixedThreadPool(24))
       .setShutdownCallbackExecutor(true)
-      .setLegacyCodePath(PerfConfig.clientLegacyCodePath())
+      .setRestOverStream(PerfConfig.clientRestOverStream())
       .build();
 
   private static int NUM_CLIENTS = 0;
@@ -67,7 +67,7 @@ public class PerfClients
     return new FactoryClient(crf, numThreads);
   }
 
-  public static PerfClient httpStream(URI uri, int numThreads, int numMsgs, int msgSize)
+  public static PerfClient httpPureStream(URI uri, int numThreads, int numMsgs, int msgSize)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
     final Client client = new TransportClientAdapter(transportClient);

@@ -123,7 +123,8 @@ public class StandaloneLauncher
                                                                  _threadPoolSize,
                                                                  dispatcher,
                                                                  servletType,
-                                                                 asyncTimeout);
+                                                                 asyncTimeout,
+                                                                 true);
   }
 
   /**
