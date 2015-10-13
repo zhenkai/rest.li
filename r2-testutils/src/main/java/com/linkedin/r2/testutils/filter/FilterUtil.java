@@ -56,7 +56,7 @@ public class FilterUtil
     FilterChain drainRequestStreamFC = fc.addLast(new StreamRequestFilter()
     {
       @Override
-      public void onRequest(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
+      public void onStreamRequest(StreamRequest request, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
       {
         request.getEntityStream().setReader(new DrainReader());
         nextFilter.onRequest(request.builder().build(EntityStreams.emptyStream()), requestContext, wireAttrs);
@@ -66,14 +66,14 @@ public class FilterUtil
     return drainRequestStreamFC.addFirst(new StreamResponseFilter()
     {
       @Override
-      public void onResponse(StreamResponse streamResponse, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
+      public void onStreamResponse(StreamResponse streamResponse, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
       {
         streamResponse.getEntityStream().setReader(new DrainReader());
         nextFilter.onResponse(streamResponse.builder().build(EntityStreams.emptyStream()), requestContext, wireAttrs);
       }
 
       @Override
-      public void onError(Throwable throwable, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
+      public void onStreamError(Throwable throwable, RequestContext requestContext, Map<String, String> wireAttrs, NextFilter<StreamRequest, StreamResponse> nextFilter)
       {
         if (throwable instanceof StreamException)
         {
@@ -97,22 +97,22 @@ public class FilterUtil
 
   public static void fireSimpleStreamResponse(FilterChain fc)
   {
-    wrapFilterChain(fc).onResponse(simpleStreamResponse(), emptyRequestContext(), emptyWireAttrs());
+    wrapFilterChain(fc).onStreamResponse(simpleStreamResponse(), emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireSimpleStreamError(FilterChain fc)
   {
-    wrapFilterChain(fc).onError(simpleError(), emptyRequestContext(), emptyWireAttrs());
+    wrapFilterChain(fc).onStreamError(simpleError(), emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireStreamRequest(FilterChain fc, StreamRequest req)
   {
-    wrapFilterChain(fc).onRequest(req, emptyRequestContext(), emptyWireAttrs());
+    wrapFilterChain(fc).onStreamRequest(req, emptyRequestContext(), emptyWireAttrs());
   }
 
   public static void fireStreamRequest(FilterChain fc, StreamRequest req, Map<String, String> wireAttrs)
   {
-    wrapFilterChain(fc).onRequest(req, emptyRequestContext(), wireAttrs);
+    wrapFilterChain(fc).onStreamRequest(req, emptyRequestContext(), wireAttrs);
   }
 
   public static void fireRestRequest(FilterChain fc, RestRequest req, Map<String, String> wireAttrs)
@@ -123,7 +123,7 @@ public class FilterUtil
   public static void fireRestRequest(FilterChain fc, RestRequest req, RequestContext requestContext, Map<String, String> wireAttrs)
   {
     StreamRequest streamRequest = Messages.toStreamRequest(req);
-    wrapFilterChain(fc).onRequest(streamRequest, requestContext, wireAttrs);
+    wrapFilterChain(fc).onStreamRequest(streamRequest, requestContext, wireAttrs);
   }
 
   public static void fireRestResponse(FilterChain fc, RestResponse res, Map<String, String> wireAttrs)
@@ -134,7 +134,7 @@ public class FilterUtil
   public static void fireRestResponse(FilterChain fc, RestResponse res, RequestContext requestContext, Map<String, String> wireAttrs)
   {
     StreamResponse streamResponse = Messages.toStreamResponse(res);
-    wrapFilterChain(fc).onResponse(streamResponse, requestContext, wireAttrs);
+    wrapFilterChain(fc).onStreamResponse(streamResponse, requestContext, wireAttrs);
   }
 
   public static void fireRestError(FilterChain fc, Exception ex, Map<String, String> wireAttrs)
@@ -147,11 +147,11 @@ public class FilterUtil
     if (ex instanceof RestException)
     {
       StreamException streamException = Messages.toStreamException((RestException)ex);
-      wrapFilterChain(fc).onError(streamException, requestContext, wireAttrs);
+      wrapFilterChain(fc).onStreamError(streamException, requestContext, wireAttrs);
     }
     else
     {
-      fc.onError(ex, requestContext, wireAttrs);
+      fc.onStreamError(ex, requestContext, wireAttrs);
     }
   }
 
@@ -172,8 +172,8 @@ public class FilterUtil
   public static void fireStreamRequestResponse(FilterChain fc, StreamRequest req, StreamResponse res)
   {
     final RequestContext context = new RequestContext();
-    wrapFilterChain(fc).onRequest(req, context, emptyWireAttrs());
-    wrapFilterChain(fc).onResponse(res, context, emptyWireAttrs());
+    wrapFilterChain(fc).onStreamRequest(req, context, emptyWireAttrs());
+    wrapFilterChain(fc).onStreamResponse(res, context, emptyWireAttrs());
   }
 
   // Determines the type of the request at runtime.
@@ -192,8 +192,8 @@ public class FilterUtil
   public static void fireStreamRequestError(FilterChain fc, StreamRequest req, Exception ex)
   {
     final RequestContext context = new RequestContext();
-    wrapFilterChain(fc).onRequest(req, context, emptyWireAttrs());
-    wrapFilterChain(fc).onError(ex, context, emptyWireAttrs());
+    wrapFilterChain(fc).onStreamRequest(req, context, emptyWireAttrs());
+    wrapFilterChain(fc).onStreamError(ex, context, emptyWireAttrs());
   }
 
   public static void fireUntypedRequestError(FilterChain fc, Request req, Exception ex)

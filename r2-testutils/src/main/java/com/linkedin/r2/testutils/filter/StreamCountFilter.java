@@ -38,7 +38,7 @@ public class StreamCountFilter implements StreamFilter
   }
 
   @Override
-  public void onRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
+  public void onStreamRequest(StreamRequest req, RequestContext requestContext, Map<String, String> wireAttrs,
                         NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     _reqCount++;
@@ -46,7 +46,7 @@ public class StreamCountFilter implements StreamFilter
   }
 
   @Override
-  public void onResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs,
+  public void onStreamResponse(StreamResponse res, RequestContext requestContext, Map<String, String> wireAttrs,
                          NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     _resCount++;
@@ -54,7 +54,7 @@ public class StreamCountFilter implements StreamFilter
   }
 
   @Override
-  public void onError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
+  public void onStreamError(Throwable ex, RequestContext requestContext, Map<String, String> wireAttrs,
                       NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
     _errCount++;
