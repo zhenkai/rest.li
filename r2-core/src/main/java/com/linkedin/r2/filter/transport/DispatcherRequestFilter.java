@@ -18,10 +18,13 @@
 package com.linkedin.r2.filter.transport;
 
 import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.message.rest.RestRequestFilter;
 import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Response;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.entitystream.BaseConnector;
@@ -41,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Chris Pettitt
  * @version $Revision$
  */
-public class DispatcherRequestFilter implements StreamRequestFilter
+public class DispatcherRequestFilter implements StreamRequestFilter, RestRequestFilter
 {
   private final TransportDispatcher _dispatcher;
 
@@ -56,7 +59,46 @@ public class DispatcherRequestFilter implements StreamRequestFilter
   }
 
   @Override
-  public void onRequest(StreamRequest req, RequestContext requestContext,
+  public void onRestRequest(RestRequest req, RequestContext requestContext,
+                            Map<String, String> wireAttrs,
+                            NextFilter<RestRequest, RestResponse> nextFilter)
+  {
+    try
+    {
+      _dispatcher.handleRestRequest(req, wireAttrs, requestContext,
+          createCallback(requestContext, nextFilter)
+      );
+    }
+    catch (Exception e)
+    {
+      nextFilter.onError(e, requestContext, new HashMap<String, String>());
+    }
+  }
+
+  private <REQ extends Request, RES extends Response> TransportCallback<RES> createCallback(
+      final RequestContext requestContext,
+      final NextFilter<REQ, RES> nextFilter)
+  {
+    return new TransportCallback<RES>()
+    {
+      @Override
+      public void onResponse(TransportResponse<RES> res)
+      {
+        final Map<String, String> wireAttrs = res.getWireAttributes();
+        if (res.hasError())
+        {
+          nextFilter.onError(res.getError(), requestContext, wireAttrs);
+        }
+        else
+        {
+          nextFilter.onResponse(res.getResponse(), requestContext, wireAttrs);
+        }
+      }
+    };
+  }
+
+  @Override
+  public void onStreamRequest(StreamRequest req, RequestContext requestContext,
                             Map<String, String> wireAttrs,
                             NextFilter<StreamRequest, StreamResponse> nextFilter)
   {
@@ -64,7 +106,7 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     try
     {
       final AtomicBoolean responded = new AtomicBoolean(false);
-      TransportCallback<StreamResponse> callback = createCallback(requestContext, nextFilter, responded);
+      TransportCallback<StreamResponse> callback = createStreamCallback(requestContext, nextFilter, responded);
       connector = new Connector(responded, nextFilter, requestContext, wireAttrs);
       req.getEntityStream().setReader(connector);
       EntityStream newStream = EntityStreams.newEntityStream(connector);
@@ -80,7 +122,7 @@ public class DispatcherRequestFilter implements StreamRequestFilter
     }
   }
 
-  private <REQ extends Request, RES extends Response> TransportCallback<RES> createCallback(
+  private <REQ extends Request, RES extends Response> TransportCallback<RES> createStreamCallback(
           final RequestContext requestContext,
           final NextFilter<REQ, RES> nextFilter,
           final AtomicBoolean responded)
