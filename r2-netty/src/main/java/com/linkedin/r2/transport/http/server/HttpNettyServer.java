@@ -69,6 +69,7 @@ import org.slf4j.LoggerFactory;
   private final int _port;
   private final int _threadPoolSize;
   private final HttpDispatcher _dispatcher;
+  private final boolean _restOverStream;
 
   private NioEventLoopGroup _bossGroup;
   private NioEventLoopGroup _workerGroup;
@@ -76,9 +77,15 @@ import org.slf4j.LoggerFactory;
 
   public HttpNettyServer(int port, int threadPoolSize, HttpDispatcher dispatcher)
   {
+    this(port, threadPoolSize, dispatcher, false);
+  }
+
+  public HttpNettyServer(int port, int threadPoolSize, HttpDispatcher dispatcher, boolean restOverStream)
+  {
     _port = port;
     _threadPoolSize = threadPoolSize;
     _dispatcher = dispatcher;
+    _restOverStream = restOverStream;
   }
 
   @Override
@@ -87,6 +94,8 @@ import org.slf4j.LoggerFactory;
     _eventExecutors = new DefaultEventExecutorGroup(_threadPoolSize);
     _bossGroup = new NioEventLoopGroup(1, new NamedThreadFactory("R2 Nio Boss"));
     _workerGroup = new NioEventLoopGroup(0, new NamedThreadFactory("R2 Nio Worker"));
+
+    final SimpleChannelInboundHandler<RestRequest> handler = _restOverStream ? new StreamHandler() : new RestHandler();
 
     ServerBootstrap bootstrap = new ServerBootstrap()
                                       .group(_bossGroup, _workerGroup)
@@ -101,7 +110,7 @@ import org.slf4j.LoggerFactory;
                                           ch.pipeline().addLast("aggregator", new HttpObjectAggregator(1048576));
                                           ch.pipeline().addLast("encoder", new HttpResponseEncoder());
                                           ch.pipeline().addLast("rapi", new RAPServerCodec());
-                                          ch.pipeline().addLast(_eventExecutors, "handler", new Handler());
+                                          ch.pipeline().addLast(_eventExecutors, "handler", handler);
                                         }
                                       });
 
@@ -125,7 +134,60 @@ import org.slf4j.LoggerFactory;
 
   }
 
-  private class Handler extends SimpleChannelInboundHandler<RestRequest>
+  private class RestHandler extends SimpleChannelInboundHandler<RestRequest>
+  {
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, RestRequest request) throws Exception
+    {
+      final Channel ch = ctx.channel();
+      TransportCallback<RestResponse> writeResponseCallback = new TransportCallback<RestResponse>()
+      {
+        @Override
+        public void onResponse(TransportResponse<RestResponse> response)
+        {
+          final RestResponseBuilder responseBuilder;
+          if (response.hasError())
+          {
+            // This onError is only getting called in cases where:
+            // (1) the exception was thrown by the handleRequest() method, and the upper layer
+            // dispatcher did not catch the exception or caught it and passed it here without
+            // turning it into a Response, or
+            // (2) the HttpBridge-installed callback's onError declined to convert the exception to a
+            // response and passed it along to here.
+            responseBuilder =
+                new RestResponseBuilder(RestStatus.responseForError(RestStatus.INTERNAL_SERVER_ERROR, response.getError()));
+          }
+          else
+          {
+            responseBuilder = new RestResponseBuilder(response.getResponse());
+          }
+
+          responseBuilder
+              .unsafeOverwriteHeaders(WireAttributeHelper.toWireAttributes(response.getWireAttributes()))
+              .build();
+
+          ch.writeAndFlush(responseBuilder.build());
+        }
+      };
+      try
+      {
+        _dispatcher.handleRequest(request, writeResponseCallback);
+      }
+      catch (Exception ex)
+      {
+        writeResponseCallback.onResponse(TransportResponseImpl.<RestResponse> error(ex, Collections.<String, String> emptyMap()));
+      }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
+    {
+      LOG.error("Exception caught on channel: " + ctx.channel().remoteAddress(), cause);
+      ctx.close();
+    }
+  }
+
+  private class StreamHandler extends SimpleChannelInboundHandler<RestRequest>
   {
     private void writeError(Channel ch, TransportResponse<StreamResponse> response, Throwable ex)
     {
@@ -190,7 +252,7 @@ import org.slf4j.LoggerFactory;
       catch (Exception ex)
       {
         writeResponseCallback.onResponse(TransportResponseImpl.<StreamResponse> error(ex,
-                                                                                    Collections.<String, String> emptyMap()));
+            Collections.<String, String> emptyMap()));
       }
     }
 
