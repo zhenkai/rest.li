@@ -14,59 +14,42 @@
    limitations under the License.
 */
 
-/**
- * $Id: $
- */
-
 package com.linkedin.r2.transport.http.server;
+
 
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 
-/**
- * @author Steven Ihde
- * @version $Revision: $
- */
 
-public class RAPServlet extends AbstractR2Servlet
+/**
+ * This servlet provides the support for asynchronous request handling. It can only be used with
+ * containers supporting Servlet API 3.0 or greater.
+ * @author Goksel Genc
+ * @version $Revision: $
+ *
+ */
+public class AsyncR2StreamServlet extends AbstractAsyncR2StreamServlet
 {
   private static final long serialVersionUID = 0L;
 
   private final HttpDispatcher _dispatcher;
 
-  public RAPServlet(HttpDispatcher dispatcher)
-  {
-    _dispatcher = dispatcher;
-  }
 
-  public RAPServlet(TransportDispatcher dispatcher)
+  public AsyncR2StreamServlet(HttpDispatcher dispatcher,
+                              long timeout)
   {
-    this(new HttpDispatcher(dispatcher));
-  }
-
-  /**
-   * Initialize the RAPServlet.
-   * @see AbstractR2Servlet#AbstractR2Servlet(boolean, int, int)
-   */
-  public RAPServlet(HttpDispatcher dispatcher,
-                    boolean useContinuations,
-                    int timeOut,
-                    int timeOutDelta)
-  {
+    super(timeout);
     _dispatcher = dispatcher;
   }
 
   /**
-   * Initialize the RAPServlet.
-   * @see AbstractR2Servlet#AbstractR2Servlet(boolean, int, int)
+   * Creates the AsyncR2Servlet.
    */
-  public RAPServlet(TransportDispatcher dispatcher,
-                    boolean useContinuations,
-                    int timeOut,
-                    int timeOutDelta)
+  public AsyncR2StreamServlet(TransportDispatcher dispatcher,
+                              long timeout)
   {
-    this(new HttpDispatcher(dispatcher), useContinuations, timeOut, timeOutDelta);
-  }
 
+    this(new HttpDispatcher(dispatcher), timeout);
+  }
 
   @Override
   protected HttpDispatcher getDispatcher()

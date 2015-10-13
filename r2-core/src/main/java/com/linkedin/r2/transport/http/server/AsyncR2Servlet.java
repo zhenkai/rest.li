@@ -25,15 +25,15 @@ import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
  * containers supporting Servlet API 3.0 or greater.
  * @author Goksel Genc
  * @version $Revision: $
- *
  */
 public class AsyncR2Servlet extends AbstractAsyncR2Servlet
 {
   private static final long serialVersionUID = 0L;
-
   private final HttpDispatcher _dispatcher;
 
-
+  /**
+   * Creates the AsyncR2Servlet.
+   */
   public AsyncR2Servlet(HttpDispatcher dispatcher,
                         long timeout)
   {
@@ -47,7 +47,6 @@ public class AsyncR2Servlet extends AbstractAsyncR2Servlet
   public AsyncR2Servlet(TransportDispatcher dispatcher,
                         long timeout)
   {
-
     this(new HttpDispatcher(dispatcher), timeout);
   }
 

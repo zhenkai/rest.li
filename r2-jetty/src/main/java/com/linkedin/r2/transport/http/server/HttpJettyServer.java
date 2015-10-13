@@ -48,7 +48,7 @@ public class HttpJettyServer implements HttpServer
 
   public HttpJettyServer(int port, HttpDispatcher dispatcher)
   {
-    this(port, new RAPServlet(dispatcher));
+    this(port, new RAPStreamServlet(dispatcher));
   }
 
   public HttpJettyServer(int port,
@@ -141,10 +141,10 @@ public class HttpJettyServer implements HttpServer
     switch (type)
     {
       case ASYNC_EVENT:
-        httpServlet = new AsyncR2Servlet(dispatcher, timeout);
+        httpServlet = new AsyncR2StreamServlet(dispatcher, timeout);
         break;
       default:
-        httpServlet = new RAPServlet(dispatcher);
+        httpServlet = new RAPStreamServlet(dispatcher);
     }
 
     return httpServlet;

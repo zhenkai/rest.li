@@ -20,6 +20,8 @@ package com.linkedin.r2.transport.http.server;
 
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.stream.entitystream.BaseConnector;
@@ -53,6 +55,53 @@ public class HttpDispatcher
   public HttpDispatcher(TransportDispatcher dispatcher)
   {
     _dispatcher = dispatcher;
+  }
+
+  /**
+   * handle a {@link com.linkedin.r2.message.rest.RestRequest}.
+   * @see TransportDispatcher#handleRestRequest
+   *
+   * @param req the request to be handled.
+   * @param callback the callback to be invoked with the response or error.
+   */
+  public void handleRequest(RestRequest req,
+                            TransportCallback<RestResponse> callback)
+  {
+    handleRequest(req, new RequestContext(), callback);
+  }
+
+  /**
+   * handle a {@link RestRequest} using the given request context.
+   * @see TransportDispatcher#handleRestRequest
+   *
+   * @param req the request to be handled.
+   * @param context the request context.
+   * @param callback the callback to be invoked with the response or error.
+   */
+  public void handleRequest(RestRequest req,
+                            RequestContext context,
+                            TransportCallback<RestResponse> callback)
+  {
+    final Map<String, String> headers = new HashMap<String, String>(req.getHeaders());
+    final Map<String, String> wireAttrs = WireAttributeHelper.removeWireAttributes(headers);
+
+    try
+    {
+      MessageType.Type msgType = MessageType.getMessageType(wireAttrs, MessageType.Type.REST);
+      switch (msgType)
+      {
+        default:
+        case REST:
+          _dispatcher.handleRestRequest(HttpBridge.toRestRequest(req, headers),
+              wireAttrs,
+              context, HttpBridge.httpToRestCallback(callback)
+          );
+      }
+    }
+    catch (Exception e)
+    {
+      callback.onResponse(TransportResponseImpl.<RestResponse>error(e, Collections.<String, String>emptyMap()));
+    }
   }
 
   /**

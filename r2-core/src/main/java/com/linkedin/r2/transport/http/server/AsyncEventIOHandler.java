@@ -16,11 +16,11 @@ import java.io.IOException;
  */
 public class AsyncEventIOHandler extends SyncIOHandler
 {
-  private final AbstractAsyncR2Servlet.WrappedAsyncContext _ctx;
+  private final AbstractAsyncR2StreamServlet.WrappedAsyncContext _ctx;
   private volatile boolean _responseWriteStarted = false;
   private boolean _inLoop = false;
 
-  public AsyncEventIOHandler(ServletInputStream is, ServletOutputStream os, AbstractAsyncR2Servlet.WrappedAsyncContext ctx, int bufferCapacity)
+  public AsyncEventIOHandler(ServletInputStream is, ServletOutputStream os, AbstractAsyncR2StreamServlet.WrappedAsyncContext ctx, int bufferCapacity)
   {
     super(is, os, bufferCapacity, Integer.MAX_VALUE);
     _ctx = ctx;

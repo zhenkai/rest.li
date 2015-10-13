@@ -137,7 +137,7 @@ public class HttpServerFactory
   {
     final TransportDispatcher filterDispatcher =
         new FilterChainDispatcher(transportDispatcher,  _filters);
-    HttpServlet httpServlet = new RAPServlet(filterDispatcher, timeout);
+    HttpServlet httpServlet = new RAPStreamServlet(filterDispatcher, timeout);
     return new HttpJettyServer(port, httpServlet);
   }
 }
