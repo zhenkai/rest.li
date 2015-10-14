@@ -11,6 +11,7 @@ import com.linkedin.r2.message.stream.StreamResponseBuilder;
 import com.linkedin.r2.message.stream.entitystream.EntityStreams;
 import com.linkedin.r2.message.stream.entitystream.ReadHandle;
 import com.linkedin.r2.sample.Bootstrap;
+import com.linkedin.r2.transport.common.RestRequestHandler;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
@@ -19,6 +20,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +40,7 @@ public class TestStreamEcho extends AbstractStreamTest
   @Override
   protected TransportDispatcher getTransportDispatcher()
   {
-    return new TransportDispatcherBuilder(getHandlers())
+    return new TransportDispatcherBuilder(Collections.<URI, RestRequestHandler>emptyMap(), getHandlers(), true)
         .build();
   }
 

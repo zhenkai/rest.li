@@ -226,6 +226,8 @@ public abstract class AbstractEchoServiceTest
     // Make sure the server got its wire attribute
     Assert.assertEquals(_serverCaptureFilter.getRequest().get(_toServerKey), _toServerValue);
 
+    Assert.assertEquals(_serverCaptureFilter.getResponse().get(_toClientKey), _toClientValue);
+
     // Make sure the client got its wire attribute, but not the server's wire attribute
     Assert.assertEquals(_clientCaptureFilter.getResponse().get(_toClientKey), _toClientValue);
     Assert.assertNull(_clientCaptureFilter.getResponse().get(_toServerKey));

@@ -32,27 +32,46 @@ public class TransportDispatcherBuilder
 {
   private final Map<URI, StreamRequestHandler> _streamHandlers;
   private final Map<URI, RestRequestHandler> _restHandlers;
+  private final Map<URI, StreamRequestHandler> _adaptedHandlers;
+  private final boolean _restOverStream;
 
   public TransportDispatcherBuilder()
   {
-    this(new HashMap<URI, RestRequestHandler>(), new HashMap<URI, StreamRequestHandler>());
+    // mostly for testing, so set to true
+    this(true);
   }
 
-  public TransportDispatcherBuilder(Map<URI, RestRequestHandler> restHandlers, Map<URI, StreamRequestHandler> streamHandlers)
+  public TransportDispatcherBuilder(boolean restOverStream)
+  {
+    this(new HashMap<URI, RestRequestHandler>(), new HashMap<URI, StreamRequestHandler>(), restOverStream);
+  }
+
+  public TransportDispatcherBuilder(Map<URI, RestRequestHandler> restHandlers, Map<URI, StreamRequestHandler> streamHandlers, boolean restOverStream)
   {
     _restHandlers = new HashMap<URI, RestRequestHandler>(restHandlers);
     _streamHandlers = new HashMap<URI, StreamRequestHandler>(streamHandlers);
+    _adaptedHandlers = new HashMap<URI, StreamRequestHandler>();
+    _restOverStream = restOverStream;
   }
 
   public TransportDispatcherBuilder addRestHandler(URI uri, RestRequestHandler handler)
   {
     _restHandlers.put(uri, handler);
+    if (_restOverStream)
+    {
+      _adaptedHandlers.put(uri, new StreamRequestHandlerAdapter(handler));
+    }
     return this;
   }
 
   public RestRequestHandler removeRestHandler(URI uri)
   {
-    return _restHandlers.remove(uri);
+    RestRequestHandler handler = _restHandlers.remove(uri);
+    if (_restOverStream)
+    {
+      _adaptedHandlers.remove(uri);
+    }
+    return handler;
   }
 
   public TransportDispatcherBuilder addStreamHandler(URI uri, StreamRequestHandler handler)
@@ -70,13 +89,16 @@ public class TransportDispatcherBuilder
   public TransportDispatcherBuilder reset()
   {
     _restHandlers.clear();
+    _adaptedHandlers.clear();
     _streamHandlers.clear();
     return this;
   }
 
   public TransportDispatcher build()
   {
-    return new TransportDispatcherImpl(_restHandlers, _streamHandlers);
+    Map<URI, StreamRequestHandler> mergedStreamHandlers = new HashMap<URI, StreamRequestHandler>(_adaptedHandlers);
+    mergedStreamHandlers.putAll(_streamHandlers);
+    return new TransportDispatcherImpl(_restHandlers, mergedStreamHandlers);
   }
 
 }
