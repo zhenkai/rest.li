@@ -51,7 +51,7 @@ public class TestStreamFilterAdapters
         nextFilter.onRequest(req, requestContext, wireAttrs);
       }
     });
-    fc.onRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     StreamRequest capturedReq = _afterFilter.getRequest();
     Assert.assertEquals(capturedReq.getURI(), SIMPLE_URI);
     capturedReq.getEntityStream().setReader(new FullEntityReader(new Callback<ByteString>()
@@ -84,7 +84,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     StreamRequest capturedReq = _afterFilter.getRequest();
     Assert.assertEquals(capturedReq.getURI(), SIMPLE_URI);
     capturedReq.getEntityStream().setReader(new FullEntityReader(new Callback<ByteString>()
@@ -115,7 +115,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     StreamResponse capturedReq = _beforeFilter.getResponse();
     capturedReq.getEntityStream().setReader(new FullEntityReader(new Callback<ByteString>()
     {
@@ -146,7 +146,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
 
     Throwable ex = _beforeFilter.getThrowable();
     Assert.assertSame(ex, runTimeException);
@@ -160,7 +160,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamRequest(simpleStreamRequest("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     ex = _beforeFilter.getThrowable();
     Assert.assertTrue(ex instanceof StreamException);
     StreamResponse errorResponse = ((StreamException) ex).getResponse();
@@ -198,7 +198,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     StreamResponse capturedResponse = _beforeFilter.getResponse();
     capturedResponse.getEntityStream().setReader(new FullEntityReader(new Callback<ByteString>()
     {
@@ -215,7 +215,7 @@ public class TestStreamFilterAdapters
       }
     }));
 
-    fc.onError(simpleStreamException("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamError(simpleStreamException("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     Throwable capturedEx = _beforeFilter.getThrowable();
 
     Assert.assertTrue(capturedEx instanceof StreamException);
@@ -253,7 +253,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     StreamResponse capturedResponse = _beforeFilter.getResponse();
     capturedResponse.getEntityStream().setReader(new FullEntityReader(new Callback<ByteString>()
     {
@@ -299,7 +299,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onError(simpleStreamException("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamError(simpleStreamException("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     Throwable capturedEx = _beforeFilter.getThrowable();
 
     Assert.assertTrue(capturedEx instanceof StreamException);
@@ -318,7 +318,7 @@ public class TestStreamFilterAdapters
       }
     }));
 
-    fc.onError(new IllegalArgumentException(), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamError(new IllegalArgumentException(), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     capturedEx = _beforeFilter.getThrowable();
     Assert.assertTrue(capturedEx instanceof IllegalStateException);
   }
@@ -340,7 +340,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     Throwable capturedEx = _beforeFilter.getThrowable();
 
     Assert.assertTrue(capturedEx instanceof StreamException);
@@ -373,7 +373,7 @@ public class TestStreamFilterAdapters
       }
     });
 
-    fc.onResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamResponse(simpleStreamResponse("12345"), FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     capturedEx = _beforeFilter.getThrowable();
 
     Assert.assertTrue(capturedEx instanceof IllegalStateException);
@@ -394,7 +394,7 @@ public class TestStreamFilterAdapters
     private Throwable _ex = null;
 
     @Override
-    public void onRequest(StreamRequest req,
+    public void onStreamRequest(StreamRequest req,
                    RequestContext requestContext,
                    Map<String, String> wireAttrs,
                    NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -404,7 +404,7 @@ public class TestStreamFilterAdapters
     }
 
     @Override
-    public void onResponse(StreamResponse res,
+    public void onStreamResponse(StreamResponse res,
                     RequestContext requestContext,
                     Map<String, String> wireAttrs,
                     NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -414,7 +414,7 @@ public class TestStreamFilterAdapters
     }
 
     @Override
-    public void onError(Throwable ex,
+    public void onStreamError(Throwable ex,
                  RequestContext requestContext,
                  Map<String, String> wireAttrs,
                  NextFilter<StreamRequest, StreamResponse> nextFilter)

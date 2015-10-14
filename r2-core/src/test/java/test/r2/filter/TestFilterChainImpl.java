@@ -157,21 +157,21 @@ public class TestFilterChainImpl
 
   private void fireRestRequest(FilterChain fc)
   {
-    fc.onRequest(Messages.toStreamRequest(new RestRequestBuilder(URI.create("src/test/resources/test")).build()),
+    fc.onStreamRequest(Messages.toStreamRequest(new RestRequestBuilder(URI.create("src/test/resources/test")).build()),
                      createRequestContext(), createWireAttributes()
     );
   }
 
   private void fireRestResponse(FilterChain fc)
   {
-    fc.onResponse(Messages.toStreamResponse(new RestResponseBuilder().build()),
+    fc.onStreamResponse(Messages.toStreamResponse(new RestResponseBuilder().build()),
                       createRequestContext(), createWireAttributes()
     );
   }
 
   private void fireRestError(FilterChain fc)
   {
-    fc.onError(new Exception(),
+    fc.onStreamError(new Exception(),
                    createRequestContext(), createWireAttributes()
     );
   }

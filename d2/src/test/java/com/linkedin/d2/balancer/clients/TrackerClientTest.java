@@ -25,6 +25,7 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
 import com.linkedin.r2.message.stream.StreamResponse;
@@ -102,6 +103,10 @@ public class TrackerClientTest
                      Map<String, String> wireAttrs,
                      TransportCallback<RestResponse> callback)
     {
+      RestResponseBuilder builder = new RestResponseBuilder();
+      RestResponse response = _emptyResponse ? builder.build() :
+          builder.setEntity("This is not empty".getBytes()).build();
+      callback.onResponse(TransportResponseImpl.success(response));
     }
 
     @Override

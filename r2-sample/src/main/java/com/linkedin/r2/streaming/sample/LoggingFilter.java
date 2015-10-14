@@ -25,7 +25,7 @@ public class LoggingFilter implements StreamResponseFilter
   private static final Logger _log = LoggerFactory.getLogger(LoggingFilter.class);
 
   @Override
-  public void onResponse(StreamResponse res,
+  public void onStreamResponse(StreamResponse res,
                              RequestContext requestContext,
                              Map<String, String> wireAttrs,
                              NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -66,7 +66,7 @@ public class LoggingFilter implements StreamResponseFilter
   }
 
   @Override
-  public void onError(Throwable ex,
+  public void onStreamError(Throwable ex,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
                           NextFilter<StreamRequest, StreamResponse> nextFilter)

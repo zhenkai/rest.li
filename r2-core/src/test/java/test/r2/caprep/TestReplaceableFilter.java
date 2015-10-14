@@ -90,7 +90,7 @@ public class TestReplaceableFilter extends BaseFilterTest
     FilterUtil.fireSimpleStreamResponse(fc);
     Assert.assertNull(error.get());
     Exception ex = new Exception();
-    fc.onError(ex, FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
+    fc.onStreamError(ex, FilterUtil.emptyRequestContext(), FilterUtil.emptyWireAttrs());
     Assert.assertSame(error.get(), ex);
   }
 }
