@@ -14,7 +14,10 @@
    limitations under the License.
  */
 
-package com.linkedin.r2.filter.compression;
+package com.linkedin.r2.filter.compression.streaming;
+
+import com.linkedin.r2.filter.compression.CompressionConstants;
+import com.linkedin.r2.filter.compression.CompressionException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,7 +79,12 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
     EncodingType[] types = new EncodingType[entries.length];
     for(int i = 0; i < entries.length; i++)
     {
-      types[i] = EncodingType.get(entries[i].trim());
+      EncodingType type = EncodingType.get(entries[i].trim());
+      if (type == null)
+      {
+        throw new IllegalArgumentException(entries[i].trim() + " is not supported");
+      }
+      types[i] = type;
     }
 
     return types;
@@ -87,7 +95,7 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
    * their order of appearance in the HTTP header value (unsupported types are filtered out).
    * @param headerValue Http header value of Accept-Encoding field
    * @return ArrayList of accepted-encoding entries
-   * @throws CompressionException
+   * @throws com.linkedin.r2.filter.compression.CompressionException
    */
   public static List<AcceptEncoding> parseAcceptEncodingHeader(String headerValue, Set<EncodingType> supportedEncodings) throws CompressionException
   {
@@ -104,12 +112,7 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
         throw new IllegalArgumentException(CompressionConstants.ILLEGAL_FORMAT + entry);
       }
 
-      EncodingType type = null;
-      String encodingName = content[0].trim();
-      if (EncodingType.isSupported(encodingName))
-      {
-        type = EncodingType.get(encodingName);
-      }
+      EncodingType type = EncodingType.get(content[0].trim());
       Float quality = 1.0f;
 
       if (type != null && supportedEncodings.contains(type))

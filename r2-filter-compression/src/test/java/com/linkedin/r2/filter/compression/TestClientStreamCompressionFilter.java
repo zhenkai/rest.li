@@ -20,6 +20,7 @@ import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.CompressionOption;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
@@ -43,7 +44,7 @@ import org.testng.annotations.Test;
  *
  * @author Karan Parikh
  */
-public class TestClientCompressionFilter
+public class TestClientStreamCompressionFilter
 {
 
   private static final String ACCEPT_COMPRESSIONS = "gzip, deflate, bzip2, x-snappy-framed";
@@ -132,7 +133,7 @@ public class TestClientCompressionFilter
       throws URISyntaxException
   {
     StreamRequest streamRequest = new StreamRequestBuilder(new URI(URI)).build(EntityStreams.emptyStream());
-    ClientCompressionFilter clientCompressionFilter = new ClientCompressionFilter(EncodingType.IDENTITY.getHttpName(),
+    ClientStreamCompressionFilter clientCompressionFilter = new ClientStreamCompressionFilter(EncodingType.IDENTITY.getHttpName(),
                                                                                   new CompressionConfig(Integer.MAX_VALUE),
                                                                                   ACCEPT_COMPRESSIONS,
                                                                                   Arrays.asList(compressionConfig.split(",")),
@@ -143,7 +144,7 @@ public class TestClientCompressionFilter
       RequestContext context = new RequestContext();
       context.putLocalAttr(R2Constants.OPERATION, operation);
 
-      clientCompressionFilter.onRequest(streamRequest, context, Collections.<String, String>emptyMap(),
+      clientCompressionFilter.onStreamRequest(streamRequest, context, Collections.<String, String>emptyMap(),
           new HeaderCaptureFilter(HttpConstants.ACCEPT_ENCODING, headerShouldBePresent));
     }
   }

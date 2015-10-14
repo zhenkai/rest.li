@@ -25,7 +25,8 @@ import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.CompressionOption;
 import com.linkedin.r2.filter.NextFilter;
-import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
@@ -87,7 +88,7 @@ public class TestRequestCompression extends RestLiIntegrationTest
     class CheckRequestCompressionFilter implements StreamRequestFilter
     {
       @Override
-      public void onRequest(StreamRequest req,
+      public void onStreamRequest(StreamRequest req,
                          RequestContext requestContext,
                          Map<String, String> wireAttrs,
                          NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -126,7 +127,7 @@ public class TestRequestCompression extends RestLiIntegrationTest
     class CheckHeadersFilter implements StreamRequestFilter
     {
       @Override
-      public void onRequest(StreamRequest req,
+      public void onStreamRequest(StreamRequest req,
                                 RequestContext requestContext,
                                 Map<String, String> wireAttrs,
                                 NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -144,7 +145,7 @@ public class TestRequestCompression extends RestLiIntegrationTest
     }
 
     final FilterChain fc = FilterChains.empty().addLast(new CheckRequestCompressionFilter())
-        .addLast(new ServerCompressionFilter(RestLiIntTestServer.supportedCompression, Executors.newCachedThreadPool()))
+        .addLast(new ServerStreamCompressionFilter(RestLiIntTestServer.supportedCompression, Executors.newCachedThreadPool()))
         .addLast(new CheckHeadersFilter())
         .addLast(new SimpleLoggingFilter());
     super.init(null, null, fc);

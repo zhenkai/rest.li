@@ -22,6 +22,7 @@ import com.linkedin.parseq.EngineBuilder;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
+import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.http.server.HttpJettyServer;
@@ -110,7 +111,7 @@ public class RestLiIntTestServer
                                         List<? extends ResponseFilter> responseFilters,
                                         Executor compressionExecutor)
   {
-    final FilterChain fc = FilterChains.empty().addLast(new ServerCompressionFilter(supportedCompression, compressionExecutor))
+    final FilterChain fc = FilterChains.empty().addLast(new ServerStreamCompressionFilter(supportedCompression, compressionExecutor))
         .addLast(new SimpleLoggingFilter());
     return createServer(engine, port, useAsyncServletApi, asyncTimeOut, requestFilters, responseFilters, fc);
   }

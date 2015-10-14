@@ -7,7 +7,8 @@ import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.compression.ClientCompressionFilter;
-import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
 import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
@@ -112,7 +113,7 @@ public class TestRequestCompression
     for (EncodingType requestEncoding : encodings)
     {
       StreamFilter clientCompressionFilter =
-          new ClientCompressionFilter(requestEncoding,
+          new ClientStreamCompressionFilter(requestEncoding,
               new CompressionConfig(THRESHOLD),
               null,
               Arrays.asList(new String[]{"*"}),
@@ -147,7 +148,7 @@ public class TestRequestCompression
     for (EncodingType requestEncoding : encodings)
     {
       StreamFilter clientCompressionFilter =
-          new ClientCompressionFilter(requestEncoding,
+          new ClientStreamCompressionFilter(requestEncoding,
               new CompressionConfig(THRESHOLD),
               null,
               Arrays.asList(new String[]{"*"}),

@@ -7,7 +7,9 @@ import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChains;
 
 import com.linkedin.r2.filter.compression.ClientCompressionFilter;
-import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
+import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
@@ -60,7 +62,7 @@ public class TestCompressionEcho
 
 
   protected final ExecutorService _executor = Executors.newCachedThreadPool();
-  protected final StreamFilter _compressionFilter = new ServerCompressionFilter(EncodingType.values(), _executor, THRESHOLD);
+  protected final StreamFilter _compressionFilter = new ServerStreamCompressionFilter(EncodingType.values(), _executor, THRESHOLD);
 
   private HttpServer _server;
 
@@ -138,7 +140,7 @@ public class TestCompressionEcho
       for (EncodingType acceptEncoding : encodings)
       {
         StreamFilter clientCompressionFilter =
-            new ClientCompressionFilter(requestEncoding,
+            new ClientStreamCompressionFilter(requestEncoding,
                                         new CompressionConfig(THRESHOLD),
                                         new EncodingType[]{acceptEncoding},
                                         Arrays.asList(new String[]{"*"}),
@@ -162,7 +164,7 @@ public class TestCompressionEcho
       for (EncodingType acceptEncoding : encodings)
       {
         StreamFilter clientCompressionFilter =
-            new ClientCompressionFilter(requestEncoding,
+            new ClientStreamCompressionFilter(requestEncoding,
                 new CompressionConfig(THRESHOLD),
                 new EncodingType[]{acceptEncoding},
                 Arrays.asList(new String[]{"*"}),

@@ -20,7 +20,8 @@ import com.linkedin.common.callback.Callback;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.FilterChains;
-import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
@@ -70,7 +71,7 @@ public class TestResponseCompression extends AbstractStreamTest
 
   protected ExecutorService _executor = Executors.newCachedThreadPool();
   protected StreamFilter _compressionFilter =
-      new ServerCompressionFilter(EncodingType.values(), _executor, (int)TINY_BYTES_NUM+1);
+      new ServerStreamCompressionFilter(EncodingType.values(), _executor, (int)TINY_BYTES_NUM+1);
 
   @AfterClass
   public void afterClass() throws Exception

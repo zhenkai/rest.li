@@ -24,6 +24,7 @@ import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.compression.ClientCompressionFilter;
+import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.EncodingType;
 import com.linkedin.r2.filter.transport.ClientQueryTunnelFilter;
 import com.linkedin.r2.filter.transport.FilterChainClient;
@@ -54,8 +55,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -520,14 +519,26 @@ public class HttpClientFactory implements TransportClientFactory
     if (_useClientCompression)
     {
       String httpServiceName = (String) properties.get(HTTP_SERVICE_NAME);
-      String requestContentEncodingName = getRequestContentEncodingName(httpRequestServerSupportedEncodings);
+      String requestContentEncodingName = getStreamRequestContentEncodingName(httpRequestServerSupportedEncodings);
       CompressionConfig compressionConfig = getCompressionConfig(httpServiceName, requestContentEncodingName);
-      String responseCompressionSchemaName = httpResponseCompressionOperations.isEmpty() ? "" : buildAcceptEncodingSchemaNames();
-      filters = _filters.addLast(new ClientCompressionFilter(requestContentEncodingName,
+      String responseCompressionSchemaName = httpResponseCompressionOperations.isEmpty() ? "" : buildStreamAcceptEncodingSchemaNames();
+      filters = _filters.addLast(new ClientStreamCompressionFilter(requestContentEncodingName,
           compressionConfig,
           responseCompressionSchemaName,
           httpResponseCompressionOperations,
           _compressionExecutor));
+
+      if (!_restOverStream)
+      {
+        // in this case we need a separate compression filter for rest messages
+        requestContentEncodingName = getRestRequestContentEncodingName(httpRequestServerSupportedEncodings);
+        responseCompressionSchemaName = httpResponseCompressionOperations.isEmpty() ? "" : buildRestAcceptEncodingSchemaNames();
+        filters = filters.addLast(new ClientCompressionFilter(requestContentEncodingName,
+            compressionConfig,
+            responseCompressionSchemaName,
+            httpResponseCompressionOperations));
+      }
+
     }
     else
     {
@@ -557,7 +568,26 @@ public class HttpClientFactory implements TransportClientFactory
    * @param serverSupportedEncodings list of compression encodings the server supports.
    * @return the encoding name that should be used to compress requests.
    */
-  private static String getRequestContentEncodingName(List<String> serverSupportedEncodings)
+  private static String getStreamRequestContentEncodingName(List<String> serverSupportedEncodings)
+  {
+    for (String encoding: serverSupportedEncodings)
+    {
+      if (com.linkedin.r2.filter.compression.streaming.EncodingType.isSupported(encoding))
+      {
+        return encoding;
+      }
+    }
+    return com.linkedin.r2.filter.compression.streaming.EncodingType.IDENTITY.getHttpName();
+  }
+
+  /**
+   * Chooses the first encoding in the given list of supported encodings that the client can compress with.
+   * This assumes that the service listed the encodings in order of preference.
+   *
+   * @param serverSupportedEncodings list of compression encodings the server supports.
+   * @return the encoding name that should be used to compress requests.
+   */
+  private static String getRestRequestContentEncodingName(List<String> serverSupportedEncodings)
   {
     for (String encoding: serverSupportedEncodings)
     {
@@ -572,7 +602,25 @@ public class HttpClientFactory implements TransportClientFactory
   /**
    * @return the compression schemas that the client will support for response compression
    */
-  private String buildAcceptEncodingSchemaNames()
+  private String buildStreamAcceptEncodingSchemaNames()
+  {
+    List<String> schemaNames = new ArrayList<String>();
+    for (com.linkedin.r2.filter.compression.streaming.EncodingType type: com.linkedin.r2.filter.compression.streaming.EncodingType.values())
+    {
+      // For now clients will accept all supported encodings (which is why we don't add EncodingType.ANY as an accepted
+      // type)
+      if (!type.equals(com.linkedin.r2.filter.compression.streaming.EncodingType.IDENTITY) && !type.equals(com.linkedin.r2.filter.compression.streaming.EncodingType.ANY))
+      {
+        schemaNames.add(type.getHttpName());
+      }
+    }
+    return StringUtils.join(schemaNames, ",");
+  }
+
+  /**
+   * @return the compression schemas that the client will support for response compression
+   */
+  private String buildRestAcceptEncodingSchemaNames()
   {
     List<String> schemaNames = new ArrayList<String>();
     for (EncodingType type: EncodingType.values())

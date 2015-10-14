@@ -17,32 +17,28 @@
 
 package com.linkedin.r2.filter.compression;
 
-import com.linkedin.r2.filter.compression.streaming.NoopCompressor;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executor;
-
-import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
-import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
-import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
-import com.linkedin.r2.filter.compression.streaming.SnappyCompressor;
-import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
 
 /**
- * @author Ang Xu
- */
+ * Helper class for parsing Accept-encoding
+ * */
 public enum EncodingType
 {
-  GZIP("gzip"),
-  DEFLATE("deflate"),
-  SNAPPY_FRAMED("x-snappy-framed"),
-  BZIP2("bzip2"),
+  //NOTE: declaration order implicitly defines preference order
+  GZIP(new GzipCompressor()),
+  DEFLATE(new DeflateCompressor()),
+  BZIP2(new Bzip2Compressor()),
+  SNAPPY(new SnappyCompressor()),
   IDENTITY("identity"),
   ANY("*");
 
-  private static final Map<String,EncodingType> REVERSE_MAP;
+  private final String httpName;
+  private final Compressor compressor;
+  private static final Map<String,EncodingType> _reverseMap;
 
+  //Initialize the reverse map for lookups
   static
   {
     Map<String, EncodingType> reverseMap = new HashMap<String, EncodingType>();
@@ -50,43 +46,58 @@ public enum EncodingType
     {
       reverseMap.put(t.getHttpName(), t);
     }
-    REVERSE_MAP = Collections.unmodifiableMap(reverseMap);
+    _reverseMap = Collections.unmodifiableMap(reverseMap);
   }
 
-  private final String _httpName;
-
+  /**
+   * @param httpName Http value for this encoding
+   */
   EncodingType(String httpName)
   {
-    _httpName = httpName;
+    this.httpName = httpName;
+    compressor = null;
   }
 
+  /**
+   * @param compressor Compressor associated with this encoding enum
+   */
+  EncodingType(Compressor compressor)
+  {
+    this.compressor = compressor;
+    httpName = compressor.getContentEncodingName();
+  }
+
+  /**
+   * @return Http value for this enum
+   */
   public String getHttpName()
   {
-    return _httpName;
+    return httpName;
   }
 
-  public StreamingCompressor getCompressor(Executor executor)
+  /**
+   * Returns the compressor of this compression method
+   */
+  public Compressor getCompressor()
   {
-    switch (this)
+    return compressor;
+  }
+
+  /**
+   * Returns the encoding type corresponding to the encoding name.
+   * Throws {@link IllegalArgumentException} if there is no corresponding enum.
+   *
+   * @param compressionHeader Http encoding type as string.
+   * @return associated enum value.
+   */
+  public static EncodingType get(String compressionHeader)
+  {
+    EncodingType result = _reverseMap.get(compressionHeader);
+    if (result == null)
     {
-      case GZIP:
-        return new GzipCompressor(executor);
-      case DEFLATE:
-        return new DeflateCompressor(executor);
-      case BZIP2:
-        return new Bzip2Compressor(executor);
-      case SNAPPY_FRAMED:
-        return new SnappyCompressor(executor);
-      case IDENTITY:
-        return new NoopCompressor();
-      default:
-        return null;
+      throw new IllegalArgumentException(CompressionConstants.UNSUPPORTED_ENCODING + compressionHeader);
     }
-  }
-
-  public static EncodingType get(String httpName)
-  {
-    return REVERSE_MAP.get(httpName);
+    return result;
   }
 
   /**
@@ -97,7 +108,15 @@ public enum EncodingType
    */
   public static boolean isSupported(String encodingName)
   {
-    return REVERSE_MAP.containsKey(encodingName);
+    return _reverseMap.containsKey(encodingName);
   }
 
+  /**
+   * @return if this encoding has a compressor. Generally, speaking, this is false
+   * for ANY (*).
+   */
+  public boolean hasCompressor()
+  {
+    return getCompressor() != null;
+  }
 }

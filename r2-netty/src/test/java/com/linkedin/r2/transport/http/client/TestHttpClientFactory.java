@@ -45,7 +45,7 @@ import com.linkedin.common.callback.Callbacks;
 import com.linkedin.common.callback.FutureCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.CompressionConfig;
-import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.message.rest.RestResponse;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestRequestBuilder;

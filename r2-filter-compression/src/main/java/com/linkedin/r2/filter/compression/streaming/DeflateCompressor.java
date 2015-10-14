@@ -16,7 +16,6 @@
 
 package com.linkedin.r2.filter.compression.streaming;
 
-import com.linkedin.r2.filter.compression.EncodingType;
 import com.linkedin.r2.message.stream.entitystream.EntityStream;
 import java.io.IOException;
 import java.io.InputStream;

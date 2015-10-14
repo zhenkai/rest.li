@@ -23,10 +23,12 @@ import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.compression.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.ClientCompressionFilter;
+import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.CompressionException;
 import com.linkedin.r2.filter.compression.Compressor;
 import com.linkedin.r2.filter.compression.DeflateCompressor;
-import com.linkedin.r2.filter.compression.EncodingType;
+import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
+import com.linkedin.r2.filter.compression.streaming.EncodingType;
 import com.linkedin.r2.filter.compression.GzipCompressor;
 import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.SnappyCompressor;
@@ -307,7 +309,7 @@ public class TestCompressionServer extends RestLiIntegrationTest
     class SaveContentEncodingHeaderFilter implements StreamResponseFilter
     {
       @Override
-      public void onResponse(StreamResponse res,
+      public void onStreamResponse(StreamResponse res,
                           RequestContext requestContext,
                           Map<String, String> wireAttrs,
                           NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -321,7 +323,7 @@ public class TestCompressionServer extends RestLiIntegrationTest
       }
 
       @Override
-      public void onError(Throwable ex,
+      public void onStreamError(Throwable ex,
                               RequestContext requestContext,
                               Map<String, String> wireAttrs,
                               NextFilter<StreamRequest, StreamResponse> nextFilter)
@@ -332,7 +334,7 @@ public class TestCompressionServer extends RestLiIntegrationTest
     super.init(Collections.<RequestFilter>emptyList(),
                Collections.<ResponseFilter>emptyList(),
                FilterChains.empty().addLast(new SaveContentEncodingHeaderFilter())
-                   .addLast(new ServerCompressionFilter(RestLiIntTestServer.supportedCompression, Executors.newCachedThreadPool()))
+                   .addLast(new ServerStreamCompressionFilter(RestLiIntTestServer.supportedCompression, Executors.newCachedThreadPool()))
                    .addLast(new SimpleLoggingFilter()),
                true);
   }
@@ -363,7 +365,7 @@ public class TestCompressionServer extends RestLiIntegrationTest
   @Test(dataProvider = "contentEncodingGeneratorDataProvider")
   public void testEncodingGeneration(EncodingType[] encoding, String acceptEncoding)
   {
-    ClientCompressionFilter cf = new ClientCompressionFilter(EncodingType.IDENTITY,
+    ClientStreamCompressionFilter cf = new ClientStreamCompressionFilter(EncodingType.IDENTITY,
                                                              new CompressionConfig(Integer.MAX_VALUE),
                                                              encoding,
                                                              Arrays.asList(new String[]{"*"}),
