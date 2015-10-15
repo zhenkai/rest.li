@@ -66,7 +66,7 @@ public class MockLBFactory
     Map<String, TransportClientFactory> clientFactories =
         new HashMap<String, TransportClientFactory>();
 
-    clientFactories.put("http", HttpClientFactory.getSimpleClientFactory());
+    clientFactories.put("http", new HttpClientFactory());
 
     SynchronousExecutorService executorService = new SynchronousExecutorService();
     MockStore<ServiceProperties> serviceRegistry = new MockStore<ServiceProperties>();

@@ -72,7 +72,7 @@ public class TestServerTimeoutAsyncEvent
   @BeforeClass
   public void setup() throws IOException
   {
-    _clientFactory = HttpClientFactory.getSimpleClientFactory();
+    _clientFactory = new HttpClientFactory();
     Map<String, Object> clientProperties = new HashMap<String, Object>();
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, String.valueOf(ASYNC_EVENT_TIMEOUT * 20));
     clientProperties.put(HttpClientFactory.HTTP_POOL_MIN_SIZE, "1");

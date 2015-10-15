@@ -103,7 +103,7 @@ public class TestStreamResponse extends AbstractStreamTest
   @Test
   public void testErrorWhileStreaming() throws Exception
   {
-    HttpClientFactory clientFactory = HttpClientFactory.getSimpleClientFactory();
+    HttpClientFactory clientFactory = new HttpClientFactory();
     Map<String, String> clientProperties = new HashMap<String, String>();
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "1000");
     Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));

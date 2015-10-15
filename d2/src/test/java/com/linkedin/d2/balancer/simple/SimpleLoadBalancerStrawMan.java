@@ -57,7 +57,7 @@ public class SimpleLoadBalancerStrawMan
     Map<String, TransportClientFactory> clientFactories =
         new HashMap<String, TransportClientFactory>();
 
-    clientFactories.put("http", HttpClientFactory.getSimpleClientFactory());
+    clientFactories.put("http", new HttpClientFactory());
 
     // listen for service updates (could be a glu discovery client, zk discovery client,
     // config discovery client, etc)

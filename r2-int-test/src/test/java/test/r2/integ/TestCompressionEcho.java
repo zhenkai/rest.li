@@ -148,7 +148,6 @@ public class TestCompressionEcho
 
         TransportClientFactory factory = new HttpClientFactory.Builder()
             .setFilterChain(FilterChains.create(clientCompressionFilter))
-            .setRestOverStream(true)
             .build();
         Client client = new TransportClientAdapter(factory.getClient(getClientProperties()));
         args[cur][0] = client;
@@ -172,7 +171,6 @@ public class TestCompressionEcho
 
         TransportClientFactory factory = new HttpClientFactory.Builder()
             .setFilterChain(FilterChains.create(clientCompressionFilter))
-            .setRestOverStream(true)
             .build();
         Client client = new TransportClientAdapter(factory.getClient(getClientProperties()));
         args[cur][0] = client;

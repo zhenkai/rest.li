@@ -68,7 +68,7 @@ public class TestHttpClient
   private void init() throws Exception
   {
     _testServer = new TestServer();
-    _clientFactory = HttpClientFactory.getSimpleClientFactory();
+    _clientFactory = new HttpClientFactory();
   }
 
   @AfterSuite
@@ -161,7 +161,7 @@ public class TestHttpClient
 
     // Specify the get timeout; we know the max rate will be half the get timeout
     final TransportClient transportClient =
-        HttpClientFactory.getSimpleClientFactory().getClient(Collections.singletonMap(HttpClientFactory.HTTP_REQUEST_TIMEOUT,
+        new HttpClientFactory().getClient(Collections.singletonMap(HttpClientFactory.HTTP_REQUEST_TIMEOUT,
             Integer.toString(REQUEST_TIMEOUT)));
     final Client client = new TransportClientAdapter(transportClient);
 

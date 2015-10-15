@@ -52,7 +52,6 @@ public class PerfClients
       .setShutdownScheduledExecutorService(true)
       .setCallbackExecutor(Executors.newFixedThreadPool(24))
       .setShutdownCallbackExecutor(true)
-      .setRestOverStream(PerfConfig.clientRestOverStream())
       .build();
 
   private static int NUM_CLIENTS = 0;

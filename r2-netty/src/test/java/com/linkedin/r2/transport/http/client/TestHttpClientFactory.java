@@ -155,7 +155,6 @@ public class TestHttpClientFactory
         .setShutDownFactory(true)
         .setScheduleExecutorService(scheduler)
         .setShutdownScheduledExecutorService(true)
-        .setRestOverStream(true)
         .build();
 
     Map<String, String> properties = new HashMap<String, String>();
@@ -188,7 +187,7 @@ public class TestHttpClientFactory
   @Test
   public void testNewSSLProperties() throws Exception
   {
-    HttpClientFactory factory = HttpClientFactory.getSimpleClientFactory();
+    HttpClientFactory factory = new HttpClientFactory();
     Map<String,Object> params = new HashMap<String, Object>();
     SSLParameters sslParameters = new SSLParameters();
     sslParameters.setProtocols(new String[]{ "Unsupported" });
@@ -210,7 +209,7 @@ public class TestHttpClientFactory
   @Test
   public void testSSLParams() throws Exception
   {
-    HttpClientFactory factory = HttpClientFactory.getSimpleClientFactory();
+    HttpClientFactory factory = new HttpClientFactory();
     Map<String,Object> params = new HashMap<String, Object>();
     SSLParameters sslParameters = new SSLParameters();
     sslParameters.setProtocols(new String[]{ "Unsupported" });
@@ -353,7 +352,7 @@ public class TestHttpClientFactory
   @Test
   public void testRequestTimeoutConfig()
   {
-    HttpClientFactory factory = new HttpClientFactory.Builder().setRestOverStream(true).build();
+    HttpClientFactory factory = new HttpClientFactory.Builder().build();
 
     try
     {
@@ -380,7 +379,7 @@ public class TestHttpClientFactory
   public void testClientShutdownBeingCalledMultipleTimes()
       throws InterruptedException, ExecutionException, TimeoutException
   {
-    HttpClientFactory factory = HttpClientFactory.getSimpleClientFactory();
+    HttpClientFactory factory = new HttpClientFactory();
     TransportClient client = factory.getClient(Collections.<String, Object>emptyMap());
     // first shutdown call
     FutureCallback<None> clientShutdown = new FutureCallback<None>();
@@ -443,7 +442,6 @@ public class TestHttpClientFactory
         .setShutDownFactory(shutdownFactory)
         .setScheduleExecutorService(scheduler)
         .setShutdownScheduledExecutorService(shutdownScheduler)
-        .setRestOverStream(true)
         .build();
   }
 }

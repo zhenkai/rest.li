@@ -68,7 +68,7 @@ public abstract class AbstractStreamTest
 
   protected TransportClientFactory getClientFactory()
   {
-    return HttpClientFactory.getSimpleClientFactory();
+    return new HttpClientFactory();
   }
 
   protected Map<String, String> getClientProperties()

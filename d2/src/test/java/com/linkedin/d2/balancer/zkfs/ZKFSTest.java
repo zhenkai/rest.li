@@ -148,7 +148,7 @@ public class ZKFSTest
     Map<String, TransportClientFactory> clientFactories =
             new HashMap<String, TransportClientFactory>();
 
-    clientFactories.put("http", HttpClientFactory.getSimpleClientFactory());
+    clientFactories.put("http", new HttpClientFactory());
 
     // We rely on _tmpdir below being fresh for each test case.  Otherwise, leftover files in
     // _tmpdir from a previous test could affect another test.  This is accomplished with the

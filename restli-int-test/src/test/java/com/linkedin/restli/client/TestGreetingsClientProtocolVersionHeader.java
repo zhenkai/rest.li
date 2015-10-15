@@ -63,7 +63,7 @@ import org.testng.annotations.Test;
  */
 public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationTest
 {
-  private static final TransportClientFactory CLIENT_FACTORY = HttpClientFactory.getSimpleClientFactory();
+  private static final TransportClientFactory CLIENT_FACTORY = new HttpClientFactory();
   private static final String URI_PREFIX = "http://localhost:1338/";
 
   private static final PropertyProviderClient BASELINE_PROVIDER =
