@@ -715,7 +715,7 @@ public class HttpClientFactory implements TransportClientFactory
     Integer maxChunkSize = chooseNewOverDefault(getIntValue(properties, HTTP_MAX_CHUNK_SIZE), DEFAULT_MAX_CHUNK_SIZE);
     Integer maxConcurrentConnections = chooseNewOverDefault(getIntValue(properties, HTTP_MAX_CONCURRENT_CONNECTIONS), Integer.MAX_VALUE);
 
-    TransportClient streamClient = new HttpNettyStreamClient(_eventLoopGroup,
+    HttpNettyStreamClient streamClient = new HttpNettyStreamClient(_eventLoopGroup,
       _executor,
       poolSize,
       requestTimeout,
@@ -735,7 +735,7 @@ public class HttpClientFactory implements TransportClientFactory
       maxConcurrentConnections,
       _tcpNoDelay);
 
-    TransportClient legacyClient = new HttpNettyClient(_eventLoopGroup,
+    HttpNettyClient legacyClient = new HttpNettyClient(_eventLoopGroup,
         _executor,
         poolSize,
         requestTimeout,
@@ -972,12 +972,12 @@ public class HttpClientFactory implements TransportClientFactory
     }
   }
 
-  private static class SwitchableClient implements TransportClient
+  static class SwitchableClient implements TransportClient
   {
     private final TransportClient _legacyClient;
     private final TransportClient _streamClient;
 
-    SwitchableClient(TransportClient legacyClient, TransportClient streamClient)
+    SwitchableClient(HttpNettyClient legacyClient, HttpNettyStreamClient streamClient)
     {
       _legacyClient = legacyClient;
       _streamClient = streamClient;
@@ -1064,6 +1064,22 @@ public class HttpClientFactory implements TransportClientFactory
 
       _legacyClient.shutdown(twiceCallback);
       _streamClient.shutdown(twiceCallback);
+    }
+
+
+    long getRequestTimeout()
+    {
+      return ((HttpNettyStreamClient)_streamClient).getRequestTimeout();
+    }
+
+    long getShutdownTimeout()
+    {
+      return ((HttpNettyStreamClient)_streamClient).getShutdownTimeout();
+    }
+
+    long getMaxResponseSize()
+    {
+      return ((HttpNettyStreamClient)_streamClient).getMaxResponseSize();
     }
   }
 }

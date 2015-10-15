@@ -164,10 +164,10 @@ public class TestHttpClientFactory
     String maxResponse = "3000";
     String idleTimeout = "8000";
     String shutdownTimeout = "14000";
-    HttpNettyStreamClient client;
+    HttpClientFactory.SwitchableClient client;
 
     //test creation using default values
-    client = (HttpNettyStreamClient) factory.getRawClient(properties);
+    client = (HttpClientFactory.SwitchableClient) factory.getRawClient(properties);
     Assert.assertEquals(client.getMaxResponseSize(), HttpClientFactory.DEFAULT_MAX_RESPONSE_SIZE);
     Assert.assertEquals(client.getRequestTimeout(), HttpClientFactory.DEFAULT_REQUEST_TIMEOUT);
     Assert.assertEquals(client.getShutdownTimeout(), HttpClientFactory.DEFAULT_SHUTDOWN_TIMEOUT);
@@ -178,7 +178,7 @@ public class TestHttpClientFactory
     properties.put(HttpClientFactory.HTTP_IDLE_TIMEOUT, idleTimeout);
     properties.put(HttpClientFactory.HTTP_MAX_RESPONSE_SIZE, maxResponse);
     properties.put(HttpClientFactory.HTTP_SHUTDOWN_TIMEOUT, shutdownTimeout);
-    client = (HttpNettyStreamClient)factory.getRawClient(properties);
+    client = (HttpClientFactory.SwitchableClient)factory.getRawClient(properties);
     Assert.assertEquals(client.getMaxResponseSize(), Integer.parseInt(maxResponse));
     Assert.assertEquals(client.getRequestTimeout(), Integer.parseInt(requestTimeout));
     Assert.assertEquals(client.getShutdownTimeout(), Integer.parseInt(shutdownTimeout));
@@ -359,12 +359,12 @@ public class TestHttpClientFactory
       Map<String,String> config = new HashMap<String, String>();
 
       config.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "999");
-      HttpNettyStreamClient client = (HttpNettyStreamClient)factory.getRawClient(config);
+      HttpClientFactory.SwitchableClient client = (HttpClientFactory.SwitchableClient)factory.getRawClient(config);
       Assert.assertEquals(client.getRequestTimeout(), 999);
 
 
       config.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "888");
-      client = (HttpNettyStreamClient)factory.getRawClient(config);
+      client = (HttpClientFactory.SwitchableClient)factory.getRawClient(config);
       Assert.assertEquals(client.getRequestTimeout(), 888);
 
     }
