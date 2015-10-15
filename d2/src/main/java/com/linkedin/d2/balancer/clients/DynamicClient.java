@@ -26,6 +26,7 @@ import com.linkedin.d2.balancer.ServiceUnavailableException;
 import com.linkedin.d2.balancer.properties.ServiceProperties;
 import com.linkedin.d2.balancer.util.LoadBalancerUtil;
 import com.linkedin.d2.discovery.event.PropertyEventThread.PropertyEventShutdownCallback;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.Request;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
@@ -60,7 +61,7 @@ public class DynamicClient extends AbstractClient implements D2Client
 
   public DynamicClient(LoadBalancer balancer, Facilities facilities)
   {
-    this(balancer, facilities, false);
+    this(balancer, facilities, R2Constants.DEFAULT_REST_OVER_STREAM);
   }
 
   public DynamicClient(LoadBalancer balancer, Facilities facilities, boolean restOverStream)

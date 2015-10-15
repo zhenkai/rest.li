@@ -23,6 +23,7 @@ import com.linkedin.r2.caprep.db.DirectoryDbSink;
 import com.linkedin.r2.caprep.db.DirectoryDbSource;
 import com.linkedin.r2.filter.Filter;
 import com.linkedin.r2.filter.NextFilter;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.message.rest.RestFilter;
 import com.linkedin.r2.filter.message.rest.RestRequestFilter;
 import com.linkedin.r2.filter.message.rest.RestResponseFilter;
@@ -59,7 +60,7 @@ public class CapRepFilter implements StreamFilter, RestFilter, CapRepAdmin
 
   CapRepFilter()
   {
-    this(false);
+    this(R2Constants.DEFAULT_REST_OVER_STREAM);
   }
 
   CapRepFilter(boolean restOverStream)

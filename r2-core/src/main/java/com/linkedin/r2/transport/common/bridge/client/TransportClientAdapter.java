@@ -20,6 +20,7 @@ package com.linkedin.r2.transport.common.bridge.client;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestRequest;
 import com.linkedin.r2.message.rest.RestResponse;
@@ -46,7 +47,7 @@ public class TransportClientAdapter extends AbstractClient
    */
   public TransportClientAdapter(TransportClient client)
   {
-    this(client, false);
+    this(client, R2Constants.DEFAULT_REST_OVER_STREAM);
   }
 
   /**

@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import com.linkedin.common.callback.Callback;
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.stream.StreamResponse;
 
@@ -77,7 +78,7 @@ import org.slf4j.LoggerFactory;
 
   public HttpNettyServer(int port, int threadPoolSize, HttpDispatcher dispatcher)
   {
-    this(port, threadPoolSize, dispatcher, false);
+    this(port, threadPoolSize, dispatcher, R2Constants.DEFAULT_REST_OVER_STREAM);
   }
 
   public HttpNettyServer(int port, int threadPoolSize, HttpDispatcher dispatcher, boolean restOverStream)

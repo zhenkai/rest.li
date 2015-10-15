@@ -37,7 +37,9 @@ public class TransportDispatcherBuilder
 
   public TransportDispatcherBuilder()
   {
-    // mostly for testing, so set to true
+    /**
+     *  mostly for testing, so set restOverStream to true regardless of {@link com.linkedin.r2.filter.R2Constants.DEFAULT_REST_OVER_STREAM}
+     */
     this(true);
   }
 
