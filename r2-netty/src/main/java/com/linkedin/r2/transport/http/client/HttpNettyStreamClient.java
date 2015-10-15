@@ -223,11 +223,12 @@ import org.slf4j.LoggerFactory;
     TransportCallback<StreamResponse> adaptedCallback = new TransportCallback<StreamResponse>()
     {
       @Override
-      public void onResponse(TransportResponse<StreamResponse> response)
+      public void onResponse(final TransportResponse<StreamResponse> response)
       {
+        final Map<String, String> responseWireAttrs = response.getWireAttributes();
         if (response.hasError())
         {
-          Throwable error = response.getError();
+          final Throwable error = response.getError();
           if (error instanceof StreamException)
           {
             Messages.toRestException((StreamException) error, new Callback<RestException>()
@@ -235,19 +236,19 @@ import org.slf4j.LoggerFactory;
               @Override
               public void onError(Throwable e)
               {
-                callback.onResponse(TransportResponseImpl.<RestResponse>error(e));
+                callback.onResponse(TransportResponseImpl.<RestResponse>error(e, responseWireAttrs));
               }
 
               @Override
               public void onSuccess(RestException result)
               {
-                callback.onResponse(TransportResponseImpl.<RestResponse>error(result));
+                callback.onResponse(TransportResponseImpl.<RestResponse>error(result, responseWireAttrs));
               }
             });
           }
           else
           {
-            callback.onResponse(TransportResponseImpl.<RestResponse>error(error));
+            callback.onResponse(TransportResponseImpl.<RestResponse>error(error, responseWireAttrs));
           }
         }
         else
@@ -257,13 +258,13 @@ import org.slf4j.LoggerFactory;
             @Override
             public void onError(Throwable e)
             {
-              callback.onResponse(TransportResponseImpl.<RestResponse>error(e));
+              callback.onResponse(TransportResponseImpl.<RestResponse>error(e, responseWireAttrs));
             }
 
             @Override
             public void onSuccess(RestResponse result)
             {
-              callback.onResponse(TransportResponseImpl.<RestResponse>success(result));
+              callback.onResponse(TransportResponseImpl.success(result, responseWireAttrs));
             }
           });
         }
