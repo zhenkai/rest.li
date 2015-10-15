@@ -85,7 +85,7 @@ public class TestHttpClient
   public void testClient() throws Exception
   {
     final TransportClient transportClient = _clientFactory.getClient(new HashMap<String, String>());
-    final Client client = new TransportClientAdapter(transportClient);
+    final Client client = new TransportClientAdapter(transportClient, true);
 
     RestRequestBuilder rb = new RestRequestBuilder(_testServer.getRequestURI());
     rb.setMethod("GET");
@@ -115,7 +115,7 @@ public class TestHttpClient
     final TransportClient transportClient =
         _clientFactory.getClient(Collections.singletonMap(HttpClientFactory.HTTP_REQUEST_TIMEOUT,
                                                           Integer.toString(REQUEST_TIMEOUT)));
-    final Client client = new TransportClientAdapter(transportClient);
+    final Client client = new TransportClientAdapter(transportClient, true);
 
     RestRequestBuilder rb = new RestRequestBuilder(_testServer.getRequestURI());
     rb.setMethod("GET");
@@ -163,7 +163,7 @@ public class TestHttpClient
     final TransportClient transportClient =
         new HttpClientFactory().getClient(Collections.singletonMap(HttpClientFactory.HTTP_REQUEST_TIMEOUT,
             Integer.toString(REQUEST_TIMEOUT)));
-    final Client client = new TransportClientAdapter(transportClient);
+    final Client client = new TransportClientAdapter(transportClient, true);
 
     final ServerSocket ss = new ServerSocket();
     ss.bind(null);
@@ -244,7 +244,7 @@ public class TestHttpClient
   public void testSimpleURI() throws Exception
   {
     final TransportClient transportClient = _clientFactory.getClient(new HashMap<String, String>());
-    final Client client = new TransportClientAdapter(transportClient);
+    final Client client = new TransportClientAdapter(transportClient, true);
 
     // Note no trailing slash; the point of the test is to ensure this URI will
     // send a Request-URI of "/".

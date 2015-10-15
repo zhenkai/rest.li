@@ -55,7 +55,7 @@ public class TestMockHttpServerFactory
   private static final TransportClient TRANSPORT_CLIENT =
       new HttpClientFactory().getClient(Collections.<String, Object>emptyMap());
   private static final RestClient REST_CLIENT =
-      new RestClient(new TransportClientAdapter(TRANSPORT_CLIENT), "http://localhost:" + PORT + "/");
+      new RestClient(new TransportClientAdapter(TRANSPORT_CLIENT, true), "http://localhost:" + PORT + "/");
 
   @Test
   public void testCreateUsingClassNames()

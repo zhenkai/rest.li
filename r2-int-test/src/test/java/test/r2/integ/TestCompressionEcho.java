@@ -149,7 +149,7 @@ public class TestCompressionEcho
         TransportClientFactory factory = new HttpClientFactory.Builder()
             .setFilterChain(FilterChains.create(clientCompressionFilter))
             .build();
-        Client client = new TransportClientAdapter(factory.getClient(getClientProperties()));
+        Client client = new TransportClientAdapter(factory.getClient(getClientProperties()), true);
         args[cur][0] = client;
         args[cur][1] = LARGE_BYTES_NUM;
         cur ++;
@@ -172,7 +172,7 @@ public class TestCompressionEcho
         TransportClientFactory factory = new HttpClientFactory.Builder()
             .setFilterChain(FilterChains.create(clientCompressionFilter))
             .build();
-        Client client = new TransportClientAdapter(factory.getClient(getClientProperties()));
+        Client client = new TransportClientAdapter(factory.getClient(getClientProperties()), true);
         args[cur][0] = client;
         args[cur][1] = SMALL_BYTES_NUM;
         cur ++;

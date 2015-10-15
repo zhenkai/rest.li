@@ -88,7 +88,7 @@ import org.testng.annotations.Test;
 public class TestScatterGather extends RestLiIntegrationTest
 {
   private static final Client CLIENT = new TransportClientAdapter(new HttpClientFactory().getClient(
-      Collections.<String, String>emptyMap()));
+      Collections.<String, String>emptyMap()), true);
   private static final String URI_PREFIX = "http://localhost:1338/";
   private static final RestClient REST_CLIENT = new RestClient(CLIENT, URI_PREFIX);
 

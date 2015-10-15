@@ -121,7 +121,7 @@ public class TestRequestCompression
 
       TransportClientFactory factory = new HttpClientFactory.Builder()
       .setFilterChain(FilterChains.create(clientCompressionFilter)).build();
-      Client client = new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()));
+      Client client = new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true);
       args[cur][0] = client;
       args[cur][1] = URI.create("/" + requestEncoding.getHttpName());
       cur ++;
@@ -156,7 +156,7 @@ public class TestRequestCompression
 
       TransportClientFactory factory = new HttpClientFactory.Builder()
       .setFilterChain(FilterChains.create(clientCompressionFilter)).build();
-      Client client = new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()));
+      Client client = new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true);
       args[cur][0] = client;
       //args[cur][1] = URI.create("/" + requestEncoding.getHttpName());
       cur ++;

@@ -87,7 +87,7 @@ public class DynamicClient extends AbstractClient implements D2Client
 
         if (client != null)
         {
-          new TransportClientAdapter(client).restRequest(request, requestContext, transportCallback);
+          new TransportClientAdapter(client, false).restRequest(request, requestContext, transportCallback);
         }
         else
         {
@@ -122,7 +122,7 @@ public class DynamicClient extends AbstractClient implements D2Client
 
       if (client != null)
       {
-        new TransportClientAdapter(client).streamRequest(request, requestContext, transportCallback);
+        new TransportClientAdapter(client, true).streamRequest(request, requestContext, transportCallback);
       }
       else
       {

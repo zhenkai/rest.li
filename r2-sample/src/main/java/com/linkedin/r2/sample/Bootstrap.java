@@ -77,7 +77,7 @@ public class Bootstrap
         .setFilterChain(filters)
         .build()
         .getClient(Collections.<String, String>emptyMap());
-    return new TransportClientAdapter(client);
+    return new TransportClientAdapter(client, true);
   }
 
   public static URI createHttpURI(URI relativeURI)

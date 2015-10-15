@@ -76,7 +76,7 @@ public class TestServerTimeout
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, String.valueOf(SERVER_IOHANDLER_TIMEOUT * 20));
     clientProperties.put(HttpClientFactory.HTTP_POOL_MIN_SIZE, "1");
     clientProperties.put(HttpClientFactory.HTTP_POOL_SIZE, "1");
-    _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
+    _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties), true);
     final Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
     handlers.put(BUGGY_SERVER_URI, new BuggyRequestHandler());
     handlers.put(THROW_BUT_SHOULD_NOT_TIMEOUT_URI, new ThrowHandler());

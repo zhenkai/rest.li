@@ -101,7 +101,7 @@ public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationT
       {
         __metadata.put(RestConstants.RESTLI_PROTOCOL_VERSION_PROPERTY, restliProtocolVersion);
       }
-      __client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()));
+      __client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()), true);
     }
 
     @Override

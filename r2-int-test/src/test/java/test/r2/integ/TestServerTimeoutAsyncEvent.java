@@ -77,7 +77,7 @@ public class TestServerTimeoutAsyncEvent
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, String.valueOf(ASYNC_EVENT_TIMEOUT * 20));
     clientProperties.put(HttpClientFactory.HTTP_POOL_MIN_SIZE, "1");
     clientProperties.put(HttpClientFactory.HTTP_POOL_SIZE, "1");
-    _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
+    _client = new TransportClientAdapter(_clientFactory.getClient(clientProperties), true);
     final Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
     handlers.put(TIMEOUT_BEFORE_SENDING_RESPONSE_SERVER_URI, new TimeoutBeforeRespondingRequestHandler());
     handlers.put(TIMEOUT_AFTER_SENDING_RESPONSE_SERVER_URI, new TimeoutAfterRespondingRequestHandler());

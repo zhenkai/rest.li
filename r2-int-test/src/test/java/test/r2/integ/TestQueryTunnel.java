@@ -61,7 +61,7 @@ public class TestQueryTunnel
     final TransportClient transportClient = _clientFactory
         .getClient(clientProperties);
 
-    _client = new TransportClientAdapter(transportClient);
+    _client = new TransportClientAdapter(transportClient, true);
 
     final RestRequestHandler restHandler = new CheckQueryTunnelHandler();
     final StreamRequestHandler streamHandler = new StreamRequestHandlerAdapter(restHandler);

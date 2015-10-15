@@ -80,7 +80,7 @@ public class SimpleLoadBalancerStrawMan
 
     final TransportClient tc = loadBalancer.getClient(new URIRequest("d2://browsemaps/52"),
                                                       new RequestContext());
-    final Client c = new TransportClientAdapter(tc);
+    final Client c = new TransportClientAdapter(tc, true);
     c.restRequest(null);
   }
 }

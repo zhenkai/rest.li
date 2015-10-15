@@ -59,7 +59,7 @@ public class PerfClients
   public static PerfClient httpRest(URI uri, int numThreads, int numMsgs, int msgSize)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
-    final Client client = new TransportClientAdapter(transportClient);
+    final Client client = new TransportClientAdapter(transportClient, PerfConfig.clientRestOverStream());
     final Generator<RestRequest> reqGen = new RestRequestGenerator(uri, numMsgs, msgSize);
     final ClientRunnableFactory crf = new RestClientRunnableFactory(client, reqGen);
 
@@ -69,7 +69,7 @@ public class PerfClients
   public static PerfClient httpPureStream(URI uri, int numThreads, int numMsgs, int msgSize)
   {
     final TransportClient transportClient = FACTORY.getClient(Collections.<String, String>emptyMap());
-    final Client client = new TransportClientAdapter(transportClient);
+    final Client client = new TransportClientAdapter(transportClient, true);
     final Generator<StreamRequest> reqGen = new StreamRequestGenerator(uri, numMsgs, msgSize);
     final ClientRunnableFactory crf = new StreamClientRunnableFactory(client, reqGen);
 

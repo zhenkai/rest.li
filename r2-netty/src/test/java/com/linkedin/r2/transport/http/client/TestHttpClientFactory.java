@@ -86,7 +86,7 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap())));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
     }
 
     for (Client c : clients)
@@ -120,7 +120,7 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap())));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
     }
 
     for (Client c : clients)
@@ -239,7 +239,7 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap())));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
     }
 
     for (Client c : clients)
@@ -267,7 +267,7 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap())));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
     }
 
     for (Client c : clients)
@@ -301,7 +301,7 @@ public class TestHttpClientFactory
     HttpClientFactory factory = getHttpClientFactory(eventLoop, true, scheduler, true);
 
     Client client = new TransportClientAdapter(factory.getClient(
-            Collections.<String, Object>emptyMap()));
+            Collections.<String, Object>emptyMap()), true);
 
     Future<RestResponse> responseFuture = client.restRequest(new RestRequestBuilder(_testServer.resetResponseLatch(1)).build());
 

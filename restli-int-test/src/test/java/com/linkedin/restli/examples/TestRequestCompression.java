@@ -240,7 +240,7 @@ public class TestRequestCompression extends RestLiIntegrationTest
 
     properties.put(HttpClientFactory.HTTP_REQUEST_CONTENT_ENCODINGS, supportedEncodings);
     properties.put(HttpClientFactory.HTTP_SERVICE_NAME, SERVICE_NAME);
-    TransportClientAdapter clientAdapter1 = new TransportClientAdapter(httpClientFactory.getClient(properties));
+    TransportClientAdapter clientAdapter1 = new TransportClientAdapter(httpClientFactory.getClient(properties), true);
     RestClient client = new RestClient(clientAdapter1, FILTERS_URI_PREFIX);
     RootBuilderWrapper<Long, Greeting> builders = new RootBuilderWrapper<Long, Greeting>(new GreetingsRequestBuilders(restliRequestOptions));
 

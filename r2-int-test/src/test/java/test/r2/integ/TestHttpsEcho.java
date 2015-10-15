@@ -85,7 +85,7 @@ public class TestHttpsEcho extends AbstractEchoServiceTest
         .setFilterChain(filters)
         .build()
         .getClient(properties);
-    return new TransportClientAdapter(client);
+    return new TransportClientAdapter(client, true);
   }
 
   @Override

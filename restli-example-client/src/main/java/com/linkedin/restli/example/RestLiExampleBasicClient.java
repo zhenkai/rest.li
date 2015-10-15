@@ -66,7 +66,7 @@ public class RestLiExampleBasicClient
     final HttpClientFactory http = new HttpClientFactory();
     final TransportClient transportClient = http.getClient(Collections.<String, String>emptyMap());
     // create an abstraction layer over the actual client, which supports both REST and RPC
-    final Client r2Client = new TransportClientAdapter(transportClient);
+    final Client r2Client = new TransportClientAdapter(transportClient, true);
     // REST client wrapper that simplifies the interface
     final StringBuilder serverUrlBuilder = new StringBuilder("http://").append(SERVER_HOSTNAME).append(":").append(SERVER_PORT).append("/");
     final RestClient restClient = new RestClient(r2Client, serverUrlBuilder.toString());

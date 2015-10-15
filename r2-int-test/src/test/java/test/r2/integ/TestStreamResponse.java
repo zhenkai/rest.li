@@ -106,7 +106,7 @@ public class TestStreamResponse extends AbstractStreamTest
     HttpClientFactory clientFactory = new HttpClientFactory();
     Map<String, String> clientProperties = new HashMap<String, String>();
     clientProperties.put(HttpClientFactory.HTTP_REQUEST_TIMEOUT, "1000");
-    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties));
+    Client client = new TransportClientAdapter(_clientFactory.getClient(clientProperties), true);
 
     StreamRequestBuilder builder = new StreamRequestBuilder(Bootstrap.createHttpURI(PORT, SERVER_ERROR_URI));
     StreamRequest request = builder.build(EntityStreams.emptyStream());

@@ -250,7 +250,7 @@ public class RestLiIntegrationTest
    */
   protected Client newTransportClient(Map<String, ? extends Object> properties)
   {
-    Client client = new TransportClientAdapter(_clientFactory.getClient(properties));
+    Client client = new TransportClientAdapter(_clientFactory.getClient(properties), true);
     _transportClients.add(client);
     return client;
   }
