@@ -69,7 +69,7 @@ public class DynamicClientTest
     KeyMapperProvider keyMapperProvider = new TestKeyMapperProvider();
     ClientFactoryProvider clientFactoryProvider = new TestClientFactoryProvider();
     Facilities facilities = new DelegatingFacilities(dirProvider, keyMapperProvider, clientFactoryProvider);
-    DynamicClient client = new DynamicClient(balancer, facilities);
+    DynamicClient client = new DynamicClient(balancer, facilities, true);
     URI uri = URI.create("d2://test");
     RestRequest restRequest = new RestRequestBuilder(uri).build();
     TestCallback<RestResponse> restCallback = new TestCallback<RestResponse>();
@@ -87,7 +87,7 @@ public class DynamicClientTest
   public void testUnavailable() throws URISyntaxException
   {
     TestLoadBalancer balancer = new TestLoadBalancer(true);
-    DynamicClient client = new DynamicClient(balancer, null);
+    DynamicClient client = new DynamicClient(balancer, null, true);
     URI uri = URI.create("d2://test");
     RestRequest restRequest = new RestRequestBuilder(uri).build();
     TestCallback<RestResponse> restCallback = new TestCallback<RestResponse>();
@@ -107,7 +107,7 @@ public class DynamicClientTest
       InterruptedException
   {
     TestLoadBalancer balancer = new TestLoadBalancer(true);
-    DynamicClient client = new DynamicClient(balancer, null);
+    DynamicClient client = new DynamicClient(balancer, null, true);
     final CountDownLatch latch = new CountDownLatch(1);
 
     assertFalse(balancer.shutdown);

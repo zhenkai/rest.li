@@ -173,7 +173,7 @@ public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationT
   @Test
   public void testNoProtocolVersionHeaderSuccess() throws InterruptedException, ExecutionException
   {
-    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()));
+    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()), true);
     final RestRequestBuilder requestBuilder = new RestRequestBuilder(URI.create(URI_PREFIX + "greetings/1"));
     final RestRequest request = requestBuilder.build();
     Assert.assertTrue(request.getHeaders().isEmpty());
@@ -187,7 +187,7 @@ public class TestGreetingsClientProtocolVersionHeader extends RestLiIntegrationT
   @Test
   public void testNoProtocolVersionHeaderFail() throws InterruptedException
   {
-    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()));
+    final TransportClientAdapter client = new TransportClientAdapter(CLIENT_FACTORY.getClient(Collections.<String, String>emptyMap()), true);
     final RestRequestBuilder requestBuilder = new RestRequestBuilder(URI.create(URI_PREFIX));
     final RestRequest request = requestBuilder.build();
     Assert.assertTrue(request.getHeaders().isEmpty());

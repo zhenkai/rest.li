@@ -388,7 +388,7 @@ public class LoadBalancerClientCli
     String responseString = null;
     if (hasService(zkclient, zkserver, d2path, cluster, service))
     {
-      DynamicClient client = new DynamicClient(getLoadBalancer(zkclient, zkserver, d2path, service), null);
+      DynamicClient client = new DynamicClient(getLoadBalancer(zkclient, zkserver, d2path, service), null, true);
       URI uri = URI.create("d2://" + service + "/");
 
       try
@@ -429,7 +429,7 @@ public class LoadBalancerClientCli
                                   PropertyStoreException,
                                   TimeoutException
   {
-    return new DynamicClient(getLoadBalancer(zkclient, zkserver, d2path, service), null);
+    return new DynamicClient(getLoadBalancer(zkclient, zkserver, d2path, service), null, true);
   }
 
   public DynamicClient createZKFSTogglingLBClient(String zkHostsPortsConnectionString, String d2path, String servicePath)
@@ -446,7 +446,7 @@ public class LoadBalancerClientCli
     _zkfsLoadBalancer.start(startupCallback);
     startupCallback.get(5000, TimeUnit.MILLISECONDS);
 
-    return new DynamicClient(_zkfsLoadBalancer, null);
+    return new DynamicClient(_zkfsLoadBalancer, null, true);
   }
 
   public DynamicClient getClient()
