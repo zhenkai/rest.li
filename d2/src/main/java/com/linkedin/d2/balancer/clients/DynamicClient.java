@@ -79,31 +79,7 @@ public class DynamicClient extends AbstractClient implements D2Client
   {
     if (!_restOverStream)
     {
-      Callback<RestResponse> transportCallback;
-      if (_log.isTraceEnabled())
-      {
-        trace(_log, "rest request: ", request);
-        transportCallback = new Callback<RestResponse>()
-        {
-          @Override
-          public void onError(Throwable e)
-          {
-            callback.onError(e);
-            trace(_log, "rest response error: ", e);
-          }
-
-          @Override
-          public void onSuccess(RestResponse result)
-          {
-            callback.onSuccess(result);
-            trace(_log, "rest response success: ", result);
-          }
-        };
-      }
-      else
-      {
-        transportCallback = callback;
-      }
+      Callback<RestResponse> transportCallback = decorateCallback(callback, request, "rest");
 
       try
       {
@@ -138,31 +114,7 @@ public class DynamicClient extends AbstractClient implements D2Client
                           RequestContext requestContext,
                           final Callback<StreamResponse> callback)
   {
-    Callback<StreamResponse> transportCallback;
-    if (_log.isTraceEnabled())
-    {
-      trace(_log, "stream request: ", request);
-      transportCallback = new Callback<StreamResponse>()
-      {
-        @Override
-        public void onError(Throwable e)
-        {
-          callback.onError(e);
-          trace(_log, "rest response error: ", e);
-        }
-
-        @Override
-        public void onSuccess(StreamResponse result)
-        {
-          callback.onSuccess(result);
-          trace(_log, "rest response success: ", result);
-        }
-      };
-    }
-    else
-    {
-      transportCallback = callback;
-    }
+    Callback<StreamResponse> transportCallback = decorateCallback(callback, request, "stream");
 
     try
     {
@@ -236,6 +188,32 @@ public class DynamicClient extends AbstractClient implements D2Client
       }
     }
     return Collections.emptyMap();
+  }
+
+  private static <T> Callback<T> decorateCallback(final Callback<T> callback, Request request, final String type)
+  {
+    if (_log.isTraceEnabled())
+    {
+      trace(_log, type + " request: ", request);
+      return new Callback<T>()
+      {
+        @Override
+        public void onError(Throwable e)
+        {
+          callback.onError(e);
+          trace(_log, type + " response error: ", e);
+        }
+
+        @Override
+        public void onSuccess(final T result)
+        {
+          callback.onSuccess(result);
+          trace(_log, type + " response success: ", result);
+        }
+      };
+    }
+
+    return callback;
   }
 
   private static String extractLogInfo(Request request)
