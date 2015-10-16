@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory;
   private final ChannelGroup _allChannels;
 
   private final ChannelPoolHandler _handler = new ChannelPoolHandler();
-  private final RAPStreamResponseHandler _responseHandler = new RAPStreamResponseHandler();
+  private final RAPResponseHandler _responseHandler = new RAPResponseHandler();
   private final AtomicReference<State> _state = new AtomicReference<State>(State.RUNNING);
 
   private enum State { RUNNING, SHUTTING_DOWN, REQUESTS_STOPPING, SHUTDOWN }
@@ -216,7 +216,7 @@ import org.slf4j.LoggerFactory;
                             Map<String, String> wireAttrs,
                             TransportCallback<StreamResponse> callback)
   {
-    throw new UnsupportedOperationException(HttpNettyClient.class.getName() + " does not support streamRequest");
+    throw new UnsupportedOperationException("stream is not supported.");
   }
 
   @Override

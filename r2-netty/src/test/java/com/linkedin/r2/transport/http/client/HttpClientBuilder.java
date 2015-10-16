@@ -160,7 +160,7 @@ class HttpClientBuilder
     return this;
   }
 
-  public HttpNettyStreamClient build()
+  public HttpNettyStreamClient buildStream()
   {
     return new HttpNettyStreamClient(_eventLoopGroup,
                                _scheduler,
@@ -181,6 +181,29 @@ class HttpClientBuilder
                                _maxChunkSize,
                                _maxConcurrentConnections,
                                _tcpNoDelay);
+
+  }
+
+  public HttpNettyClient buildRest()
+  {
+    return new HttpNettyClient(_eventLoopGroup,
+        _scheduler,
+        _maxPoolSize,
+        _requestTimeout,
+        _idleTimeout,
+        _shutdownTimeout,
+        _maxResponseSize,
+        _sslContext,
+        _sslParameters,
+        _callbackExecutors,
+        _poolWaiterSize,
+        _name,
+        _jmxManager,
+        _strategy,
+        _minPoolSize,
+        _maxHeaderSize,
+        _maxChunkSize,
+        _maxConcurrentConnections);
 
   }
 
