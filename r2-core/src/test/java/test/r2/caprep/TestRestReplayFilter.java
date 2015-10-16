@@ -18,6 +18,7 @@
 package test.r2.caprep;
 
 import com.linkedin.r2.filter.FilterChain;
+import com.linkedin.r2.filter.message.stream.StreamFilterAdapters;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestException;
 import com.linkedin.r2.message.rest.RestRequest;
@@ -42,7 +43,7 @@ public class TestRestReplayFilter extends AbstractReplayFilterTest
     final RestResponse res = new RestResponseBuilder().setStatus(RestStatus.NOT_FOUND).build();
 
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
-    final FilterChain fc = getFilterChain().addFirst(captureFilter);
+    final FilterChain fc = getFilterChain().addFirst(StreamFilterAdapters.adaptRestFilter(captureFilter));
 
     // Record a response for the request we will fire
     getDb().record(req, res);

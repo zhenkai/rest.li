@@ -20,6 +20,7 @@ package test.r2.filter;
 
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
+import com.linkedin.r2.filter.message.stream.StreamFilterAdapters;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Messages;
 import com.linkedin.r2.message.rest.RestRequestBuilder;
@@ -119,7 +120,7 @@ public class TestFilterChainImpl
     final MessageCountFilter filter1 = new MessageCountFilter();
     final StreamCountFilter filter2 = new StreamCountFilter();
     final RestCountFilter filter3 = new RestCountFilter();
-    final FilterChain fc = FilterChains.create(filter1, filter2, filter3);
+    final FilterChain fc = FilterChains.create(filter1, filter2, StreamFilterAdapters.adaptRestFilter(filter3));
 
     fireRestRequest(fc);
     assertMessageCounts(1, 0, 0, filter1);
@@ -133,7 +134,7 @@ public class TestFilterChainImpl
     final MessageCountFilter filter1 = new MessageCountFilter();
     final StreamCountFilter filter2 = new StreamCountFilter();
     final RestCountFilter filter3 = new RestCountFilter();
-    final FilterChain fc = FilterChains.create(filter1, filter2, filter3);
+    final FilterChain fc = FilterChains.create(filter1, filter2, StreamFilterAdapters.adaptRestFilter(filter3));
 
     fireRestResponse(fc);
     assertMessageCounts(0, 1, 0, filter1);
@@ -147,7 +148,7 @@ public class TestFilterChainImpl
     final MessageCountFilter filter1 = new MessageCountFilter();
     final StreamCountFilter filter2 = new StreamCountFilter();
     final RestCountFilter filter3 = new RestCountFilter();
-    final FilterChain fc = FilterChains.create(filter1, filter2, filter3);
+    final FilterChain fc = FilterChains.create(filter1, filter2, StreamFilterAdapters.adaptRestFilter(filter3));
 
     fireRestError(fc);
     assertMessageCounts(0, 0, 1, filter1);

@@ -274,11 +274,6 @@ import java.util.Map;
     {
       reqFilter = (RequestFilter) filter;
     }
-    else if (filter instanceof RestRequestFilter)
-    {
-      reqFilter = adaptStreamRequestFilter((StreamRequestFilter)StreamFilterAdapters.adaptRestFilter(filter));
-      LOG.info("RestRequestFilter [" + filter.getClass().getName() + "] used. This would result in fully buffering requests in memory.");
-    }
     else
     {
       reqFilter = null;
@@ -292,11 +287,6 @@ import java.util.Map;
     else if (filter instanceof ResponseFilter)
     {
       resFilter = (ResponseFilter) filter;
-    }
-    else if (filter instanceof RestResponseFilter)
-    {
-      resFilter = adaptStreamResponseFilter((StreamResponseFilter)StreamFilterAdapters.adaptRestFilter(filter));
-      LOG.info("RestResponseFilter [" + filter.getClass().getName() + "] used. This would result in fully buffering responses in memory.");
     }
     else
     {

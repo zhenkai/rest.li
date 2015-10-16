@@ -43,7 +43,7 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
     final RestResponse res = response();
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
     final FilterChain fc = getFilterChain()
-            .addFirst(captureFilter);
+            .addFirst(StreamFilterAdapters.adaptRestFilter(captureFilter));
 
     FilterUtil.fireUntypedRequestResponse(fc, Messages.toStreamRequest(req), Messages.toStreamResponse(res));
 
@@ -56,7 +56,7 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
     final RestRequest req = request();
     final RestResponse res = response();
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
-    final FilterChain fc = getFilterChain().addFirst(captureFilter);
+    final FilterChain fc = getFilterChain().addFirst(StreamFilterAdapters.adaptRestFilter(captureFilter));
 
     // Record a response for the request we will fire
     getDb().record(req, res);
