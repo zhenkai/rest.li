@@ -40,7 +40,7 @@ public class TestRestCaptureFilter extends AbstractCaptureFilterTest
     final RestResponse res = new RestResponseBuilder().setStatus(RestStatus.NOT_FOUND).build();
     final RestException ex = new RestException(res);
 
-    FilterUtil.fireUntypedRequestError(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamException(ex));
+    FilterUtil.fireRestRequestError(getFilterChain(), req,ex);
 
     Assert.assertEquals(res, getDb().replay(req));
   }

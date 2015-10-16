@@ -43,9 +43,9 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
     final RestResponse res = response();
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
     final FilterChain fc = getFilterChain()
-            .addFirst(StreamFilterAdapters.adaptRestFilter(captureFilter));
+            .addFirst(captureFilter);
 
-    FilterUtil.fireUntypedRequestResponse(fc, Messages.toStreamRequest(req), Messages.toStreamResponse(res));
+    FilterUtil.fireRestRequestResponse(fc, req, res);
 
     Assert.assertEquals(captureFilter.getLastRes(), res);
   }
@@ -56,20 +56,20 @@ public abstract class AbstractReplayFilterTest extends AbstractCapRepTest
     final RestRequest req = request();
     final RestResponse res = response();
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
-    final FilterChain fc = getFilterChain().addFirst(StreamFilterAdapters.adaptRestFilter(captureFilter));
+    final FilterChain fc = getFilterChain().addFirst(captureFilter);
 
     // Record a response for the request we will fire
     getDb().record(req, res);
 
     // We should be able to fire just the request - the response should be replayed from the
     // capture we set up above.
-    FilterUtil.fireUntypedRequest(fc, Messages.toStreamRequest(req));
+    FilterUtil.fireRestRequest(fc, req);
     Assert.assertEquals(captureFilter.getLastRes(), res);
   }
 
   @Override
   protected Filter createFilter(TransientDb db)
   {
-    return StreamFilterAdapters.adaptRestFilter(new ReplayFilter(db));
+    return new ReplayFilter(db);
   }
 }

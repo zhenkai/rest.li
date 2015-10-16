@@ -43,14 +43,14 @@ public class TestRestReplayFilter extends AbstractReplayFilterTest
     final RestResponse res = new RestResponseBuilder().setStatus(RestStatus.NOT_FOUND).build();
 
     final CaptureLastCallFilter captureFilter = new CaptureLastCallFilter();
-    final FilterChain fc = getFilterChain().addFirst(StreamFilterAdapters.adaptRestFilter(captureFilter));
+    final FilterChain fc = getFilterChain().addFirst(captureFilter);
 
     // Record a response for the request we will fire
     getDb().record(req, res);
 
     // We should be able to fire just the request - the response should be replayed from the
     // capture we set up above. The response should be a RestException since the status code is 404.
-    FilterUtil.fireUntypedRequest(fc, Messages.toStreamRequest(req));
+    FilterUtil.fireRestRequest(fc, req);
 
     Assert.assertTrue(captureFilter.getLastErr() instanceof RestException);
     Assert.assertEquals(((RestException)captureFilter.getLastErr()).getResponse(), res);

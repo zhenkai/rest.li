@@ -25,6 +25,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import com.linkedin.r2.message.Messages;
+import com.linkedin.r2.message.rest.RestException;
+import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.stream.StreamException;
 import com.linkedin.r2.message.stream.StreamResponse;
 import com.linkedin.r2.message.stream.StreamResponseBuilder;
@@ -47,9 +50,54 @@ import com.linkedin.r2.transport.http.common.HttpBridge;
 
 public class TestHttpBridge
 {
-
   @Test
   public void testRestToHttpErrorMessage() throws TimeoutException, InterruptedException
+  {
+    URI uri = URI.create("http://some.host/thisShouldAppearInTheErrorMessage");
+
+    RestRequest r = new RestRequestBuilder(uri).build();
+
+    FutureCallback<RestResponse> futureCallback = new FutureCallback<RestResponse>();
+    TransportCallback<RestResponse> callback = new TransportCallbackAdapter<RestResponse>(futureCallback);
+    TransportCallback<RestResponse> bridgeCallback = HttpBridge.restToHttpCallback(callback, r);
+
+    bridgeCallback.onResponse(TransportResponseImpl.<RestResponse>error(new Exception()));
+
+    try
+    {
+      futureCallback.get(30, TimeUnit.SECONDS);
+      Assert.fail("get should have thrown exception");
+    }
+    catch (ExecutionException e)
+    {
+      Assert.assertTrue(e.getCause().getMessage().contains(uri.toString()));
+    }
+
+  }
+
+  @Test
+  public void testHttpToRestErrorMessage() throws TimeoutException, InterruptedException, ExecutionException
+  {
+    FutureCallback<RestResponse> futureCallback = new FutureCallback<RestResponse>();
+    TransportCallback<RestResponse> callback =
+        new TransportCallbackAdapter<RestResponse>(futureCallback);
+    TransportCallback<RestResponse> bridgeCallback = HttpBridge.httpToRestCallback(callback);
+
+    RestResponse restResponse = new RestResponseBuilder().build();
+
+    // Note: FutureCallback will fail if called twice. An exception would be raised on the current
+    // thread because we begin the callback sequence here in onResponse.
+    // (test originally added due to bug with double callback invocation)
+    bridgeCallback.onResponse(TransportResponseImpl.<RestResponse> error(new RestException(restResponse)));
+
+    RestResponse resp = futureCallback.get(30, TimeUnit.SECONDS);
+    // should have unpacked restResponse from the RestException that we passed in without
+    // propagating the actual exception
+    Assert.assertSame(resp, restResponse);
+  }
+
+  @Test
+  public void testStreamToHttpErrorMessage() throws TimeoutException, InterruptedException
   {
     URI uri = URI.create("http://some.host/thisShouldAppearInTheErrorMessage");
 
@@ -75,7 +123,7 @@ public class TestHttpBridge
   }
 
   @Test
-  public void testHttpToRestErrorMessage() throws TimeoutException, InterruptedException, ExecutionException
+  public void testHttpToStreamErrorMessage() throws TimeoutException, InterruptedException, ExecutionException
   {
     FutureCallback<StreamResponse> futureCallback = new FutureCallback<StreamResponse>();
     TransportCallback<StreamResponse> callback =

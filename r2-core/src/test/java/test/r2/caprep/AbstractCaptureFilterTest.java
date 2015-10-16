@@ -44,7 +44,7 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
 
     Assert.assertNull(getDb().replay(req));
 
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamResponse(res));
+    FilterUtil.fireRestRequestResponse(getFilterChain(), req, res);
 
     Assert.assertEquals(res, getDb().replay(req));
   }
@@ -57,8 +57,8 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
     final RestResponse res1 = response();
     final RestResponse res2 = new RestResponseBuilder(res1).setEntity("This is a different response".getBytes()).build();
 
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req1), Messages.toStreamResponse(res1));
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req2), Messages.toStreamResponse(res2));
+    FilterUtil.fireRestRequestResponse(getFilterChain(), req1, res1);
+    FilterUtil.fireRestRequestResponse(getFilterChain(), req2, res2);
 
     // Should have created two separate entries
     Assert.assertEquals(res1, getDb().replay(req1));
@@ -72,8 +72,8 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
     final RestResponse res1 = response();
     final RestResponse res2 = new RestResponseBuilder().setEntity("This is a different response".getBytes()).build();
 
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamResponse(res1));
-    FilterUtil.fireUntypedRequestResponse(getFilterChain(), Messages.toStreamRequest(req), Messages.toStreamResponse(res2));
+    FilterUtil.fireRestRequestResponse(getFilterChain(), req, res1);
+    FilterUtil.fireRestRequestResponse(getFilterChain(), req, res2);
 
     // Last one wins
     Assert.assertEquals(res2, getDb().replay(req));
@@ -94,6 +94,6 @@ public abstract class AbstractCaptureFilterTest extends AbstractCapRepTest
   @Override
   protected Filter createFilter(TransientDb db)
   {
-    return StreamFilterAdapters.adaptRestFilter(new CaptureFilter(db));
+    return new CaptureFilter(db);
   }
 }
