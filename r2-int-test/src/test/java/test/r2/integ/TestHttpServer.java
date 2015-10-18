@@ -31,6 +31,7 @@ import com.linkedin.r2.transport.common.RestRequestHandler;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import java.util.Arrays;
@@ -39,6 +40,8 @@ import java.util.List;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -71,16 +74,39 @@ public class TestHttpServer
   private static final String MULTI_VALUE_HEADER_NAME = "MultiValuedHeader";
   private static final String MULTI_VALUE_HEADER_COUNT_HEADER = "MultiValuedHeaderCount";
 
+  private final boolean _restOverStream;
+  private final HttpJettyServer.ServletType _servletType;
+  private final int _port;
+
+  @Factory(dataProvider = "configs")
+  public TestHttpServer(boolean restOverStream, HttpJettyServer.ServletType servletType, int port)
+  {
+    _restOverStream = restOverStream;
+    _servletType = servletType;
+    _port = port;
+  }
+
+  @DataProvider
+  public static Object[][] configs()
+  {
+    return new Object[][] {
+        {true, HttpJettyServer.ServletType.RAP, PORT},
+        {false, HttpJettyServer.ServletType.RAP, PORT + 1},
+        {true, HttpJettyServer.ServletType.ASYNC_EVENT, PORT + 2},
+        {false, HttpJettyServer.ServletType.ASYNC_EVENT, PORT + 3}
+    };
+  }
+
   @BeforeClass
   public void setup() throws IOException
   {
-    final TransportDispatcher dispatcher = new TransportDispatcherBuilder()
+    final TransportDispatcher dispatcher = new TransportDispatcherBuilder(_restOverStream)
             .addRestHandler(URI.create("/error"), new ErrorHandler())
             .addRestHandler(URI.create("/headerEcho"), new HeaderEchoHandler())
             .addRestHandler(URI.create("/foobar"), new FoobarHandler(_scheduler))
             .build();
 
-    _server = getServerFactory().createServer(PORT, dispatcher, true);
+    _server = new HttpServerFactory(_servletType).createServer(_port, dispatcher, _restOverStream);
     _server.start();
   }
 
@@ -93,16 +119,10 @@ public class TestHttpServer
     _scheduler.shutdown();
   }
 
-  protected HttpServerFactory getServerFactory()
-  {
-    return new HttpServerFactory();
-  }
-
-
   @Test
   public void testSuccess() throws Exception
   {
-    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/foobar").openConnection();
+    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + _port + "/foobar").openConnection();
     assertEquals(c.getResponseCode(), RestStatus.OK);
     InputStream in = c.getInputStream();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -117,7 +137,7 @@ public class TestHttpServer
   @Test
   public void testPost() throws Exception
   {
-    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/foobar").openConnection();
+    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + _port + "/foobar").openConnection();
     c.setRequestMethod("POST");
     c.setDoInput(true);
     c.setDoOutput(true);
@@ -131,14 +151,14 @@ public class TestHttpServer
   @Test
   public void testException() throws Exception
   {
-    HttpURLConnection c2 = (HttpURLConnection)new URL("http://localhost:" + PORT + "/error").openConnection();
+    HttpURLConnection c2 = (HttpURLConnection)new URL("http://localhost:" + _port + "/error").openConnection();
     assertEquals(c2.getResponseCode(), RestStatus.INTERNAL_SERVER_ERROR);
   }
 
   @Test
   public void testHeaderEcho() throws Exception
   {
-    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/headerEcho").openConnection();
+    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + _port + "/headerEcho").openConnection();
     c.setRequestProperty("Header1", "foo");
     c.setRequestProperty("Header2", "bar");
     assertEquals(c.getHeaderField("header1"), "foo");
@@ -149,7 +169,7 @@ public class TestHttpServer
   public void testMultiValuedHeaderEcho() throws Exception
   {
     final List<String> values = Arrays.asList(new String[]{ "foo", "bar", "baz", "qux" });
-    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/headerEcho").openConnection();
+    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + _port + "/headerEcho").openConnection();
     for (String v : values)
     {
       c.addRequestProperty(MULTI_VALUE_HEADER_NAME, v);
@@ -170,7 +190,7 @@ public class TestHttpServer
   public void testCookieEcho() throws Exception
   {
     String cookie = "sdsc=1%3A1SZM1shxDNbLt36wZwCgPgvN58iw%3D; Path=/; Domain=.linkedin.com; HTTPOnly";
-    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/headerEcho").openConnection();
+    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + _port + "/headerEcho").openConnection();
     c.setRequestProperty(HttpConstants.REQUEST_COOKIE_HEADER_NAME, cookie);
     assertEquals(c.getHeaderField(HttpConstants.RESPONSE_COOKIE_HEADER_NAME), cookie);
   }
@@ -183,7 +203,7 @@ public class TestHttpServer
         "_lipt=deleteMe; Expires=Thu, 01-Jan-1970 00:00:10 GMT; Path=/",
         "lang=\"v=2&lang=en-us&c=\"; Version=1; Domain=linkedin.com; Path=/"
       });
-    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + PORT + "/headerEcho").openConnection();
+    HttpURLConnection c = (HttpURLConnection)new URL("http://localhost:" + _port + "/headerEcho").openConnection();
     for (String cookie : cookies)
     {
       c.addRequestProperty(HttpConstants.REQUEST_COOKIE_HEADER_NAME, cookie);
