@@ -23,10 +23,13 @@ import com.linkedin.r2.transport.common.bridge.common.TransportCallback;
 import com.linkedin.r2.transport.common.bridge.server.TransportCallbackAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -47,9 +50,33 @@ public class TestQueryTunnel
   private Server _server;
   private TransportClientFactory _clientFactory;
 
-  protected HttpServerFactory getServerFactory()
+  private final boolean _clientROS;
+  private final boolean _serverROS;
+  private final HttpJettyServer.ServletType _servletType;
+  private final int _port;
+
+  @Factory(dataProvider = "configs")
+  public TestQueryTunnel(boolean clientROS, boolean serverROS, HttpJettyServer.ServletType servletType, int port)
   {
-    return new HttpServerFactory();
+    _clientROS = clientROS;
+    _serverROS = serverROS;
+    _servletType = servletType;
+    _port = port;
+  }
+
+  @DataProvider
+  public static Object[][] configs()
+  {
+    return new Object[][] {
+        {true, true, HttpJettyServer.ServletType.RAP, PORT},
+        {true, false, HttpJettyServer.ServletType.RAP, PORT + 1},
+        {false, true, HttpJettyServer.ServletType.RAP, PORT + 2},
+        {false, false, HttpJettyServer.ServletType.RAP, PORT + 3},
+        {true, true, HttpJettyServer.ServletType.ASYNC_EVENT, PORT + 4},
+        {true, false, HttpJettyServer.ServletType.ASYNC_EVENT, PORT + 5},
+        {false, true, HttpJettyServer.ServletType.ASYNC_EVENT, PORT + 6},
+        {false, false, HttpJettyServer.ServletType.ASYNC_EVENT, PORT + 7}
+    };
   }
 
   @BeforeClass
@@ -61,7 +88,7 @@ public class TestQueryTunnel
     final TransportClient transportClient = _clientFactory
         .getClient(clientProperties);
 
-    _client = new TransportClientAdapter(transportClient, true);
+    _client = new TransportClientAdapter(transportClient, _clientROS);
 
     final RestRequestHandler restHandler = new CheckQueryTunnelHandler();
     final StreamRequestHandler streamHandler = new StreamRequestHandlerAdapter(restHandler);
@@ -82,7 +109,7 @@ public class TestQueryTunnel
         streamHandler.handleRequest(req, requestContext, new TransportCallbackAdapter<StreamResponse>(callback));
       }
     };
-    _server = getServerFactory().createServer(PORT, dispatcher, true);
+    _server = new HttpServerFactory(_servletType).createServer(_port, dispatcher, _serverROS);
     _server.start();
   }
 
@@ -128,7 +155,7 @@ public class TestQueryTunnel
 
   private RestResponse getResponse(String query, RequestContext requestContext) throws Exception
   {
-    URI uri = URI.create("http://localhost:" + PORT + "/checkQuery?" + query);
+    URI uri = URI.create("http://localhost:" + _port + "/checkQuery?" + query);
     RestRequestBuilder builder = new RestRequestBuilder(uri);
     return  _client.restRequest(builder.build(), requestContext).get(5000, TimeUnit.MILLISECONDS);
   }
