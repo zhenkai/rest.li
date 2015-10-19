@@ -515,6 +515,7 @@ public class HttpClientFactory implements TransportClientFactory
           httpResponseCompressionOperations,
           _compressionExecutor));
 
+      // we need a separate compression filter for rest request/response
       requestContentEncodingName = getRestRequestContentEncodingName(httpRequestServerSupportedEncodings);
       responseCompressionSchemaName = httpResponseCompressionOperations.isEmpty() ? "" : buildRestAcceptEncodingSchemaNames();
       filters = filters.addLast(new ClientCompressionFilter(requestContentEncodingName,

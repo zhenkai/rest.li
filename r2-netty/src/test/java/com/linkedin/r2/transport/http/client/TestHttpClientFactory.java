@@ -76,8 +76,14 @@ public class TestHttpClientFactory
     _testServer.shutdown();
   }
 
-  @Test
-  public void testShutdownAfterClients() throws ExecutionException, TimeoutException, InterruptedException
+  @DataProvider
+  public static Object[][] configs()
+  {
+    return new Object[][] {{true}, {false}};
+  }
+
+  @Test(dataProvider = "configs")
+  public void testShutdownAfterClients(boolean restOverStream) throws ExecutionException, TimeoutException, InterruptedException
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -86,13 +92,16 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), restOverStream));
     }
 
     for (Client c : clients)
     {
       RestRequest r = new RestRequestBuilder(_testServer.getRequestURI()).build();
-      c.restRequest(r).get(30, TimeUnit.SECONDS);
+//      c.restRequest(r).get(30, TimeUnit.SECONDS);
+      FutureCallback<RestResponse> futureCallback = new FutureCallback<RestResponse>();
+      c.restRequest(r, futureCallback);
+      futureCallback.get(30, TimeUnit.SECONDS);
     }
 
     for (Client c : clients)
@@ -110,8 +119,8 @@ public class TestHttpClientFactory
     Assert.assertTrue(scheduler.awaitTermination(30, TimeUnit.SECONDS), "Failed to shut down scheduler");
   }
 
-  @Test
-  public void testShutdownBeforeClients() throws ExecutionException, TimeoutException, InterruptedException
+  @Test(dataProvider = "configs")
+  public void testShutdownBeforeClients(boolean restOverStream) throws ExecutionException, TimeoutException, InterruptedException
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -120,7 +129,7 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), restOverStream));
     }
 
     for (Client c : clients)
@@ -229,8 +238,8 @@ public class TestHttpClientFactory
     }
   }
 
-  @Test
-  public void testShutdownTimeout() throws ExecutionException, TimeoutException, InterruptedException
+  @Test(dataProvider = "configs")
+  public void testShutdownTimeout(boolean restOverStream) throws ExecutionException, TimeoutException, InterruptedException
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -239,7 +248,7 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), restOverStream));
     }
 
     for (Client c : clients)
@@ -257,8 +266,8 @@ public class TestHttpClientFactory
     Assert.assertTrue(scheduler.awaitTermination(30, TimeUnit.SECONDS), "Failed to shut down scheduler");
   }
 
-  @Test
-  public void testShutdownNoTimeout() throws ExecutionException, TimeoutException, InterruptedException
+  @Test(dataProvider = "configs")
+  public void testShutdownNoTimeout(boolean restOverStream) throws ExecutionException, TimeoutException, InterruptedException
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -267,7 +276,7 @@ public class TestHttpClientFactory
     List<Client> clients = new ArrayList<Client>();
     for (int i = 0; i < 100; i++)
     {
-      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), true));
+      clients.add(new TransportClientAdapter(factory.getClient(Collections.<String, String>emptyMap()), restOverStream));
     }
 
     for (Client c : clients)
@@ -293,15 +302,15 @@ public class TestHttpClientFactory
     Assert.assertFalse(scheduler.isShutdown(), "Scheduler should not be shut down");
   }
 
-  @Test
-  public void testShutdownIOThread() throws ExecutionException, TimeoutException, InterruptedException
+  @Test(dataProvider = "configs")
+  public void testShutdownIOThread(boolean restOverStream) throws ExecutionException, TimeoutException, InterruptedException
   {
     NioEventLoopGroup eventLoop = new NioEventLoopGroup();
     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     HttpClientFactory factory = getHttpClientFactory(eventLoop, true, scheduler, true);
 
     Client client = new TransportClientAdapter(factory.getClient(
-            Collections.<String, Object>emptyMap()), true);
+            Collections.<String, Object>emptyMap()), restOverStream);
 
     Future<RestResponse> responseFuture = client.restRequest(new RestRequestBuilder(_testServer.resetResponseLatch(1)).build());
 
