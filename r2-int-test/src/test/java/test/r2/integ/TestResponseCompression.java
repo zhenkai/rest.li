@@ -47,6 +47,7 @@ import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
 import com.linkedin.r2.transport.http.common.HttpConstants;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import java.net.URI;
 import java.util.HashMap;
@@ -58,6 +59,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 
@@ -73,6 +76,20 @@ public class TestResponseCompression extends AbstractStreamTest
   protected StreamFilter _compressionFilter =
       new ServerStreamCompressionFilter(EncodingType.values(), _executor, (int)TINY_BYTES_NUM+1);
 
+  private final HttpJettyServer.ServletType _servletType;
+
+  @Factory(dataProvider = "configs")
+  public TestResponseCompression(HttpJettyServer.ServletType servletType)
+  {
+    _servletType = servletType;
+  }
+
+  @DataProvider
+  public static Object[][] configs()
+  {
+    return new Object[][] {{HttpJettyServer.ServletType.RAP}, {HttpJettyServer.ServletType.ASYNC_EVENT}};
+  }
+
   @AfterClass
   public void afterClass() throws Exception
   {
@@ -82,7 +99,7 @@ public class TestResponseCompression extends AbstractStreamTest
   @Override
   protected HttpServerFactory getServerFactory()
   {
-    return new HttpServerFactory(FilterChains.create(_compressionFilter));
+    return new HttpServerFactory(FilterChains.create(_compressionFilter), _servletType);
   }
 
   @Override

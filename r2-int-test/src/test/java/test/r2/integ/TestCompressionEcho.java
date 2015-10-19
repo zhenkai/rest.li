@@ -27,6 +27,7 @@ import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
 import com.linkedin.r2.transport.http.server.HttpServer;
 import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import java.io.IOException;
@@ -45,6 +46,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 
@@ -69,6 +71,19 @@ public class TestCompressionEcho
   private List<TransportClientFactory> _clientFactories = new ArrayList<TransportClientFactory>();
   private List<Client> _clients = new ArrayList<Client>();
 
+  private final HttpJettyServer.ServletType _servletType;
+
+  @Factory(dataProvider = "configs")
+  public TestCompressionEcho(HttpJettyServer.ServletType servletType)
+  {
+    _servletType = servletType;
+  }
+
+  @DataProvider
+  public static Object[][] configs()
+  {
+    return new Object[][] {{HttpJettyServer.ServletType.RAP}, {HttpJettyServer.ServletType.ASYNC_EVENT}};
+  }
 
   @BeforeClass
   public void setup() throws IOException
@@ -103,7 +118,7 @@ public class TestCompressionEcho
 
   protected HttpServerFactory getServerFactory()
   {
-    return new HttpServerFactory(FilterChains.create(_compressionFilter));
+    return new HttpServerFactory(FilterChains.create(_compressionFilter), _servletType);
   }
 
   protected TransportDispatcher getTransportDispatcher()

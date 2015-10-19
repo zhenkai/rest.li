@@ -21,7 +21,11 @@ import com.linkedin.r2.transport.common.bridge.client.TransportClientAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
+import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 import java.net.URI;
@@ -44,7 +48,25 @@ public class TestStreamResponse extends AbstractStreamTest
   private static final URI SERVER_ERROR_URI = URI.create("/error");
   private static final URI HICCUP_URI = URI.create("/hiccup");
   private BytesWriterRequestHandler _smallHandler;
+  private final HttpJettyServer.ServletType _servletType;
 
+  @Factory(dataProvider = "configs")
+  public TestStreamResponse(HttpJettyServer.ServletType servletType)
+  {
+    _servletType = servletType;
+  }
+
+  @DataProvider
+  public static Object[][] configs()
+  {
+    return new Object[][] {{HttpJettyServer.ServletType.RAP}, {HttpJettyServer.ServletType.ASYNC_EVENT}};
+  }
+
+  @Override
+  protected HttpServerFactory getServerFactory()
+  {
+    return new HttpServerFactory(_servletType);
+  }
 
   @Override
   protected TransportDispatcher getTransportDispatcher()

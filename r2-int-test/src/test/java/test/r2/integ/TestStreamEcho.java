@@ -3,6 +3,10 @@ package test.r2.integ;
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.message.RequestContext;
+import com.linkedin.r2.message.rest.RestRequest;
+import com.linkedin.r2.message.rest.RestRequestBuilder;
+import com.linkedin.r2.message.rest.RestResponse;
+import com.linkedin.r2.message.rest.RestResponseBuilder;
 import com.linkedin.r2.message.rest.RestStatus;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
@@ -13,13 +17,19 @@ import com.linkedin.r2.message.stream.entitystream.ReadHandle;
 import com.linkedin.r2.sample.Bootstrap;
 import com.linkedin.r2.transport.common.RestRequestHandler;
 import com.linkedin.r2.transport.common.StreamRequestHandler;
+import com.linkedin.r2.transport.common.StreamRequestHandlerAdapter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcherBuilder;
 import com.linkedin.r2.transport.http.client.HttpClientFactory;
+import com.linkedin.r2.transport.http.server.HttpJettyServer;
+import com.linkedin.r2.transport.http.server.HttpServerFactory;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +46,28 @@ public class TestStreamEcho extends AbstractStreamTest
 {
   private static final URI ECHO_URI = URI.create("/echo");
   private static final URI ASYNC_ECHO_URI = URI.create("/async-echo");
+  private static final URI DELAYED_ECHO_URI = URI.create("/delayed-echo");
+
+  private final HttpJettyServer.ServletType _servletType;
+
+
+  @Factory(dataProvider = "configs")
+  public TestStreamEcho(HttpJettyServer.ServletType servletType)
+  {
+    _servletType = servletType;
+  }
+
+  @DataProvider
+  public static Object[][] configs()
+  {
+    return new Object[][] {{HttpJettyServer.ServletType.RAP}, {HttpJettyServer.ServletType.ASYNC_EVENT}};
+  }
+
+  @Override
+  protected HttpServerFactory getServerFactory()
+  {
+    return new HttpServerFactory(_servletType);
+  }
 
   @Override
   protected TransportDispatcher getTransportDispatcher()
@@ -49,6 +81,7 @@ public class TestStreamEcho extends AbstractStreamTest
     Map<URI, StreamRequestHandler> handlers = new HashMap<URI, StreamRequestHandler>();
     handlers.put(ECHO_URI, new SteamEchoHandler());
     handlers.put(ASYNC_ECHO_URI, new SteamAsyncEchoHandler(_scheduler));
+    handlers.put(DELAYED_ECHO_URI, new StreamRequestHandlerAdapter(new DelayedStoreAndForwardEchoHandler()));
     return handlers;
   }
 
@@ -70,21 +103,6 @@ public class TestStreamEcho extends AbstractStreamTest
   @Test
   public void testNormalEchoLarge() throws Exception
   {
-    /**
-     * This test fails for Jetty 9 most of times due to
-     * Caused by: java.lang.IllegalStateException: state=UNREADY
-        at org.eclipse.jetty.server.HttpOutput.run(HttpOutput.java:822)
-
-     I suspect this is a bug in jetty because the write to outputstream if always after isReady() returns true
-
-     Update 3/27/2015: for some reason, after the work to support Jetty 8, this test stops failing for Jetty 9;
-     or at least not easy to produce the failure (no failure after 10ish runs)
-
-     Update 4/x/2015: it appears consistently when running ligradle r2-int-test:test
-
-     Update 5/1/2015: after the changes to take advantage of the new Writer/ReadHandle API to get rid of locks,
-     it disappeared
-     */
     testNormalEcho(LARGE_BYTES_NUM, ECHO_URI);
   }
 
@@ -180,6 +198,15 @@ public class TestStreamEcho extends AbstractStreamTest
     Assert.assertTrue(diffRatio < 0.2);
   }
 
+  @Test
+  public void testDelayedEcho() throws Exception
+  {
+    RestRequest restRequest = new RestRequestBuilder(Bootstrap.createHttpURI(PORT, DELAYED_ECHO_URI))
+        .setEntity("wei ni hao ma?".getBytes()).build();
+    RestResponse response = _client.restRequest(restRequest).get();
+    Assert.assertEquals(response.getEntity().asString(Charset.defaultCharset()), "wei ni hao ma?");
+  }
+
   private static class SteamEchoHandler implements StreamRequestHandler
   {
     @Override
@@ -250,5 +277,15 @@ public class TestStreamEcho extends AbstractStreamTest
         result.getEntityStream().setReader(reader);
       }
     };
+  }
+
+  private class DelayedStoreAndForwardEchoHandler implements RestRequestHandler
+  {
+    @Override
+    public void handleRequest(final RestRequest request, RequestContext requestContext, final Callback<RestResponse> callback)
+    {
+      RestResponse restResponse = new RestResponseBuilder().setEntity(request.getEntity()).build();
+      callback.onSuccess(restResponse);
+    }
   }
 }
