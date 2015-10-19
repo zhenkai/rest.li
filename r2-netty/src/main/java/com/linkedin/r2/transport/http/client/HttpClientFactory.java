@@ -19,6 +19,7 @@ package com.linkedin.r2.transport.http.client;
 
 
 import com.linkedin.common.callback.Callback;
+import com.linkedin.common.callback.MultiCallback;
 import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
@@ -1003,66 +1004,9 @@ public class HttpClientFactory implements TransportClientFactory
     @Override
     public void shutdown(final Callback<None> callback)
     {
-      Callback<None> twiceCallback = new Callback<None>()
-      {
-        boolean _invoked = false;
-        Throwable _error = null;
-
-        @Override
-        public void onError(Throwable e)
-        {
-          boolean invokeOriginalCallback = false;
-          synchronized (this)
-          {
-            if (_invoked)
-            {
-              invokeOriginalCallback = true;
-            }
-            else
-            {
-              _invoked = true;
-              _error = e;
-            }
-          }
-
-          if (invokeOriginalCallback)
-          {
-            callback.onError(e);
-          }
-        }
-
-        @Override
-        public void onSuccess(None result)
-        {
-          boolean invokeOriginalCallback = false;
-          synchronized (this)
-          {
-            if (_invoked)
-            {
-              invokeOriginalCallback = true;
-            }
-            else
-            {
-              _invoked = true;
-            }
-          }
-
-          if (invokeOriginalCallback)
-          {
-            if (_error != null)
-            {
-              callback.onError(_error);
-            }
-            else
-            {
-              callback.onSuccess(result);
-            }
-          }
-        }
-      };
-
-      _legacyClient.shutdown(twiceCallback);
-      _streamClient.shutdown(twiceCallback);
+      Callback<None> multiCallback = new MultiCallback(callback, 2);
+      _legacyClient.shutdown(multiCallback);
+      _streamClient.shutdown(multiCallback);
     }
 
 
