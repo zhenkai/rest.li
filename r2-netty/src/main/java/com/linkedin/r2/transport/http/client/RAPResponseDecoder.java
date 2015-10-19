@@ -157,11 +157,11 @@ import static io.netty.handler.codec.http.HttpHeaders.removeTransferEncodingChun
         _chunkedMessageWriter = null;
         if (shouldCloseConnection)
         {
-          ctx.fireChannelRead(ChannelPoolHandler.CHANNEL_DESTROY_SIGNAL);
+          ctx.fireChannelRead(ChannelPoolStreamHandler.CHANNEL_DESTROY_SIGNAL);
         }
         else
         {
-          ctx.fireChannelRead(ChannelPoolHandler.CHANNEL_RELEASE_SIGNAL);
+          ctx.fireChannelRead(ChannelPoolStreamHandler.CHANNEL_RELEASE_SIGNAL);
         }
       }
     }

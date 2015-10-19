@@ -21,14 +21,11 @@
 package com.linkedin.r2.transport.http.client;
 
 
-import com.linkedin.r2.message.rest.RestResponse;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.AttributeKey;
-
-import java.util.List;
 
 
 /**
@@ -44,31 +41,31 @@ import java.util.List;
  * that the channel's attachment will be an AsyncPool&lt;Channel&gt; to which the channel belongs.
  */
 @ChannelHandler.Sharable
-class ChannelPoolHandler extends ChannelInboundHandlerAdapter
+class ChannelPoolStreamHandler extends ChannelInboundHandlerAdapter
 {
   public static final AttributeKey<AsyncPool<Channel>> CHANNEL_POOL_ATTR_KEY
       = AttributeKey.valueOf("ChannelPool");
+  /* package private */ static final Object CHANNEL_RELEASE_SIGNAL = new Object();
+  /* package private */ static final Object CHANNEL_DESTROY_SIGNAL = new Object();
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception
   {
-    AsyncPool<Channel> pool = ctx.channel().attr(CHANNEL_POOL_ATTR_KEY).getAndRemove();
-    if (pool != null)
+    if (msg == CHANNEL_RELEASE_SIGNAL)
     {
-      RestResponse restResponse = (RestResponse) msg;
-      List<String> connectionTokens = restResponse.getHeaderValues("connection");
-      if (connectionTokens != null)
+      AsyncPool<Channel> pool = ctx.channel().attr(CHANNEL_POOL_ATTR_KEY).getAndRemove();
+      if (pool != null)
       {
-        for (String token: connectionTokens)
-        {
-          if ("close".equalsIgnoreCase(token))
-          {
-            pool.dispose(ctx.channel());
-            return;
-          }
-        }
+        pool.put(ctx.channel());
       }
-      pool.put(ctx.channel());
+    }
+    else if (msg == CHANNEL_DESTROY_SIGNAL)
+    {
+      AsyncPool<Channel> pool = ctx.channel().attr(CHANNEL_POOL_ATTR_KEY).getAndRemove();
+      if (pool != null)
+      {
+        pool.dispose(ctx.channel());
+      }
     }
   }
 

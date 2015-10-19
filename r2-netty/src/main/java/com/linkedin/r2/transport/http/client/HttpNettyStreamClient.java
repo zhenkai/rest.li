@@ -23,7 +23,6 @@ package com.linkedin.r2.transport.http.client;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.common.util.None;
-import com.linkedin.data.message.Message;
 import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.Messages;
@@ -94,7 +93,7 @@ import org.slf4j.LoggerFactory;
   private final ChannelPoolManager _channelPoolManager;
   private final ChannelGroup _allChannels;
 
-  private final ChannelPoolHandler _handler = new ChannelPoolHandler();
+  private final ChannelPoolStreamHandler _handler = new ChannelPoolStreamHandler();
   private final RAPStreamResponseHandler _responseHandler = new RAPStreamResponseHandler();
   private final AtomicReference<State> _state = new AtomicReference<State>(State.RUNNING);
 
@@ -466,13 +465,13 @@ import org.slf4j.LoggerFactory;
       {
         // This handler ensures the channel is returned to the pool at the end of the
         // Netty pipeline.
-        channel.attr(ChannelPoolHandler.CHANNEL_POOL_ATTR_KEY).set(pool);
+        channel.attr(ChannelPoolStreamHandler.CHANNEL_POOL_ATTR_KEY).set(pool);
         callback.addTimeoutTask(new Runnable()
         {
           @Override
           public void run()
           {
-            AsyncPool<Channel> pool = channel.attr(ChannelPoolHandler.CHANNEL_POOL_ATTR_KEY).getAndRemove();
+            AsyncPool<Channel> pool = channel.attr(ChannelPoolStreamHandler.CHANNEL_POOL_ATTR_KEY).getAndRemove();
             if (pool != null)
             {
               pool.dispose(channel);
