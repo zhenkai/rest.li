@@ -22,7 +22,6 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.FilterChains;
 import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.EncodingType;
-import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
 import com.linkedin.r2.filter.compression.streaming.GzipCompressor;

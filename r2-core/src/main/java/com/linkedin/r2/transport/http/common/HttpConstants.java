@@ -6,6 +6,10 @@ public interface HttpConstants
   public static final String CONTENT_ENCODING = "Content-Encoding";
   public static final String CONTENT_LENGTH = "Content-Length";
   public static final String TRANSFER_ENCODING = "Transfer-Encoding";
+  /**
+   * Custom header for the size threshold for encoding(compressing) responses.
+   */
+  public static final String HEADER_RESPONSE_COMPRESSION_THRESHOLD = "X-Response-Compression-Threshold";
 
   /**
    * HTTP Cookie header name. See RFC 2109.

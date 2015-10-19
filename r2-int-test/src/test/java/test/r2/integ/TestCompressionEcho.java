@@ -6,11 +6,9 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChains;
 
-import com.linkedin.r2.filter.compression.ClientCompressionFilter;
 import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.EncodingType;
-import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestStatus;

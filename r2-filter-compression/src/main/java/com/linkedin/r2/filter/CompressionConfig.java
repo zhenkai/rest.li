@@ -88,6 +88,11 @@ public class CompressionConfig
     return _compressionThreshold;
   }
 
+  public int getCompressionThreshold()
+  {
+    return _compressionThreshold;
+  }
+
   /**
    * Determines whether the request should be compressed, first checking {@link CompressionOption} in the request context,
    * then the threshold.
