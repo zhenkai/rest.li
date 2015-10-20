@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,6 +150,7 @@ public class TestRestCompressionEcho
             new ClientCompressionFilter(requestEncoding,
                 new CompressionConfig(THRESHOLD),
                 new EncodingType[]{acceptEncoding},
+                new CompressionConfig(THRESHOLD),
                 Arrays.asList(new String[]{"*"}));
 
         TransportClientFactory factory = new HttpClientFactory.Builder()
@@ -171,6 +173,7 @@ public class TestRestCompressionEcho
             new ClientCompressionFilter(requestEncoding,
                 new CompressionConfig(THRESHOLD),
                 new EncodingType[]{acceptEncoding},
+                new CompressionConfig(THRESHOLD),
                 Arrays.asList(new String[]{"*"}));
 
         TransportClientFactory factory = new HttpClientFactory.Builder()

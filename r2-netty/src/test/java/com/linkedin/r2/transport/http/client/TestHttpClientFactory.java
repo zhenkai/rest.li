@@ -438,7 +438,7 @@ public class TestHttpClientFactory
         .setRequestCompressionThresholdDefault(requestCompressionThresholdDefault)
         .setRequestCompressionConfigs(requestCompressionConfigs)
         .build();
-    Assert.assertEquals(factory.getCompressionConfig(serviceName, EncodingType.SNAPPY_FRAMED.getHttpName()), expectedConfig);
+    Assert.assertEquals(factory.getStreamRequestCompressionConfig(serviceName, EncodingType.SNAPPY_FRAMED), expectedConfig);
   }
 
   private static HttpClientFactory getHttpClientFactory(NioEventLoopGroup eventLoopGroup,
