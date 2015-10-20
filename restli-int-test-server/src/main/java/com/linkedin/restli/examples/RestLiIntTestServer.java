@@ -19,10 +19,8 @@ package com.linkedin.restli.examples;
 
 import com.linkedin.parseq.Engine;
 import com.linkedin.parseq.EngineBuilder;
-import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChain;
 import com.linkedin.r2.filter.FilterChains;
-import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.transport.common.bridge.server.TransportDispatcher;
@@ -100,7 +98,6 @@ public class RestLiIntTestServer
                                         int asyncTimeOut,
                                         Executor compressionExecutor)
   {
-    final FilterChain fc = FilterChains.empty().addLast(new ServerCompressionFilter(supportedCompression, new CompressionConfig(0)));
     return createServer(engine, port, supportedCompression, useAsyncServletApi, asyncTimeOut, null, null, compressionExecutor);
   }
 
