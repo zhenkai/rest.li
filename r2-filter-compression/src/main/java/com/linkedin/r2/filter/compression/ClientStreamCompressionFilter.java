@@ -235,7 +235,7 @@ public class ClientStreamCompressionFilter implements StreamFilter
       CompressionOption option = (CompressionOption) requestContext.getLocalAttr(R2Constants.REQUEST_COMPRESSION_OVERRIDE);
       if (option == null || option != CompressionOption.FORCE_OFF)
       {
-        final int threshold = _requestCompressionConfig.getCompressionThreshold();
+        final int threshold = option == CompressionOption.FORCE_ON ? 0 : _requestCompressionConfig.getCompressionThreshold();
         PartialReader reader = new PartialReader(threshold, new Callback<EntityStream[]>()
         {
           @Override
