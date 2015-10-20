@@ -571,20 +571,22 @@ public class HttpClientFactory implements TransportClientFactory
     }
 
     FilterChain filters = _filters;
-    String httpServiceName = (String) properties.get(HTTP_SERVICE_NAME);
-    EncodingType restRequestContentEncoding = getRestRequestContentEncoding(httpRequestServerSupportedEncodings);
-    StreamEncodingType streamRequestContentEncoding =
-        getStreamRequestContentEncoding(httpRequestServerSupportedEncodings);
 
     if (_useClientCompression)
     {
+      List<String> responseEncodings = null;
+      if (properties.containsKey(HTTP_RESPONSE_CONTENT_ENCODINGS))
+      {
+        responseEncodings = ConfigValueExtractor.buildList(properties.remove(HTTP_RESPONSE_CONTENT_ENCODINGS), LIST_SEPARATOR);
+      }
+
+      String httpServiceName = (String) properties.get(HTTP_SERVICE_NAME);
+      EncodingType restRequestContentEncoding = getRestRequestContentEncoding(httpRequestServerSupportedEncodings);
+      StreamEncodingType streamRequestContentEncoding =
+          getStreamRequestContentEncoding(httpRequestServerSupportedEncodings);
+
       if (restRequestContentEncoding != EncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty())
       {
-        List<String> responseEncodings = null;
-        if (properties.containsKey(HTTP_RESPONSE_CONTENT_ENCODINGS))
-        {
-          responseEncodings = ConfigValueExtractor.buildList(properties.remove(HTTP_RESPONSE_CONTENT_ENCODINGS), LIST_SEPARATOR);
-        }
         filters = _filters.addLast(new ClientCompressionFilter(restRequestContentEncoding,
             getRestRequestCompressionConfig(httpServiceName, restRequestContentEncoding),
             buildRestAcceptEncodingSchemaNames(responseEncodings),
@@ -595,11 +597,6 @@ public class HttpClientFactory implements TransportClientFactory
       if (streamRequestContentEncoding != StreamEncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty())
       {
         CompressionConfig compressionConfig = getStreamRequestCompressionConfig(httpServiceName, streamRequestContentEncoding);
-        List<String> responseEncodings = null;
-        if (properties.containsKey(HTTP_RESPONSE_CONTENT_ENCODINGS))
-        {
-          responseEncodings = ConfigValueExtractor.buildList(properties.remove(HTTP_RESPONSE_CONTENT_ENCODINGS), LIST_SEPARATOR);
-        }
         filters = _filters.addLast(new ClientStreamCompressionFilter(streamRequestContentEncoding,
             compressionConfig,
             buildStreamAcceptEncodingSchemas(responseEncodings),
@@ -675,7 +672,7 @@ public class HttpClientFactory implements TransportClientFactory
       List<StreamEncodingType> encodingTypes = new ArrayList<StreamEncodingType>();
       for (String encoding : encodings)
       {
-        if (EncodingType.isSupported(encoding))
+        if (StreamEncodingType.isSupported(encoding))
         {
           encodingTypes.add(StreamEncodingType.get(encoding));
         }
