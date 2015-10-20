@@ -345,17 +345,6 @@ public class TestCompressionServer extends RestLiIntegrationTest
     Assert.assertNull(response.getFirstHeader(CONTENT_ENCODING_SAVED));
   }
 
-  @Test(dataProvider = "contentEncodingGeneratorDataProvider")
-  public void testEncodingGeneration(StreamEncodingType[] encoding, String acceptEncoding)
-  {
-    ClientStreamCompressionFilter cf = new ClientStreamCompressionFilter(StreamEncodingType.IDENTITY,
-                                                             new CompressionConfig(Integer.MAX_VALUE),
-                                                             encoding,
-                                                             Arrays.asList(new String[]{"*"}),
-        Executors.newSingleThreadExecutor());
-    Assert.assertEquals(cf.buildAcceptEncodingHeader(), acceptEncoding);
-  }
-
   //Tests for when compression should be applied
   @Test(enabled = false, dataProvider = "compressorDataProvider")
   public void testCompressionBetter(Compressor compressor) throws RemoteInvocationException, HttpException, IOException, CompressionException, URISyntaxException

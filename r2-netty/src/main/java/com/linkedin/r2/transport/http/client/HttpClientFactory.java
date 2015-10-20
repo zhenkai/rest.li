@@ -570,41 +570,42 @@ public class HttpClientFactory implements TransportClientFactory
       httpResponseCompressionOperations.add(ClientCompressionFilter.COMPRESS_ALL_RESPONSES_INDICATOR);
     }
 
-    FilterChain filters;
+    FilterChain filters = _filters;
     String httpServiceName = (String) properties.get(HTTP_SERVICE_NAME);
     EncodingType restRequestContentEncoding = getRestRequestContentEncoding(httpRequestServerSupportedEncodings);
     StreamEncodingType streamRequestContentEncoding =
         getStreamRequestContentEncoding(httpRequestServerSupportedEncodings);
-    if (_useClientCompression && (restRequestContentEncoding != EncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty()))
+
+    if (_useClientCompression)
     {
-      List<String> responseEncodings = null;
-      if (properties.containsKey(HTTP_RESPONSE_CONTENT_ENCODINGS))
+      if (restRequestContentEncoding != EncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty())
       {
-        responseEncodings = ConfigValueExtractor.buildList(properties.remove(HTTP_RESPONSE_CONTENT_ENCODINGS), LIST_SEPARATOR);
+        List<String> responseEncodings = null;
+        if (properties.containsKey(HTTP_RESPONSE_CONTENT_ENCODINGS))
+        {
+          responseEncodings = ConfigValueExtractor.buildList(properties.remove(HTTP_RESPONSE_CONTENT_ENCODINGS), LIST_SEPARATOR);
+        }
+        filters = _filters.addLast(new ClientCompressionFilter(restRequestContentEncoding,
+            getRestRequestCompressionConfig(httpServiceName, restRequestContentEncoding),
+            buildRestAcceptEncodingSchemaNames(responseEncodings),
+            _responseCompressionConfigs.get(httpServiceName),
+            httpResponseCompressionOperations));
       }
-      filters = _filters.addLast(new ClientCompressionFilter(restRequestContentEncoding,
-          getRestRequestCompressionConfig(httpServiceName, restRequestContentEncoding),
-          buildRestAcceptEncodingSchemaNames(responseEncodings),
-          _responseCompressionConfigs.get(httpServiceName),
-          httpResponseCompressionOperations));
-    }
-    else if (_useClientCompression && (streamRequestContentEncoding != StreamEncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty()))
-    {
-      CompressionConfig compressionConfig = getStreamRequestCompressionConfig(httpServiceName, streamRequestContentEncoding);
-      List<String> responseEncodings = null;
-      if (properties.containsKey(HTTP_RESPONSE_CONTENT_ENCODINGS))
+
+      if (streamRequestContentEncoding != StreamEncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty())
       {
-        responseEncodings = ConfigValueExtractor.buildList(properties.remove(HTTP_RESPONSE_CONTENT_ENCODINGS), LIST_SEPARATOR);
+        CompressionConfig compressionConfig = getStreamRequestCompressionConfig(httpServiceName, streamRequestContentEncoding);
+        List<String> responseEncodings = null;
+        if (properties.containsKey(HTTP_RESPONSE_CONTENT_ENCODINGS))
+        {
+          responseEncodings = ConfigValueExtractor.buildList(properties.remove(HTTP_RESPONSE_CONTENT_ENCODINGS), LIST_SEPARATOR);
+        }
+        filters = _filters.addLast(new ClientStreamCompressionFilter(streamRequestContentEncoding,
+            compressionConfig,
+            buildStreamAcceptEncodingSchemas(responseEncodings),
+            httpResponseCompressionOperations,
+            _compressionExecutor));
       }
-      filters = _filters.addLast(new ClientStreamCompressionFilter(streamRequestContentEncoding,
-          compressionConfig,
-          buildStreamAcceptEncodingSchemas(responseEncodings),
-          httpResponseCompressionOperations,
-          _compressionExecutor));
-    }
-    else
-    {
-      filters = _filters;
     }
 
     Integer queryPostThreshold = chooseNewOverDefault(getIntValue(properties, HTTP_QUERY_POST_THRESHOLD), Integer.MAX_VALUE);
