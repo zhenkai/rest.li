@@ -20,7 +20,7 @@ import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.CompressionOption;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.stream.StreamRequest;
 import com.linkedin.r2.message.stream.StreamRequestBuilder;
@@ -133,7 +133,7 @@ public class TestClientStreamCompressionFilter
       throws URISyntaxException
   {
     StreamRequest streamRequest = new StreamRequestBuilder(new URI(URI)).build(EntityStreams.emptyStream());
-    ClientStreamCompressionFilter clientCompressionFilter = new ClientStreamCompressionFilter(EncodingType.IDENTITY.getHttpName(),
+    ClientStreamCompressionFilter clientCompressionFilter = new ClientStreamCompressionFilter(StreamEncodingType.IDENTITY.getHttpName(),
                                                                                   new CompressionConfig(Integer.MAX_VALUE),
                                                                                   ACCEPT_COMPRESSIONS,
                                                                                   Arrays.asList(compressionConfig.split(",")),

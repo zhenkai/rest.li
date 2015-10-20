@@ -11,7 +11,7 @@ public class NoopCompressor implements StreamingCompressor
   @Override
   public String getContentEncodingName()
   {
-    return EncodingType.IDENTITY.getHttpName();
+    return StreamEncodingType.IDENTITY.getHttpName();
   }
 
   @Override

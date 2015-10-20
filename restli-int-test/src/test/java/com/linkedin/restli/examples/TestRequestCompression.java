@@ -26,8 +26,7 @@ import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.CompressionOption;
 import com.linkedin.r2.filter.NextFilter;
 import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
-import com.linkedin.r2.filter.compression.ServerCompressionFilter;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.filter.message.stream.StreamRequestFilter;
 import com.linkedin.r2.message.RequestContext;
@@ -103,7 +102,7 @@ public class TestRequestCompression extends RestLiIntegrationTest
             {
               throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, "Request is not compressed when it should be.");
             }
-            else if (!contentEncodingHeader.equals(EncodingType.SNAPPY_FRAMED.getHttpName()))
+            else if (!contentEncodingHeader.equals(StreamEncodingType.SNAPPY_FRAMED.getHttpName()))
             {
               // Request should be compressed with the first encoding the client can compress with,
               // which is always snappy in this test.
@@ -168,7 +167,7 @@ public class TestRequestCompression extends RestLiIntegrationTest
     CompressionConfig tinyThresholdConfig = new CompressionConfig(tiny);
     CompressionConfig hugeThresholdConfig = new CompressionConfig(huge);
 
-    String encodings = "unsupportedEncoding, " + EncodingType.SNAPPY_FRAMED.getHttpName() +", gzip";
+    String encodings = "unsupportedEncoding, " + StreamEncodingType.SNAPPY_FRAMED.getHttpName() +", gzip";
 
     RestliRequestOptions forceOnOption = new RestliRequestOptionsBuilder().setProtocolVersionOption(ProtocolVersionOption.USE_LATEST_IF_AVAILABLE)
         .setRequestCompressionOverride(CompressionOption.FORCE_ON).build();

@@ -40,7 +40,7 @@ public class SnappyCompressor extends AbstractCompressor
   @Override
   public String getContentEncodingName()
   {
-    return EncodingType.SNAPPY_FRAMED.getHttpName();
+    return StreamEncodingType.SNAPPY_FRAMED.getHttpName();
   }
 
   @Override

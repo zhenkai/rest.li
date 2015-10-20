@@ -31,7 +31,7 @@ import java.util.Set;
  */
 public class AcceptEncoding implements Comparable<AcceptEncoding>
 {
-  private final EncodingType _type;
+  private final StreamEncodingType _type;
   private final float _quality;
 
   /**
@@ -39,7 +39,7 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
    * @param type Encoding of this encoding entry
    * @param quality Quality value of this encoding entry
    */
-  public AcceptEncoding(EncodingType type, float quality)
+  public AcceptEncoding(StreamEncodingType type, float quality)
   {
     _type = type;
     _quality = quality;
@@ -56,7 +56,7 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
   /**
    * @return Encoding of this entry
    */
-  public EncodingType getType()
+  public StreamEncodingType getType()
   {
     return _type;
   }
@@ -68,18 +68,18 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
    * if something not supported or not recognized shows up.
    * @param acceptCompression
    */
-  public static EncodingType[] parseAcceptEncoding(String acceptCompression)
+  public static StreamEncodingType[] parseAcceptEncoding(String acceptCompression)
   {
     if(acceptCompression.trim().isEmpty())
     {
-      return new EncodingType[0];
+      return new StreamEncodingType[0];
     }
 
     String[] entries = acceptCompression.toLowerCase().split(CompressionConstants.ENCODING_DELIMITER);
-    EncodingType[] types = new EncodingType[entries.length];
+    StreamEncodingType[] types = new StreamEncodingType[entries.length];
     for(int i = 0; i < entries.length; i++)
     {
-      EncodingType type = EncodingType.get(entries[i].trim());
+      StreamEncodingType type = StreamEncodingType.get(entries[i].trim());
       if (type == null)
       {
         throw new IllegalArgumentException(entries[i].trim() + " is not supported");
@@ -97,7 +97,7 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
    * @return ArrayList of accepted-encoding entries
    * @throws com.linkedin.r2.filter.compression.CompressionException
    */
-  public static List<AcceptEncoding> parseAcceptEncodingHeader(String headerValue, Set<EncodingType> supportedEncodings) throws CompressionException
+  public static List<AcceptEncoding> parseAcceptEncodingHeader(String headerValue, Set<StreamEncodingType> supportedEncodings) throws CompressionException
   {
     headerValue = headerValue.toLowerCase();
     String[] entries = headerValue.split(CompressionConstants.ENCODING_DELIMITER);
@@ -112,7 +112,7 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
         throw new IllegalArgumentException(CompressionConstants.ILLEGAL_FORMAT + entry);
       }
 
-      EncodingType type = EncodingType.get(content[0].trim());
+      StreamEncodingType type = StreamEncodingType.get(content[0].trim());
       Float quality = 1.0f;
 
       if (type != null && supportedEncodings.contains(type))
@@ -152,10 +152,10 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
    * @param entries List of accepted-encoding entries
    * @return Encoding type of choice, null if not possible; must contain compressor
    */
-  public static EncodingType chooseBest(List<AcceptEncoding> entries)
+  public static StreamEncodingType chooseBest(List<AcceptEncoding> entries)
   {
     Collections.sort(entries);
-    HashSet<EncodingType> bannedEncoding = new HashSet<EncodingType>();
+    HashSet<StreamEncodingType> bannedEncoding = new HashSet<StreamEncodingType>();
 
     //Add the banned entries to the disallow list
     int lastEntry = entries.size()-1;
@@ -169,7 +169,7 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
     //Return the first acceptable entry
     for(AcceptEncoding type : entries)
     {
-      if (type.getType() == EncodingType.ANY)
+      if (type.getType() == StreamEncodingType.ANY)
       {
         //NOTE: this is very conservative by returning IDENTITY
         //for all ANYs unless explicitly stated, and in fact
@@ -177,9 +177,9 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
         //such as "identity;q=0.0, *,gzip=0.5"
         //The current code is to ensure that server doesn't
         //return something unintelligible to the client.
-        if (!bannedEncoding.contains(EncodingType.IDENTITY))
+        if (!bannedEncoding.contains(StreamEncodingType.IDENTITY))
         {
-          return EncodingType.IDENTITY;
+          return StreamEncodingType.IDENTITY;
         }
       }
       else
@@ -191,8 +191,8 @@ public class AcceptEncoding implements Comparable<AcceptEncoding>
     //If we're at the end of the list, if either ANY or IDENTITY is
     //in the ban list, then identity is banned by default; otherwise,
     //No encoding will be used.
-    return bannedEncoding.contains(EncodingType.ANY) ||
-        bannedEncoding.contains(EncodingType.IDENTITY) ? null : EncodingType.IDENTITY;
+    return bannedEncoding.contains(StreamEncodingType.ANY) ||
+        bannedEncoding.contains(StreamEncodingType.IDENTITY) ? null : StreamEncodingType.IDENTITY;
   }
 
   @Override

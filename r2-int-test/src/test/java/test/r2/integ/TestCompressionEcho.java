@@ -8,7 +8,7 @@ import com.linkedin.r2.filter.FilterChains;
 
 import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.filter.message.stream.StreamFilter;
 import com.linkedin.r2.message.RequestContext;
 import com.linkedin.r2.message.rest.RestStatus;
@@ -62,7 +62,7 @@ public class TestCompressionEcho
 
 
   protected final ExecutorService _executor = Executors.newCachedThreadPool();
-  protected final StreamFilter _compressionFilter = new ServerStreamCompressionFilter(EncodingType.values(), _executor, THRESHOLD);
+  protected final StreamFilter _compressionFilter = new ServerStreamCompressionFilter(StreamEncodingType.values(), _executor, THRESHOLD);
 
   private HttpServer _server;
 
@@ -137,25 +137,25 @@ public class TestCompressionEcho
   @DataProvider
   public Object[][] compressionEchoData()
   {
-    EncodingType[] encodings =
-        new EncodingType[]{
-                            EncodingType.GZIP,
-                            EncodingType.DEFLATE,
-                            EncodingType.SNAPPY_FRAMED,
-                            EncodingType.BZIP2,
-                            EncodingType.IDENTITY
+    StreamEncodingType[] encodings =
+        new StreamEncodingType[]{
+                            StreamEncodingType.GZIP,
+                            StreamEncodingType.DEFLATE,
+                            StreamEncodingType.SNAPPY_FRAMED,
+                            StreamEncodingType.BZIP2,
+                            StreamEncodingType.IDENTITY
                           };
     Object[][] args = new Object[2 * encodings.length * encodings.length][2];
 
     int cur = 0;
-    for (EncodingType requestEncoding : encodings)
+    for (StreamEncodingType requestEncoding : encodings)
     {
-      for (EncodingType acceptEncoding : encodings)
+      for (StreamEncodingType acceptEncoding : encodings)
       {
         StreamFilter clientCompressionFilter =
             new ClientStreamCompressionFilter(requestEncoding,
                                         new CompressionConfig(THRESHOLD),
-                                        new EncodingType[]{acceptEncoding},
+                                        new StreamEncodingType[]{acceptEncoding},
                                         Arrays.asList(new String[]{"*"}),
                                         _executor);
 
@@ -171,14 +171,14 @@ public class TestCompressionEcho
       }
     }
     // test data that won't trigger compression
-    for (EncodingType requestEncoding : encodings)
+    for (StreamEncodingType requestEncoding : encodings)
     {
-      for (EncodingType acceptEncoding : encodings)
+      for (StreamEncodingType acceptEncoding : encodings)
       {
         StreamFilter clientCompressionFilter =
             new ClientStreamCompressionFilter(requestEncoding,
                 new CompressionConfig(THRESHOLD),
-                new EncodingType[]{acceptEncoding},
+                new StreamEncodingType[]{acceptEncoding},
                 Arrays.asList(new String[]{"*"}),
                 _executor);
 

@@ -25,7 +25,7 @@ import java.util.concurrent.Executor;
 /**
  * @author Ang Xu
  */
-public enum EncodingType
+public enum StreamEncodingType
 {
   GZIP("gzip"),
   DEFLATE("deflate"),
@@ -34,12 +34,12 @@ public enum EncodingType
   IDENTITY("identity"),
   ANY("*");
 
-  private static final Map<String,EncodingType> REVERSE_MAP;
+  private static final Map<String,StreamEncodingType> REVERSE_MAP;
 
   static
   {
-    Map<String, EncodingType> reverseMap = new HashMap<String, EncodingType>();
-    for(EncodingType t : EncodingType.values())
+    Map<String, StreamEncodingType> reverseMap = new HashMap<String, StreamEncodingType>();
+    for(StreamEncodingType t : StreamEncodingType.values())
     {
       reverseMap.put(t.getHttpName(), t);
     }
@@ -48,7 +48,7 @@ public enum EncodingType
 
   private final String _httpName;
 
-  EncodingType(String httpName)
+  StreamEncodingType(String httpName)
   {
     _httpName = httpName;
   }
@@ -77,7 +77,7 @@ public enum EncodingType
     }
   }
 
-  public static EncodingType get(String httpName)
+  public static StreamEncodingType get(String httpName)
   {
     return REVERSE_MAP.get(httpName);
   }

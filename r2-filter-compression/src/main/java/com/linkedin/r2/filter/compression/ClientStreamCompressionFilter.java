@@ -23,7 +23,7 @@ import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.CompressionOption;
 import com.linkedin.r2.filter.compression.streaming.AcceptEncoding;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.message.stream.entitystream.CompositeWriter;
 import com.linkedin.r2.filter.compression.streaming.PartialReader;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
@@ -58,12 +58,12 @@ public class ClientStreamCompressionFilter implements StreamFilter
 {
   private static final Logger LOG = LoggerFactory.getLogger(ClientStreamCompressionFilter.class);
 
-  private final EncodingType _requestContentEncoding;
+  private final StreamEncodingType _requestContentEncoding;
   private final CompressionConfig _requestCompressionConfig;
   /**
    * Encodings accepted by the client, used to generate Accept-Encoding header.
    */
-  private final EncodingType[] _acceptedEncodings;
+  private final StreamEncodingType[] _acceptedEncodings;
   private final String _acceptEncodingHeader;
 
   /**
@@ -97,9 +97,9 @@ public class ClientStreamCompressionFilter implements StreamFilter
    * @param acceptedEncodings encodings accepted by the client, used to generate Accept-Encoding header.
    * @param responseCompressionOperations the set of operations for which response compression will be turned on.
    */
-  public ClientStreamCompressionFilter(EncodingType requestContentEncoding,
+  public ClientStreamCompressionFilter(StreamEncodingType requestContentEncoding,
                                  CompressionConfig requestCompressionConfig,
-                                 EncodingType[] acceptedEncodings,
+                                 StreamEncodingType[] acceptedEncodings,
                                  List<String> responseCompressionOperations,
                                  Executor executor)
   {
@@ -110,11 +110,11 @@ public class ClientStreamCompressionFilter implements StreamFilter
 
     if (acceptedEncodings == null)
     {
-      acceptedEncodings = new EncodingType[0];
+      acceptedEncodings = new StreamEncodingType[0];
     }
 
     //Sanity check
-    for (EncodingType type : acceptedEncodings)
+    for (StreamEncodingType type : acceptedEncodings)
     {
       if (type == null)
       {
@@ -122,7 +122,7 @@ public class ClientStreamCompressionFilter implements StreamFilter
       }
     }
 
-    if (requestContentEncoding.equals(EncodingType.ANY))
+    if (requestContentEncoding.equals(StreamEncodingType.ANY))
     {
       throw new IllegalArgumentException(CompressionConstants.REQUEST_ANY_ERROR
           + requestContentEncoding.getHttpName());
@@ -150,7 +150,7 @@ public class ClientStreamCompressionFilter implements StreamFilter
                                  List<String> responseCompressionOperations,
                                  Executor executor)
   {
-    this(requestContentEncoding.trim().isEmpty() ? EncodingType.IDENTITY : EncodingType.get(requestContentEncoding.trim().toLowerCase()),
+    this(requestContentEncoding.trim().isEmpty() ? StreamEncodingType.IDENTITY : StreamEncodingType.get(requestContentEncoding.trim().toLowerCase()),
         requestCompressionConfig,
         AcceptEncoding.parseAcceptEncoding(acceptedEncodings),
         responseCompressionOperations,
@@ -198,7 +198,7 @@ public class ClientStreamCompressionFilter implements StreamFilter
     StringBuilder acceptEncodingValue = new StringBuilder();
     for(int i=0; i < _acceptedEncodings.length; i++)
     {
-      EncodingType t = _acceptedEncodings[i];
+      StreamEncodingType t = _acceptedEncodings[i];
 
       if(i > 0)
       {
@@ -228,7 +228,7 @@ public class ClientStreamCompressionFilter implements StreamFilter
           .build(req.getEntityStream());
     }
 
-    if (_requestContentEncoding != EncodingType.IDENTITY)
+    if (_requestContentEncoding != StreamEncodingType.IDENTITY)
     {
       final StreamRequest request = req;
       final StreamingCompressor compressor = _requestContentEncoding.getCompressor(_executor);
@@ -317,7 +317,7 @@ public class ClientStreamCompressionFilter implements StreamFilter
       //decompress if necessary
       if (compressionHeader != null)
       {
-        final EncodingType encoding = EncodingType.get(compressionHeader.trim().toLowerCase());
+        final StreamEncodingType encoding = StreamEncodingType.get(compressionHeader.trim().toLowerCase());
         if (encoding == null)
         {
           nextFilter.onError(new IllegalArgumentException("Server returned unrecognized content encoding: " +
@@ -355,7 +355,7 @@ public class ClientStreamCompressionFilter implements StreamFilter
         //decompress if necessary
         if (compressionHeader != null)
         {
-          EncodingType encoding = EncodingType.get(compressionHeader.trim().toLowerCase());
+          StreamEncodingType encoding = StreamEncodingType.get(compressionHeader.trim().toLowerCase());
           if (encoding != null)
           {
             final StreamingCompressor compressor = encoding.getCompressor(_executor);

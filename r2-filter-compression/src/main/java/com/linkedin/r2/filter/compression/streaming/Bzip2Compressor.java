@@ -40,7 +40,7 @@ public class Bzip2Compressor extends AbstractCompressor
   @Override
   public String getContentEncodingName()
   {
-    return EncodingType.BZIP2.getHttpName();
+    return StreamEncodingType.BZIP2.getHttpName();
   }
 
   @Override

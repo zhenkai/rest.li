@@ -40,7 +40,7 @@ public class DeflateCompressor extends AbstractCompressor
   @Override
   public String getContentEncodingName()
   {
-    return EncodingType.DEFLATE.getHttpName();
+    return StreamEncodingType.DEFLATE.getHttpName();
   }
 
   @Override

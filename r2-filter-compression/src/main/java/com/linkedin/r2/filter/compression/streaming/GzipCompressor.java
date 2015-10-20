@@ -40,7 +40,7 @@ public class GzipCompressor extends AbstractCompressor
   @Override
   public String getContentEncodingName()
   {
-    return EncodingType.GZIP.getHttpName();
+    return StreamEncodingType.GZIP.getHttpName();
   }
 
   @Override

@@ -18,7 +18,7 @@ package com.linkedin.r2.filter.compression;
 
 import com.linkedin.common.callback.Callback;
 import com.linkedin.r2.filter.compression.streaming.AcceptEncoding;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.message.stream.entitystream.CompositeWriter;
 import com.linkedin.r2.filter.compression.streaming.PartialReader;
 import com.linkedin.r2.filter.compression.streaming.StreamingCompressor;
@@ -56,7 +56,7 @@ public class ServerStreamCompressionFilter implements StreamFilter
 {
   private static final Logger LOG = LoggerFactory.getLogger(ServerStreamCompressionFilter.class);
 
-  private final Set<EncodingType> _supportedEncoding;
+  private final Set<StreamEncodingType> _supportedEncoding;
   private final Executor _executor;
   private final int _compressThreshold;
 
@@ -80,11 +80,11 @@ public class ServerStreamCompressionFilter implements StreamFilter
    * that supports the compression methods in the given set in argument.
    * @param supportedEncoding
    */
-  public ServerStreamCompressionFilter(EncodingType[] supportedEncoding, Executor executor, int compressThreshold)
+  public ServerStreamCompressionFilter(StreamEncodingType[] supportedEncoding, Executor executor, int compressThreshold)
   {
-    _supportedEncoding = new HashSet<EncodingType>(Arrays.asList(supportedEncoding));
-    _supportedEncoding.add(EncodingType.IDENTITY);
-    _supportedEncoding.add(EncodingType.ANY);
+    _supportedEncoding = new HashSet<StreamEncodingType>(Arrays.asList(supportedEncoding));
+    _supportedEncoding.add(StreamEncodingType.IDENTITY);
+    _supportedEncoding.add(StreamEncodingType.ANY);
     _executor = executor;
     _compressThreshold = compressThreshold;
   }
@@ -101,8 +101,8 @@ public class ServerStreamCompressionFilter implements StreamFilter
     if (requestContentEncoding != null)
     {
       //This must be a specific compression type other than *
-      EncodingType encoding = EncodingType.get(requestContentEncoding.trim().toLowerCase());
-      if (encoding == null || encoding == EncodingType.ANY)
+      StreamEncodingType encoding = StreamEncodingType.get(requestContentEncoding.trim().toLowerCase());
+      if (encoding == null || encoding == StreamEncodingType.ANY)
       {
         Exception ex = new IllegalArgumentException("Unsupported Content-encoding type: " + requestContentEncoding);
         LOG.error(ex.getMessage(), ex.getCause());
@@ -124,7 +124,7 @@ public class ServerStreamCompressionFilter implements StreamFilter
     {
       // per RFC 2616, section 14.3, if no Accept-Encoding field is present in a request,
       // server SHOULD use "identity" content-encoding if it is available.
-      responseCompression = EncodingType.IDENTITY.getHttpName();
+      responseCompression = StreamEncodingType.IDENTITY.getHttpName();
     }
     requestContext.putLocalAttr(HttpConstants.ACCEPT_ENCODING, responseCompression);
     nextFilter.onRequest(req, requestContext, wireAttrs);
@@ -147,7 +147,7 @@ public class ServerStreamCompressionFilter implements StreamFilter
       }
 
       List<AcceptEncoding> parsedEncodings = AcceptEncoding.parseAcceptEncodingHeader(responseCompression, _supportedEncoding);
-      EncodingType selectedEncoding = AcceptEncoding.chooseBest(parsedEncodings);
+      StreamEncodingType selectedEncoding = AcceptEncoding.chooseBest(parsedEncodings);
 
       //Check if there exists an acceptable encoding
       if (selectedEncoding == null)
@@ -155,7 +155,7 @@ public class ServerStreamCompressionFilter implements StreamFilter
         //Not acceptable encoding status
         response = new StreamResponseBuilder().setStatus(HttpConstants.NOT_ACCEPTABLE).build(EntityStreams.emptyStream());
       }
-      else if (selectedEncoding != EncodingType.IDENTITY)
+      else if (selectedEncoding != StreamEncodingType.IDENTITY)
       {
         final StreamingCompressor compressor = selectedEncoding.getCompressor(_executor);
         PartialReader reader = new PartialReader(_compressThreshold, new Callback<EntityStream[]>()

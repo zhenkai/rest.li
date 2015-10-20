@@ -27,9 +27,8 @@ import com.linkedin.r2.filter.compression.CompressionException;
 import com.linkedin.r2.filter.compression.Compressor;
 import com.linkedin.r2.filter.compression.DeflateCompressor;
 import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.filter.compression.GzipCompressor;
-import com.linkedin.r2.filter.compression.ServerCompressionFilter;
 import com.linkedin.r2.filter.compression.SnappyCompressor;
 import com.linkedin.r2.filter.logging.SimpleLoggingFilter;
 import com.linkedin.r2.filter.message.stream.StreamResponseFilter;
@@ -347,9 +346,9 @@ public class TestCompressionServer extends RestLiIntegrationTest
   }
 
   @Test(dataProvider = "contentEncodingGeneratorDataProvider")
-  public void testEncodingGeneration(EncodingType[] encoding, String acceptEncoding)
+  public void testEncodingGeneration(StreamEncodingType[] encoding, String acceptEncoding)
   {
-    ClientStreamCompressionFilter cf = new ClientStreamCompressionFilter(EncodingType.IDENTITY,
+    ClientStreamCompressionFilter cf = new ClientStreamCompressionFilter(StreamEncodingType.IDENTITY,
                                                              new CompressionConfig(Integer.MAX_VALUE),
                                                              encoding,
                                                              Arrays.asList(new String[]{"*"}),

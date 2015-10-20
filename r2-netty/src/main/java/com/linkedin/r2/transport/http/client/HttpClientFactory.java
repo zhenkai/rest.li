@@ -27,7 +27,7 @@ import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.compression.ClientCompressionFilter;
 import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.EncodingType;
-import com.linkedin.r2.filter.compression.streaming.AcceptEncoding;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.filter.transport.ClientQueryTunnelFilter;
 import com.linkedin.r2.filter.transport.FilterChainClient;
 import com.linkedin.r2.message.RequestContext;
@@ -122,11 +122,11 @@ public class HttpClientFactory implements TransportClientFactory
   public static final EncodingType[] DEFAULT_RESPONSE_CONTENT_ENCODINGS
       = {EncodingType.GZIP, EncodingType.SNAPPY, EncodingType.DEFLATE, EncodingType.BZIP2};
 
-  public static final com.linkedin.r2.filter.compression.streaming.EncodingType[] DEFAULT_STREAM_RESPONSE_CONTENT_ENCODINGS
-      = {com.linkedin.r2.filter.compression.streaming.EncodingType.GZIP,
-      com.linkedin.r2.filter.compression.streaming.EncodingType.SNAPPY_FRAMED,
-      com.linkedin.r2.filter.compression.streaming.EncodingType.DEFLATE,
-      com.linkedin.r2.filter.compression.streaming.EncodingType.BZIP2};
+  public static final StreamEncodingType[] DEFAULT_STREAM_RESPONSE_CONTENT_ENCODINGS
+      = {StreamEncodingType.GZIP,
+      StreamEncodingType.SNAPPY_FRAMED,
+      StreamEncodingType.DEFLATE,
+      StreamEncodingType.BZIP2};
 
 
   private static final String LIST_SEPARATOR = ",";
@@ -518,11 +518,11 @@ public class HttpClientFactory implements TransportClientFactory
     return _defaultRequestCompressionConfig;
   }
 
-  /* package private */ CompressionConfig getStreamRequestCompressionConfig(String httpServiceName,  com.linkedin.r2.filter.compression.streaming.EncodingType requestContentEncoding)
+  /* package private */ CompressionConfig getStreamRequestCompressionConfig(String httpServiceName,  StreamEncodingType requestContentEncoding)
   {
     if (_requestCompressionConfigs.containsKey(httpServiceName))
     {
-      if (requestContentEncoding == com.linkedin.r2.filter.compression.streaming.EncodingType.IDENTITY)
+      if (requestContentEncoding == StreamEncodingType.IDENTITY)
       {
         // This will likely happen when the service doesn't allow any request content encodings for compression,
         // but the client specified a compression config for the service.
@@ -573,7 +573,7 @@ public class HttpClientFactory implements TransportClientFactory
     FilterChain filters;
     String httpServiceName = (String) properties.get(HTTP_SERVICE_NAME);
     EncodingType restRequestContentEncoding = getRestRequestContentEncoding(httpRequestServerSupportedEncodings);
-    com.linkedin.r2.filter.compression.streaming.EncodingType streamRequestContentEncoding =
+    StreamEncodingType streamRequestContentEncoding =
         getStreamRequestContentEncoding(httpRequestServerSupportedEncodings);
     if (_useClientCompression && (restRequestContentEncoding != EncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty()))
     {
@@ -588,7 +588,7 @@ public class HttpClientFactory implements TransportClientFactory
           _responseCompressionConfigs.get(httpServiceName),
           httpResponseCompressionOperations));
     }
-    else if (_useClientCompression && (streamRequestContentEncoding != com.linkedin.r2.filter.compression.streaming.EncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty()))
+    else if (_useClientCompression && (streamRequestContentEncoding != StreamEncodingType.IDENTITY || !httpResponseCompressionOperations.isEmpty()))
     {
       CompressionConfig compressionConfig = getStreamRequestCompressionConfig(httpServiceName, streamRequestContentEncoding);
       List<String> responseEncodings = null;
@@ -630,16 +630,16 @@ public class HttpClientFactory implements TransportClientFactory
    * @param serverSupportedEncodings list of compression encodings the server supports.
    * @return the encoding that should be used to compress requests.
    */
-  private static com.linkedin.r2.filter.compression.streaming.EncodingType getStreamRequestContentEncoding(List<String> serverSupportedEncodings)
+  private static StreamEncodingType getStreamRequestContentEncoding(List<String> serverSupportedEncodings)
   {
     for (String encoding: serverSupportedEncodings)
     {
-      if (com.linkedin.r2.filter.compression.streaming.EncodingType.isSupported(encoding))
+      if (StreamEncodingType.isSupported(encoding))
       {
-        return com.linkedin.r2.filter.compression.streaming.EncodingType.get(encoding);
+        return StreamEncodingType.get(encoding);
       }
     }
-    return com.linkedin.r2.filter.compression.streaming.EncodingType.IDENTITY;
+    return StreamEncodingType.IDENTITY;
   }
 
   /**
@@ -667,19 +667,19 @@ public class HttpClientFactory implements TransportClientFactory
    * @param encodings list of encodings in order of preference
    * @return the compression schemas that the client will support for response compression
    */
-  private com.linkedin.r2.filter.compression.streaming.EncodingType[] buildStreamAcceptEncodingSchemas(List<String> encodings)
+  private StreamEncodingType[] buildStreamAcceptEncodingSchemas(List<String> encodings)
   {
     if (encodings != null)
     {
-      List<com.linkedin.r2.filter.compression.streaming.EncodingType> encodingTypes = new ArrayList<com.linkedin.r2.filter.compression.streaming.EncodingType>();
+      List<StreamEncodingType> encodingTypes = new ArrayList<StreamEncodingType>();
       for (String encoding : encodings)
       {
         if (EncodingType.isSupported(encoding))
         {
-          encodingTypes.add(com.linkedin.r2.filter.compression.streaming.EncodingType.get(encoding));
+          encodingTypes.add(StreamEncodingType.get(encoding));
         }
       }
-      return encodingTypes.toArray(new com.linkedin.r2.filter.compression.streaming.EncodingType[encodingTypes.size()]);
+      return encodingTypes.toArray(new StreamEncodingType[encodingTypes.size()]);
     }
     return DEFAULT_STREAM_RESPONSE_CONTENT_ENCODINGS;
   }

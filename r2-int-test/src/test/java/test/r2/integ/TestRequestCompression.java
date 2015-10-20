@@ -6,9 +6,8 @@ import com.linkedin.common.util.None;
 import com.linkedin.data.ByteString;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChains;
-import com.linkedin.r2.filter.compression.ClientCompressionFilter;
 import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
-import com.linkedin.r2.filter.compression.streaming.EncodingType;
+import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
 import com.linkedin.r2.filter.compression.streaming.Bzip2Compressor;
 import com.linkedin.r2.filter.compression.streaming.DeflateCompressor;
 import com.linkedin.r2.filter.compression.streaming.GzipCompressor;
@@ -59,10 +58,10 @@ import org.testng.annotations.Test;
  */
 public class TestRequestCompression
 {
-  private static final URI GZIP_URI  = URI.create("/" + EncodingType.GZIP.getHttpName());
-  private static final URI DEFLATE_URI  = URI.create("/" + EncodingType.DEFLATE.getHttpName());
-  private static final URI BZIP2_URI  = URI.create("/" + EncodingType.BZIP2.getHttpName());
-  private static final URI SNAPPY_URI  = URI.create("/" + EncodingType.SNAPPY_FRAMED.getHttpName());
+  private static final URI GZIP_URI  = URI.create("/" + StreamEncodingType.GZIP.getHttpName());
+  private static final URI DEFLATE_URI  = URI.create("/" + StreamEncodingType.DEFLATE.getHttpName());
+  private static final URI BZIP2_URI  = URI.create("/" + StreamEncodingType.BZIP2.getHttpName());
+  private static final URI SNAPPY_URI  = URI.create("/" + StreamEncodingType.SNAPPY_FRAMED.getHttpName());
   private static final URI NO_COMPRESSION_URI = URI.create("/noCompression");
 
 
@@ -100,17 +99,17 @@ public class TestRequestCompression
   @DataProvider
   public Object[][] requestCompressionData()
   {
-    EncodingType[] encodings =
-        new EncodingType[]{
-            EncodingType.GZIP,
-            EncodingType.DEFLATE,
-            EncodingType.SNAPPY_FRAMED,
-            EncodingType.BZIP2,
+    StreamEncodingType[] encodings =
+        new StreamEncodingType[]{
+            StreamEncodingType.GZIP,
+            StreamEncodingType.DEFLATE,
+            StreamEncodingType.SNAPPY_FRAMED,
+            StreamEncodingType.BZIP2,
         };
     Object[][] args = new Object[encodings.length][2];
 
     int cur = 0;
-    for (EncodingType requestEncoding : encodings)
+    for (StreamEncodingType requestEncoding : encodings)
     {
       StreamFilter clientCompressionFilter =
           new ClientStreamCompressionFilter(requestEncoding,
@@ -134,18 +133,18 @@ public class TestRequestCompression
   @DataProvider
   public Object[][] noCompressionData()
   {
-    EncodingType[] encodings =
-        new EncodingType[]{
-            EncodingType.GZIP,
-            EncodingType.DEFLATE,
-            EncodingType.SNAPPY_FRAMED,
-            EncodingType.BZIP2,
-            EncodingType.IDENTITY
+    StreamEncodingType[] encodings =
+        new StreamEncodingType[]{
+            StreamEncodingType.GZIP,
+            StreamEncodingType.DEFLATE,
+            StreamEncodingType.SNAPPY_FRAMED,
+            StreamEncodingType.BZIP2,
+            StreamEncodingType.IDENTITY
         };
     Object[][] args = new Object[encodings.length][1];
 
     int cur = 0;
-    for (EncodingType requestEncoding : encodings)
+    for (StreamEncodingType requestEncoding : encodings)
     {
       StreamFilter clientCompressionFilter =
           new ClientStreamCompressionFilter(requestEncoding,
