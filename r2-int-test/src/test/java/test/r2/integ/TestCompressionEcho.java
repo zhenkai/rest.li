@@ -6,6 +6,7 @@ import com.linkedin.common.util.None;
 import com.linkedin.r2.filter.CompressionConfig;
 import com.linkedin.r2.filter.FilterChains;
 
+import com.linkedin.r2.filter.R2Constants;
 import com.linkedin.r2.filter.compression.ClientStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.ServerStreamCompressionFilter;
 import com.linkedin.r2.filter.compression.streaming.StreamEncodingType;
@@ -205,8 +206,11 @@ public class TestCompressionEcho
     BytesWriter writer = new BytesWriter(bytes, BYTE);
     StreamRequest request = builder.build(EntityStreams.newEntityStream(writer));
 
+    // add operation to enable sending accept encoding
+    RequestContext requestContext = new RequestContext();
+    requestContext.putLocalAttr(R2Constants.OPERATION, "get");
     final FutureCallback<StreamResponse> callback = new FutureCallback<StreamResponse>();
-    client.streamRequest(request, callback);
+    client.streamRequest(request, requestContext, callback);
 
     final StreamResponse response = callback.get(60, TimeUnit.SECONDS);
     Assert.assertEquals(response.getStatus(), RestStatus.OK);
